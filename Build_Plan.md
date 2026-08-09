@@ -287,10 +287,109 @@ Each fix has a **numeric tripwire**, not just a note. If a budget check fails, t
 - [ ] **GNN**: skip. High effort, low payoff, data isn't graph-shaped.
 
 **Polish**
-- [ ] Economics: H₂ loss cost, compressor energy, ROI vs traditional monitoring
+- [ ] **Economics module (~90 min) — spec in §Economics below.** Differential ROI only; do not attempt to price the storage project.
 - [ ] 3D view in Plotly (extrude the 2D slice — looks 3D, costs nothing)
-- [ ] Baseline comparison: "pressure-threshold monitoring catches it at day 40; we predict at day 5"
+- [ ] Baseline comparison — **measure it, don't assert it.** Run a pressure-threshold detector over the simulator's own pressure trace, report the day it trips vs the day the surrogate crosses its risk threshold. Both come from the same synthetic run, so the comparison is internally consistent and you can say exactly what it is. *"Pressure-threshold monitoring catches it at day 40; we predict at day 5" was an invented number — do not put it on a slide.*
 - [ ] Write the limitations slide honestly (see §Risks)
+
+## Economics — scope, assumptions, and what not to claim
+
+**Supersedes `Document 9.pdf` §4 (Economic & Operational Optimization).** That section lists operational costs, H₂ losses, compressor energy, storage efficiency, ROI, and price-driven scheduling. Built literally, it produces a dollar figure resting on ~20 unstated assumptions, most of which we cannot source in a hackathon. This section narrows it to what we can defend.
+
+### The scope decision: compute the differential, not the project
+
+Do **not** compute "ROI of underground hydrogen storage." Compute **the incremental value of adding HyLeakAI to a site that already exists.**
+
+```
+annual_benefit = (avoided_H2_loss + avoided_intervention_cost)
+               − (system_cost + false_positive_cost)
+```
+
+In a differential, everything common to both arms cancels — and that removes exactly the assumptions we can't defend:
+
+| Cancels (do not model) | Why it would otherwise dominate |
+|---|---|
+| Cushion gas | Roughly half of gas-in-place, permanently immobilised. Largest capex in porous storage. Identical in both arms. |
+| Drilling, completion, surface facilities | Site exists in both arms |
+| Compressor capex | Same machine either way |
+| Discount rate / WACC / asset life | Not needed for an annual differential — **we deliberately do not compute NPV.** Picking a WACC we can't defend adds a 2–3× error for no gain. |
+
+This also sidesteps the two worst framing errors: it does not require us to claim leakage is the dominant loss (it isn't — see below), and it does not require the operator to own the molecules.
+
+### Assumption register
+
+Every number the module consumes. **Status is the important column.** Nothing marked UNVERIFIED goes on a slide as a point value.
+
+| Quantity | Value / range | Source | Status | ROI sensitivity |
+|---|---|---|---|---|
+| H₂ price | sweep $1–8/kg | market data — **needs a real citation** | ⚠️ UNVERIFIED | linear |
+| Loss fraction | simulator `% H₂ lost` label | our own VE/IMPES run | ❌ **UNCALIBRATED** — no ground truth exists | linear |
+| Working gas mass | pore volume × sat, from Volve | our own model | ✅ derived | linear |
+| Compressor isentropic efficiency | 0.70–0.85 | textbook range; lower for H₂ reciprocating | ⚠️ needs cite | mild |
+| Suction / discharge pressure | from simulator pressure field | our own model | ✅ derived | log — enters as `ln(p₂/p₁)` |
+| Electricity price | ENTSO-E / EIA / CAISO | public, free, downloadable | ✅ verifiable | linear on compression term only |
+| Intervention (workover) cost | order $10⁵–10⁶ | ⚠️ **needs a real citation** | ⚠️ UNVERIFIED | linear |
+| Detection lead-time gain | **measure it** (see Phase 3) | our own simulator + surrogate | ✅ computable | linear |
+| False-positive rate | held-out CV on the surrogate | our own model | ✅ **measurable — we already have it** | linear |
+| Seasonal price spread | winter − summer | public price data | ✅ verifiable | linear on arbitrage term |
+
+> **The project's own history is the reason for this table.** `Data_sources_research.md` was AI-generated and shipped fabricated datasets and an inverted viscosity/density claim. Do not accept a $/kg or $/workover figure from anyone — including a model — without a source you have opened.
+
+### What we explicitly do NOT claim
+
+State these on the limitations slide rather than waiting to be asked:
+
+1. **Leakage is not the dominant hydrogen loss.** Our own physics section ranks the pathways and puts caprock breakthrough *last*; cushion gas, residual trapping (up to ~41% saturation), dissolution and microbial consumption are all larger. We model the *engineered* leak path (old wells) because it is the actionable one, not the biggest one.
+2. **The loss fraction is uncalibrated.** No public H₂ leakage ground truth exists — that absence is the premise of the project. Monetising the label does not add information; it converts an order-of-magnitude uncertainty into a number with a currency symbol. Hence: ranges only.
+3. **Storage is usually a service business.** If the operator sells capacity rather than molecules, shrinkage is contractual and the real drivers are permit retention, avoided workover, and insurance. We report avoided-loss value as an *upper bound* on the merchant case.
+4. **False positives cost money.** A de-rated injection pressure is lost working-gas revenue. The term is in the formula and it is not zero.
+5. **"Traditional monitoring" is not nothing.** Real sites run downhole gauges, DTS/DAS, periodic integrity logging, soil-gas and groundwater sampling. HyLeakAI is a forecasting layer *on top of* that stack, not a replacement for a strawman.
+
+### Compressor energy — the one first-principles number
+
+The only part of Doc 9 §4 that is genuinely computable from scratch, and the one a reservoir engineer on the panel can check in their head. Get it right.
+
+- **Real gas, not ideal.** H₂'s compressibility Z exceeds 1 at reservoir pressure, so ideal-gas underestimates the work. Use enthalpy differences from the **precomputed CoolProp table** (Fix 2) — `w = (h_out − h_in) / η_isentropic` per stage, intercooled back to suction temperature between stages.
+- H₂ also has a **negative Joule–Thomson coefficient** above ~193 K: it *warms* on throttling, unlike methane. Worth one sentence in the demo; it surprises people.
+
+**Sanity anchor — compute this by hand before trusting the code.** Ideal isothermal work is `w = (R·T/M)·ln(p₂/p₁)`, and for H₂ at 300 K that constant is **1.237 MJ/kg = 0.344 kWh/kg per natural-log unit**. Pipeline 30 bar → reservoir 200 bar is `ln(6.67) = 1.90`, so ≈ 0.65 kWh/kg ideal, ≈ 0.9 kWh/kg at 75% efficiency. Multi-stage real-gas lands somewhat above that.
+
+> **Tripwire: specific compression work must land in ~0.5–3 kWh/kg**, i.e. under ~10% of H₂'s LHV (33.3 kWh/kg). If you compute 20 kWh/kg you have a unit error or a molar-mass error, not an expensive compressor.
+
+### Scheduling: seasonal spread, not hourly renewable arbitrage
+
+Doc 9 §4 asks for schedules optimised against *renewable availability and market electricity prices* — an hourly / day-ahead problem. **Our simulator runs 3 cycles of 6-month injection / 6-month withdrawal.** You cannot do hourly dispatch optimisation on a 6-month half-cycle model. Pick the one that matches the physics:
+
+- **Do:** seasonal spread arbitrage — inject on summer prices, withdraw on winter prices, net of compression energy at the injection-period electricity price.
+- **Don't:** hourly curtailment-chasing. If the pitch needs that story, build it as a clearly-labelled separate toy that is *not* coupled to the simulator, and say so.
+- **Label perfect foresight as perfect foresight.** Optimising against known future prices gives an upper bound, not achievable profit. Report it as "perfect-foresight ceiling" or report a naive-forecast run alongside it.
+- The genuinely novel coupling, if there's time: constrain the schedule by the surrogate's predicted safe pressure. Economics bounded by the leakage model is the interesting version of this module.
+
+### Tripwires
+
+Same discipline as the compute fixes in Part I — thresholds, not notes.
+
+| Check | Threshold | If it fails |
+|---|---|---|
+| Loss-fraction plausibility, **before monetising** | assert the label is in a physically plausible band | A site losing 30%/yr is not a business. The label is wrong, not the site. |
+| Compression specific work | 0.5–3 kWh/kg, < 10% of LHV | Unit or molar-mass error |
+| ROI output format | **range + tornado chart, never a point estimate** | A point ROI invites exactly the question you can't answer |
+| False-positive cost term | non-zero | Without it, it isn't an ROI |
+
+### Scale anchor for the pitch
+
+~10,000 t working gas at ~$5/kg ≈ $50M inventory; **1% annual loss ≈ $500k/yr.** Memorise one anchor like this so the magnitude of every number on screen can be checked live. Verify the tonnage against whatever site scale you actually derive from Volve.
+
+### Time budget (~90 min, Person C)
+
+| Task | Time |
+|---|---|
+| Differential formula + assumption register wired to the labels CSV | 30 min |
+| Real-gas compression energy off the CoolProp table | 20 min |
+| Seasonal spread arbitrage on downloaded price data | 20 min |
+| Tornado / sensitivity chart | 20 min |
+
+Skip NPV, discounting, cushion gas, and hourly dispatch entirely.
 
 ## Work split
 
@@ -327,6 +426,9 @@ All three run slices of the LHS sweep in Phase 2b — that's the only step where
 | torch/sklearn segfault mid-demo | Import order fixed in every file, including Streamlit |
 | M1 stalls during judging | Free 15–20 GB; pre-compute everything; **never run a simulation live** |
 | Coarse `dz` questioned by judges | Own it — say vertical resolution was traded for 300 scenarios, and show the CFL arithmetic |
+| **"Where did your $/kg come from?"** | Assumption register (§Economics) with sources and status; sweep the price, never quote one |
+| **"Isn't leakage the smallest loss term?"** — it is | Answer it first, unprompted. We model the *actionable* loss path, not the biggest one. Differential ROI doesn't require it to be the biggest. |
+| **Economics inherits the unvalidated loss label** | Plausibility tripwire before monetising; report ranges + tornado, never a point ROI |
 
 **Caveats on the numbers in Part I:**
 
