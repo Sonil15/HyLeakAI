@@ -1,5 +1,16 @@
 # HyLeakAI — Build Plan & Compute Analysis
 
+> **Superseded.** This plans the custom Volve-based VE/IMPES simulator and
+> its hackathon schedule, including the Economics module spec below. None of
+> the simulator, dashboard-as-planned, or economics module were built as
+> described — the project pivoted to Mao et al.'s published UHS dataset
+> (Zenodo 14029514) with a U-Net surrogate + XGBoost risk model. See
+> [`README.md`](README.md) for what actually shipped, what's still missing
+> against the original 4-module scope in `Document 9.pdf`, and the current
+> path ahead. Kept here as historical record — the compute benchmarks (Part
+> I) and the Economics section's reasoning still hold if that module gets
+> built later.
+
 **Written:** 2026-08-09 · **Deadlines:** basic prototype 2026-08-11, improved 2026-08-14
 **Supersedes:** §4–§6 of `Data_sources_research.md` (physics and data sources in §1–§3 there still stand)
 **Team:** 3 people — 1× MacBook Air M1 (8 GB, fanless), 2× Windows laptops with entry-level GPUs

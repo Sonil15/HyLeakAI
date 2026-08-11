@@ -41,6 +41,39 @@ up.
 
 ---
 
+## Status vs. the original scope, and what's next
+
+`Document 9.pdf` (the original pitch) proposed four modules. Here's what
+actually exists today and what doesn't:
+
+| # | Module | Status | What's built |
+|---|---|---|---|
+| 1 | **Geological / subsurface intelligence** — screen candidate sites for storage suitability (caprock stability, fault zones) | 🟡 **Prototype built** | `src/site_suitability.py` ranks all 1,000 realisations by a weighted composite of storage capacity, caprock seal risk, and heterogeneity — see `docs/SITE_SUITABILITY.md`. Clustering was tried first and dropped (weak silhouette, geology features are collinear — a continuum, not discrete site types). No frontend yet; backend/ranking only. |
+| 2 | **AI leakage prediction engine** | ✅ **Built, narrower scope** | U-Net surrogate + XGBoost risk model + SHAP, described above. Predicts leakage risk for a hypothesised fault, not the full original list (no explicit "safe injection pressure limit" output yet, though the caprock margin feature it would come from already exists). |
+| 3 | **Digital twin & visualisation dashboard** | 🟡 **Partial** | `app/dashboard.py` shows risk trajectory, fault-ensemble sweep, and SHAP attribution. No 3D reservoir view, no fault-activation-zone map, no plan-view geology display. |
+| 4 | **Economic & operational optimisation** | ❌ **Not started** | No code. A scoped-down spec (differential ROI, not full project NPV) exists in `Build_Plan.md`'s Economics section and is still a reasonable starting point if this gets built. |
+
+**Path ahead, in order:**
+
+1. **Site-suitability frontend — current priority.** The ranking exists
+   (`src/site_suitability.py`, `docs/SITE_SUITABILITY.md`); it has no
+   visualisation yet. Smallest lift: one scatter plot (capacity vs. seal
+   risk, coloured by score) plus a table of the top/bottom sites, either as
+   a standalone chart or a new dashboard panel.
+2. **Safe injection pressure limit.** Derive an explicit max-safe-pressure
+   number from the caprock margin feature that already exists, and surface
+   it on the dashboard — closes most of the gap in module 2.
+3. **Economics module.** Port the differential-ROI spec from
+   `Build_Plan.md` (avoided loss + avoided intervention, minus system cost
+   and false-positive cost — deliberately not a full project NPV) into
+   working code.
+4. **Dashboard: geology/fault-zone map.** Add a plan-view panel (porosity,
+   permeability, fault-activation zones) to close the gap toward an actual
+   "digital twin" view, rather than just the risk-trajectory charts it has
+   now.
+
+---
+
 ## Results
 
 **U-Net surrogate** — architecture verified against the paper's Table 1:
