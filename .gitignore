@@ -29,6 +29,7 @@ __pycache__/
 .venv/
 venv/
 api_artifacts/
+runtime_artifacts/
 .ipynb_checkpoints/
 .pytest_cache/
 *.egg-info/
