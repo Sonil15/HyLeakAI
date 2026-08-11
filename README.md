@@ -1,0 +1,193 @@
+# HyLeakAI
+
+Physics-guided leakage-risk screening for **underground hydrogen storage (UHS)**.
+
+A U-Net surrogate learns reservoir flow from geology, physics features are
+extracted from its predicted fields, and a gradient-boosted model scores leakage
+risk against a hypothesised fault — turning a multi-hour reservoir simulation
+into a sub-second screening pass that can be Monte-Carlo'd over unknown fault
+properties.
+
+```
+geology (phi, k)  ->  U-Net surrogate  ->  pressure + H2 saturation fields
+                                                    |
+                                        physics feature extraction (41)
+                                                    |
+                                      + hypothesised fault realisation
+                                                    |
+                                    XGBoost -> P(elevated leakage in 6 months)
+                                                    |
+                                              SHAP attribution
+```
+
+---
+
+## Read this before quoting any number
+
+The source dataset contains **porosity, permeability, pressure and H2
+saturation** — nothing else. No faults, no caprock properties, **no leakage**.
+We have no reservoir simulator.
+
+So the split is:
+
+- **Features are real.** From Mao et al.'s 1,000 tNavigator physics simulations.
+- **Leakage labels are ours.** A semi-analytical Darcy flux through a
+  *hypothetical* fault whose position, permeability, length and width we sample.
+
+This is a **physics-guided screening tool, not a calibrated leak-rate
+predictor**. `docs/FINDINGS.md` records every measurement behind that statement,
+including the two targets we tried and dropped. Read it before writing anything
+up.
+
+---
+
+## Results
+
+**U-Net surrogate** — architecture verified against the paper's Table 1:
+
+| Variant | Embedding | Our params | Paper |
+|---|---|---|---|
+| Small (in use) | 32 | 7,764,674 | 7.7M |
+| Medium | 64 | 31,043,586 | 31M |
+| Large | 128 | 124,120,706 | 124M |
+
+Training runs on Kaggle (`notebooks/kaggle_train_unet.ipynb`). Target is
+relative L2 ~0.06–0.10 saturation, ~0.09–0.13 pressure; the paper's best
+(U-Net-Large on an A100) is 0.0577 / 0.0861.
+
+**Leakage risk** — horizon sweep on the held-out test split, 1,000 simulations:
+
+| Horizon | Months | Cycle phase | Model PR-AUC | Persistence | Gain |
+|---|---|---|---|---|---|
+| 1 | 2 | different | 0.9949 | 0.4224 | +0.5725 |
+| **3** | **6** | **different** | **0.9931** | **0.0218** | **+0.9714** |
+| 6 | 12 | same | 0.9975 | 0.9918 | +0.0057 |
+| 12 | 24 | same | 0.9960 | 0.9758 | +0.0202 |
+| 30 | 60 | same | 0.9918 | 0.9125 | +0.0792 |
+
+**Does the surrogate's error matter?** The risk model is trained once on
+simulator features and never retrained, then scored on both field sources over
+150 held-out simulations:
+
+| Field source | PR-AUC | log-flux R² | RMSE |
+|---|---|---|---|
+| Simulator | 0.9941 | +0.9714 | 0.739 |
+| **U-Net surrogate** | **0.9842** | +0.9200 | 1.236 |
+
+**The surrogate retains 99.0% of the simulator's PR-AUC** — so risk *screening*
+survives a ~16% pressure error almost intact, which is what justifies using a
+surrogate at all. Magnitude estimation degrades more (flux predicted within
+~17x rather than ~5.5x), which is why the claim here is screening, not
+quantitative leak-rate prediction.
+
+**The persistence column is the one that matters.** At any horizon that is a
+whole number of storage cycles, the fields repeat and simply copying today's
+value already scores ~0.99 — a high model score there measures the reservoir's
+annual periodicity, not forecasting skill. Horizon 3 (half a cycle) is the
+reported task because persistence collapses there to 0.0218, *below* the 2.3%
+base rate.
+
+---
+
+## Setup
+
+```bash
+pip install -r requirements.txt
+```
+
+## Pipeline
+
+```bash
+# 1. Data: download 12.38 GB from Zenodo (resumable, parallel), then convert
+python -m src.data.download                  # verifies against the published MD5
+python -m src.data.lmdb_convert              # -> constants.npy, states.npy, stats.json
+
+# 2. Validate the dataset and settle the T1 go/no-go question
+python -m src.explore
+
+# 3. Leakage physics self-checks (monotonicity of the T3 model)
+python -m src.leakage.labels
+
+# 4. Feature table: 1.18M rows x 41 features, all horizons in one pass (~2 min)
+python -m src.build_features --workers 12
+
+# 5. Risk model: horizon sweep vs persistence, then SHAP (~10 min)
+python -m src.train_xgb --table data/features.npy --n-jobs 12
+
+# 6. Dashboard
+streamlit run app/dashboard.py
+```
+
+**U-Net training** goes on Kaggle — see below. There is no local GPU path worth
+taking: measured at ~4 hours per epoch on a 16-core CPU versus ~3–5 minutes on
+a T4.
+
+## Training the surrogate on Kaggle
+
+Upload `notebooks/kaggle_train_unet.ipynb` (File → Import Notebook). It is
+self-contained: it writes its own sources, fetches the dataset from Zenodo,
+converts, verifies, and trains.
+
+1. **Settings → Accelerator → GPU T4 ×2.** Not P100 — it is compute capability
+   6.0 (Pascal) and current PyTorch builds ship no Pascal kernels. Cell 1 checks
+   this explicitly and fails in seconds rather than 30 minutes in.
+2. **Settings → Internet → On.**
+3. Run all. Expect ~3–5 min/epoch, so 120 epochs ≈ two sessions.
+4. **Save Version → Save & Run All** before closing, or the session is discarded.
+5. To resume: new session → *Data → Add Input* → previous output → set
+   `PREV_OUTPUT` in cell 2 → run all.
+
+Checkpoints are written **every epoch**, **atomically** (`.tmp` then move), in
+three tiers: `_best.pt` (lowest validation loss), `_last.pt` (exact resume —
+model + optimizer + scheduler + history), and numbered `_epochNNN.pt` archival
+snapshots every 10 epochs. Resume falls back through the snapshots newest-first,
+so a damaged `_last.pt` costs a few epochs rather than the run.
+
+## Layout
+
+```
+src/
+  config.py                 all constants, tagged [DATASET] / [DERIVED] / [ASSUMED]
+  explore.py                dataset validation + T1 go/no-go
+  build_features.py         multi-horizon feature table (parallel)
+  train_unet.py             surrogate training (local / CPU fallback)
+  train_xgb.py              horizon sweep, persistence baseline, SHAP
+  data/                     download, LMDB conversion, PyTorch dataset
+  models/unet.py            U-Net + relative-L2 loss + paper parameter check
+  leakage/
+    labels.py               T1/T2/T3 targets + physics self-checks
+    features.py             41 physics features, multi-horizon labels
+kaggle/                     self-contained modules + notebook generator
+notebooks/                  kaggle_train_unet.ipynb
+app/dashboard.py            Streamlit screening dashboard
+docs/FINDINGS.md            every measurement, including the negative results
+```
+
+## Verification built into the pipeline
+
+Each of these is an assertion in the code, not a manual step:
+
+- **Download** checked against the Zenodo MD5.
+- **Conversion** round-tripped against the LMDB, with tolerances *derived from
+  float16 resolution* rather than chosen to pass.
+- **Architecture** checked against the paper's reported weight counts before any
+  training step.
+- **Overfit test** on 4 simulations, to catch channel-ordering and normalisation
+  bugs before committing hours.
+- **Split disjointness** asserted by simulation ID at both the U-Net and XGBoost
+  stages — a simulation is never in one stage's training set and another's test
+  set.
+- **Leakage physics** monotonicity: flux must rise with fault permeability and
+  overpressure, and be exactly zero during withdrawal and below residual gas
+  saturation.
+- **Persistence baseline** reported alongside every risk score, with horizons
+  where persistence exceeds 0.9 PR-AUC flagged as "not a forecasting task".
+
+## Source
+
+Mao, S., Carbonero, A., & Mehana, M. (2025). *Deep learning for subsurface flow:
+A comparative study of U-Net, Fourier neural operators, and transformers in
+underground hydrogen storage.* JGR: Machine Learning and Computation, 2,
+e2024JH000401. <https://doi.org/10.1029/2024JH000401>
+
+Dataset: <https://zenodo.org/records/14029514> (CC-BY-4.0 / MIT)

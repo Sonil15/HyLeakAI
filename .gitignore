@@ -1,0 +1,47 @@
+# Data (large, downloaded separately — see README).
+# Leading slash matters: a bare `data/` would also match the src/data/ source
+# package and silently drop the download and conversion code from the repo.
+/data/
+*.mdb
+*.npy
+*.npz
+*.h5
+*.lmdb
+
+# Model artifacts.
+# Checkpoints are 89 MB each and there are eight of them. We ship only the
+# best one plus its history — the archival snapshots and the overfit-test
+# checkpoints are reproducible and would add ~620 MB of dead weight to every
+# clone. Regenerate them by re-running the Kaggle notebook.
+checkpoints/*
+!checkpoints/unet_small_best.pt
+!checkpoints/unet_small_history.json
+!checkpoints/stats.json
+*.pth
+*.json.model
+
+# Papers / references
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+*.egg-info/
+
+# Outputs: keep the trained risk models and the result JSONs (all small and
+# needed by the dashboard); drop raw dumps and logs.
+outputs/*
+!outputs/*.json
+!outputs/*.ubj
+figures/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
