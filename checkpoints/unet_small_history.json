@@ -1,0 +1,1202 @@
+[
+  {
+    "epoch": 0,
+    "lr": 0.0001,
+    "train_pressure": 0.6305169417858124,
+    "train_saturation": 0.5592685962404523,
+    "val_pressure": 0.509893406895881,
+    "val_saturation": 0.2664790176489252,
+    "val_total": 0.7763724245448063,
+    "seconds": 129.13181049800005
+  },
+  {
+    "epoch": 1,
+    "lr": 0.0001,
+    "train_pressure": 0.4513300758429936,
+    "train_saturation": 0.24147700818947385,
+    "val_pressure": 0.46307256278839515,
+    "val_saturation": 0.21546669930536697,
+    "val_total": 0.6785392620937621,
+    "seconds": 127.08195422799986
+  },
+  {
+    "epoch": 2,
+    "lr": 0.0001,
+    "train_pressure": 0.43405654294150214,
+    "train_saturation": 0.21487979417187827,
+    "val_pressure": 0.44747393102721966,
+    "val_saturation": 0.2058516503807078,
+    "val_total": 0.6533255814079275,
+    "seconds": 126.68717297099988
+  },
+  {
+    "epoch": 3,
+    "lr": 0.0001,
+    "train_pressure": 0.42602275712149484,
+    "train_saturation": 0.19975842693873813,
+    "val_pressure": 0.4567204934168369,
+    "val_saturation": 0.21512657705139607,
+    "val_total": 0.671847070468233,
+    "seconds": 126.66767562199993
+  },
+  {
+    "epoch": 4,
+    "lr": 0.0001,
+    "train_pressure": 0.4214887137413025,
+    "train_saturation": 0.1900689947264535,
+    "val_pressure": 0.44439509114686476,
+    "val_saturation": 0.19600464760306033,
+    "val_total": 0.6403997387499251,
+    "seconds": 126.79070589399998
+  },
+  {
+    "epoch": 5,
+    "lr": 0.0001,
+    "train_pressure": 0.41817520904541017,
+    "train_saturation": 0.18378252955845423,
+    "val_pressure": 0.4437226468419775,
+    "val_saturation": 0.20272117496487943,
+    "val_total": 0.6464438218068569,
+    "seconds": 126.67238823799994
+  },
+  {
+    "epoch": 6,
+    "lr": 0.0001,
+    "train_pressure": 0.4152559416975294,
+    "train_saturation": 0.18128611307484763,
+    "val_pressure": 0.4397426022494093,
+    "val_saturation": 0.1922457811838769,
+    "val_total": 0.6319883834332862,
+    "seconds": 126.56628989400019
+  },
+  {
+    "epoch": 7,
+    "lr": 0.0001,
+    "train_pressure": 0.4133216441018241,
+    "train_saturation": 0.17423403705869403,
+    "val_pressure": 0.4384546092850097,
+    "val_saturation": 0.1884898722885137,
+    "val_total": 0.6269444815735233,
+    "seconds": 126.41293762500004
+  },
+  {
+    "epoch": 8,
+    "lr": 0.0001,
+    "train_pressure": 0.41238361035074506,
+    "train_saturation": 0.17258398219517299,
+    "val_pressure": 0.4399560673281233,
+    "val_saturation": 0.18711369587702953,
+    "val_total": 0.6270697632051528,
+    "seconds": 126.39531690900003
+  },
+  {
+    "epoch": 9,
+    "lr": 0.0001,
+    "train_pressure": 0.408571021590914,
+    "train_saturation": 0.16749948867729733,
+    "val_pressure": 0.4369841462912712,
+    "val_saturation": 0.18413537728818172,
+    "val_total": 0.6211195235794529,
+    "seconds": 126.42346313300004
+  },
+  {
+    "epoch": 10,
+    "lr": 0.0001,
+    "train_pressure": 0.40629885816574096,
+    "train_saturation": 0.16465142308814185,
+    "val_pressure": 0.4408776083208145,
+    "val_saturation": 0.20366115023956655,
+    "val_total": 0.644538758560381,
+    "seconds": 126.76637855599984
+  },
+  {
+    "epoch": 11,
+    "lr": 0.0001,
+    "train_pressure": 0.4050161900520325,
+    "train_saturation": 0.16131444381816046,
+    "val_pressure": 0.4342688071600934,
+    "val_saturation": 0.18333387382804078,
+    "val_total": 0.6176026809881342,
+    "seconds": 127.23395167700028
+  },
+  {
+    "epoch": 12,
+    "lr": 0.0001,
+    "train_pressure": 0.40310370666640144,
+    "train_saturation": 0.15926875742844174,
+    "val_pressure": 0.42806591632518365,
+    "val_saturation": 0.17240757859767752,
+    "val_total": 0.6004734949228612,
+    "seconds": 127.38138751399993
+  },
+  {
+    "epoch": 13,
+    "lr": 0.0001,
+    "train_pressure": 0.40135192486218046,
+    "train_saturation": 0.1573440814273698,
+    "val_pressure": 0.42304389273866694,
+    "val_saturation": 0.1713297615184429,
+    "val_total": 0.5943736542571099,
+    "seconds": 127.61223071200038
+  },
+  {
+    "epoch": 14,
+    "lr": 0.0001,
+    "train_pressure": 0.39930294142450606,
+    "train_saturation": 0.15381902652978896,
+    "val_pressure": 0.422537570621105,
+    "val_saturation": 0.17816054507931497,
+    "val_total": 0.60069811570042,
+    "seconds": 126.95791860300005
+  },
+  {
+    "epoch": 15,
+    "lr": 0.0001,
+    "train_pressure": 0.39796950231279643,
+    "train_saturation": 0.15306600637095316,
+    "val_pressure": 0.4209758484775716,
+    "val_saturation": 0.17365067864352085,
+    "val_total": 0.5946265271210924,
+    "seconds": 126.36552799200035
+  },
+  {
+    "epoch": 16,
+    "lr": 0.0001,
+    "train_pressure": 0.39574473166465757,
+    "train_saturation": 0.15004459958417074,
+    "val_pressure": 0.42060012417904874,
+    "val_saturation": 0.17269029139362752,
+    "val_total": 0.5932904155726763,
+    "seconds": 126.4594374809999
+  },
+  {
+    "epoch": 17,
+    "lr": 0.0001,
+    "train_pressure": 0.39285759922436303,
+    "train_saturation": 0.14695650601387025,
+    "val_pressure": 0.4173250340242335,
+    "val_saturation": 0.16908162974930824,
+    "val_total": 0.5864066637735417,
+    "seconds": 127.0660060969999
+  },
+  {
+    "epoch": 18,
+    "lr": 0.0001,
+    "train_pressure": 0.3903330702781677,
+    "train_saturation": 0.14444019772325242,
+    "val_pressure": 0.41724074148434276,
+    "val_saturation": 0.16900465375882515,
+    "val_total": 0.5862453952431679,
+    "seconds": 127.06576763900011
+  },
+  {
+    "epoch": 19,
+    "lr": 0.0001,
+    "train_pressure": 0.38686055752209253,
+    "train_saturation": 0.14235817036458423,
+    "val_pressure": 0.4196285977959633,
+    "val_saturation": 0.1762282935149492,
+    "val_total": 0.5958568913109125,
+    "seconds": 126.80236939400038
+  },
+  {
+    "epoch": 20,
+    "lr": 0.0001,
+    "train_pressure": 0.3849791306768145,
+    "train_saturation": 0.14043666873659405,
+    "val_pressure": 0.41243915228133504,
+    "val_saturation": 0.16806074120896927,
+    "val_total": 0.5804998934903043,
+    "seconds": 126.83761200799972
+  },
+  {
+    "epoch": 21,
+    "lr": 0.0001,
+    "train_pressure": 0.3795459258556366,
+    "train_saturation": 0.13635128256252835,
+    "val_pressure": 0.4059440866905324,
+    "val_saturation": 0.16480512512808151,
+    "val_total": 0.5707492118186139,
+    "seconds": 127.22229977500001
+  },
+  {
+    "epoch": 22,
+    "lr": 0.0001,
+    "train_pressure": 0.37556873185294015,
+    "train_saturation": 0.13406826617888043,
+    "val_pressure": 0.4080244301164404,
+    "val_saturation": 0.1658222414156858,
+    "val_total": 0.5738466715321262,
+    "seconds": 127.19041901900027
+  },
+  {
+    "epoch": 23,
+    "lr": 0.0001,
+    "train_pressure": 0.3751515862260546,
+    "train_saturation": 0.1336260578121458,
+    "val_pressure": 0.4015958791876093,
+    "val_saturation": 0.16250688927446275,
+    "val_total": 0.5641027684620721,
+    "seconds": 126.74524059700025
+  },
+  {
+    "epoch": 24,
+    "lr": 0.0001,
+    "train_pressure": 0.3725190806048257,
+    "train_saturation": 0.13128128549882342,
+    "val_pressure": 0.40777151151857477,
+    "val_saturation": 0.16338497634105226,
+    "val_total": 0.571156487859627,
+    "seconds": 126.48031353499982
+  },
+  {
+    "epoch": 25,
+    "lr": 0.0001,
+    "train_pressure": 0.36984968076433455,
+    "train_saturation": 0.12955905237368176,
+    "val_pressure": 0.40315284009309527,
+    "val_saturation": 0.16051174628924816,
+    "val_total": 0.5636645863823434,
+    "seconds": 126.40518005099966
+  },
+  {
+    "epoch": 26,
+    "lr": 0.0001,
+    "train_pressure": 0.3698650930609022,
+    "train_saturation": 0.1289258644921439,
+    "val_pressure": 0.4143906192101063,
+    "val_saturation": 0.16524229860527717,
+    "val_total": 0.5796329178153834,
+    "seconds": 126.88231344500036
+  },
+  {
+    "epoch": 27,
+    "lr": 0.0001,
+    "train_pressure": 0.36529378512927463,
+    "train_saturation": 0.1260292240721839,
+    "val_pressure": 0.3920560563973924,
+    "val_saturation": 0.15762097721404217,
+    "val_total": 0.5496770336114345,
+    "seconds": 126.92192929199973
+  },
+  {
+    "epoch": 28,
+    "lr": 0.0001,
+    "train_pressure": 0.3623211588859558,
+    "train_saturation": 0.12480087381601333,
+    "val_pressure": 0.3905609995126724,
+    "val_saturation": 0.1608664639531932,
+    "val_total": 0.5514274634658656,
+    "seconds": 126.37216551700021
+  },
+  {
+    "epoch": 29,
+    "lr": 0.0001,
+    "train_pressure": 0.3597241498061589,
+    "train_saturation": 0.1238581235408783,
+    "val_pressure": 0.3958186070494195,
+    "val_saturation": 0.15718019111676418,
+    "val_total": 0.5529987981661837,
+    "seconds": 126.41150111500065
+  },
+  {
+    "epoch": 30,
+    "lr": 0.0001,
+    "train_pressure": 0.3553106750079564,
+    "train_saturation": 0.12237464095864978,
+    "val_pressure": 0.3931411366037866,
+    "val_saturation": 0.1676643966360295,
+    "val_total": 0.5608055332398161,
+    "seconds": 126.5761648130001
+  },
+  {
+    "epoch": 31,
+    "lr": 0.0001,
+    "train_pressure": 0.3531611592769623,
+    "train_saturation": 0.12064188827787127,
+    "val_pressure": 0.36970688497766535,
+    "val_saturation": 0.14774371525074573,
+    "val_total": 0.517450600228411,
+    "seconds": 126.4795529919993
+  },
+  {
+    "epoch": 32,
+    "lr": 0.0001,
+    "train_pressure": 0.34653943736212595,
+    "train_saturation": 0.11714895374434335,
+    "val_pressure": 0.4007723550213144,
+    "val_saturation": 0.15705273173590925,
+    "val_total": 0.5578250867572236,
+    "seconds": 126.27979919300014
+  },
+  {
+    "epoch": 33,
+    "lr": 0.0001,
+    "train_pressure": 0.34623305250917163,
+    "train_saturation": 0.11760135928222111,
+    "val_pressure": 0.3748988020134733,
+    "val_saturation": 0.16094544117755077,
+    "val_total": 0.5358442431910241,
+    "seconds": 126.40349858399986
+  },
+  {
+    "epoch": 34,
+    "lr": 0.0001,
+    "train_pressure": 0.3403514221906662,
+    "train_saturation": 0.11463832528250557,
+    "val_pressure": 0.3967671482328405,
+    "val_saturation": 0.1643134974181018,
+    "val_total": 0.5610806456509423,
+    "seconds": 126.43989133800005
+  },
+  {
+    "epoch": 35,
+    "lr": 0.0001,
+    "train_pressure": 0.33753019533838546,
+    "train_saturation": 0.11430738555533546,
+    "val_pressure": 0.35816000560496714,
+    "val_saturation": 0.14392393660989214,
+    "val_total": 0.5020839422148593,
+    "seconds": 126.63624429999982
+  },
+  {
+    "epoch": 36,
+    "lr": 0.0001,
+    "train_pressure": 0.3464511077063424,
+    "train_saturation": 0.11790820005110332,
+    "val_pressure": 0.38372522568766104,
+    "val_saturation": 0.15941017136928884,
+    "val_total": 0.5431353970569499,
+    "seconds": 126.42442678400039
+  },
+  {
+    "epoch": 37,
+    "lr": 0.0001,
+    "train_pressure": 0.3460769773210798,
+    "train_saturation": 0.11704035507781164,
+    "val_pressure": 0.38882713820388976,
+    "val_saturation": 0.16758206181545207,
+    "val_total": 0.5564092000193418,
+    "seconds": 126.43397948599977
+  },
+  {
+    "epoch": 38,
+    "lr": 0.0001,
+    "train_pressure": 0.3422390603508268,
+    "train_saturation": 0.11472916635445186,
+    "val_pressure": 0.37772834990569887,
+    "val_saturation": 0.15535534046431806,
+    "val_total": 0.5330836903700169,
+    "seconds": 126.420283423
+  },
+  {
+    "epoch": 39,
+    "lr": 0.0001,
+    "train_pressure": 0.343146427154541,
+    "train_saturation": 0.11484446848290307,
+    "val_pressure": 0.3900244526089506,
+    "val_saturation": 0.15951777923297375,
+    "val_total": 0.5495422318419243,
+    "seconds": 126.41157477199977
+  },
+  {
+    "epoch": 40,
+    "lr": 0.0001,
+    "train_pressure": 0.33511516761779786,
+    "train_saturation": 0.11199302160739899,
+    "val_pressure": 0.35426128084989306,
+    "val_saturation": 0.14324862113658418,
+    "val_total": 0.49750990198647727,
+    "seconds": 125.84860056900015
+  },
+  {
+    "epoch": 41,
+    "lr": 0.0001,
+    "train_pressure": 0.3296816579784666,
+    "train_saturation": 0.11013648504018783,
+    "val_pressure": 0.36753484250066126,
+    "val_saturation": 0.1531608565611408,
+    "val_total": 0.5206956990618021,
+    "seconds": 125.81028288499965
+  },
+  {
+    "epoch": 42,
+    "lr": 0.0001,
+    "train_pressure": 0.32522527514185223,
+    "train_saturation": 0.10851366771970476,
+    "val_pressure": 0.35868774322753255,
+    "val_saturation": 0.1441514191237536,
+    "val_total": 0.5028391623512861,
+    "seconds": 126.87897752400022
+  },
+  {
+    "epoch": 43,
+    "lr": 0.0001,
+    "train_pressure": 0.326372070653098,
+    "train_saturation": 0.10933860583816256,
+    "val_pressure": 0.348291500134671,
+    "val_saturation": 0.14220239134862067,
+    "val_total": 0.49049389148329164,
+    "seconds": 126.01243867899939
+  },
+  {
+    "epoch": 44,
+    "lr": 0.0001,
+    "train_pressure": 0.31867224419116974,
+    "train_saturation": 0.10685552998951503,
+    "val_pressure": 0.3546753395745095,
+    "val_saturation": 0.14448531673468173,
+    "val_total": 0.4991606563091912,
+    "seconds": 125.94655545000023
+  },
+  {
+    "epoch": 45,
+    "lr": 0.0001,
+    "train_pressure": 0.320264090520995,
+    "train_saturation": 0.10654603143249239,
+    "val_pressure": 0.3472568988800049,
+    "val_saturation": 0.15239333297978055,
+    "val_total": 0.4996502318597854,
+    "seconds": 126.57625825499963
+  },
+  {
+    "epoch": 46,
+    "lr": 0.0001,
+    "train_pressure": 0.3096904080935887,
+    "train_saturation": 0.10322915549789156,
+    "val_pressure": 0.3245441807394332,
+    "val_saturation": 0.13770870004404098,
+    "val_total": 0.46225288078347415,
+    "seconds": 126.41960759999984
+  },
+  {
+    "epoch": 47,
+    "lr": 0.0001,
+    "train_pressure": 0.304146004319191,
+    "train_saturation": 0.10152254643610546,
+    "val_pressure": 0.3236465406544665,
+    "val_saturation": 0.14366042082931132,
+    "val_total": 0.4673069614837778,
+    "seconds": 125.70733831199959
+  },
+  {
+    "epoch": 48,
+    "lr": 0.0001,
+    "train_pressure": 0.30199312932150707,
+    "train_saturation": 0.10063462827035359,
+    "val_pressure": 0.3390354060746254,
+    "val_saturation": 0.1478302695570474,
+    "val_total": 0.4868656756316728,
+    "seconds": 125.97152315800031
+  },
+  {
+    "epoch": 49,
+    "lr": 5e-05,
+    "train_pressure": 0.29673884436062403,
+    "train_saturation": 0.0980110377754484,
+    "val_pressure": 0.3484654023926309,
+    "val_saturation": 0.15862667992552545,
+    "val_total": 0.5070920823181564,
+    "seconds": 126.41717704199982
+  },
+  {
+    "epoch": 50,
+    "lr": 5e-05,
+    "train_pressure": 0.27259553582327706,
+    "train_saturation": 0.08874363209520067,
+    "val_pressure": 0.30347900290755514,
+    "val_saturation": 0.13443789777762077,
+    "val_total": 0.4379169006851759,
+    "seconds": 126.50079152000035
+  },
+  {
+    "epoch": 51,
+    "lr": 5e-05,
+    "train_pressure": 0.26077237606048587,
+    "train_saturation": 0.08454324396167483,
+    "val_pressure": 0.3016513584459082,
+    "val_saturation": 0.13439371837104888,
+    "val_total": 0.43604507681695703,
+    "seconds": 126.4793718209994
+  },
+  {
+    "epoch": 52,
+    "lr": 5e-05,
+    "train_pressure": 0.2565139454773494,
+    "train_saturation": 0.08398578293834413,
+    "val_pressure": 0.289565504469136,
+    "val_saturation": 0.13237898087406413,
+    "val_total": 0.4219444853432001,
+    "seconds": 126.83171165199929
+  },
+  {
+    "epoch": 53,
+    "lr": 5e-05,
+    "train_pressure": 0.25045758075373514,
+    "train_saturation": 0.08254788638864245,
+    "val_pressure": 0.287912462620025,
+    "val_saturation": 0.13153246671278426,
+    "val_total": 0.4194449293328093,
+    "seconds": 127.0964621410003
+  },
+  {
+    "epoch": 54,
+    "lr": 5e-05,
+    "train_pressure": 0.24545224685328348,
+    "train_saturation": 0.0812603505040918,
+    "val_pressure": 0.3251536876914349,
+    "val_saturation": 0.1427319540860171,
+    "val_total": 0.46788564177745195,
+    "seconds": 127.06070652400012
+  },
+  {
+    "epoch": 55,
+    "lr": 5e-05,
+    "train_pressure": 0.24184534839221408,
+    "train_saturation": 0.08012600678631238,
+    "val_pressure": 0.32036861317588927,
+    "val_saturation": 0.14620415458178265,
+    "val_total": 0.4665727677576719,
+    "seconds": 126.95656319500085
+  },
+  {
+    "epoch": 56,
+    "lr": 5e-05,
+    "train_pressure": 0.23902361238002778,
+    "train_saturation": 0.07907487635953085,
+    "val_pressure": 0.2787496905298309,
+    "val_saturation": 0.13090818569539708,
+    "val_total": 0.409657876225228,
+    "seconds": 126.96655873199961
+  },
+  {
+    "epoch": 57,
+    "lr": 5e-05,
+    "train_pressure": 0.22974417841434477,
+    "train_saturation": 0.07707299857480185,
+    "val_pressure": 0.2672501470338791,
+    "val_saturation": 0.13030255443238198,
+    "val_total": 0.3975527014662611,
+    "seconds": 126.80563943400011
+  },
+  {
+    "epoch": 58,
+    "lr": 5e-05,
+    "train_pressure": 0.22659405372823987,
+    "train_saturation": 0.07632421062248093,
+    "val_pressure": 0.2661245562373958,
+    "val_saturation": 0.1309338095498846,
+    "val_total": 0.3970583657872804,
+    "seconds": 126.77562499300075
+  },
+  {
+    "epoch": 59,
+    "lr": 5e-05,
+    "train_pressure": 0.23010322787080492,
+    "train_saturation": 0.07808681115082332,
+    "val_pressure": 0.2653093271433039,
+    "val_saturation": 0.1268896832269557,
+    "val_total": 0.3921990103702596,
+    "seconds": 126.70423080299952
+  },
+  {
+    "epoch": 60,
+    "lr": 5e-05,
+    "train_pressure": 0.2166713762794222,
+    "train_saturation": 0.07393463988389287,
+    "val_pressure": 0.3135399114974636,
+    "val_saturation": 0.1411609087297891,
+    "val_total": 0.45470082022725267,
+    "seconds": 126.82832115199926
+  },
+  {
+    "epoch": 61,
+    "lr": 5e-05,
+    "train_pressure": 0.21526057844502586,
+    "train_saturation": 0.07435827580094337,
+    "val_pressure": 0.2532578038963232,
+    "val_saturation": 0.12747740557298382,
+    "val_total": 0.380735209469307,
+    "seconds": 126.59506640200016
+  },
+  {
+    "epoch": 62,
+    "lr": 5e-05,
+    "train_pressure": 0.21425194811820983,
+    "train_saturation": 0.07411503492508616,
+    "val_pressure": 0.26319855614069926,
+    "val_saturation": 0.13058061263662704,
+    "val_total": 0.3937791687773263,
+    "seconds": 126.58620601300026
+  },
+  {
+    "epoch": 63,
+    "lr": 5e-05,
+    "train_pressure": 0.20899902050835745,
+    "train_saturation": 0.07290865151371274,
+    "val_pressure": 0.271891399425395,
+    "val_saturation": 0.13195498069708653,
+    "val_total": 0.40384638012248153,
+    "seconds": 126.83433256900025
+  },
+  {
+    "epoch": 64,
+    "lr": 5e-05,
+    "train_pressure": 0.20633583801984787,
+    "train_saturation": 0.07211588254145214,
+    "val_pressure": 0.27470414804175813,
+    "val_saturation": 0.1326038207700278,
+    "val_total": 0.40730796881178594,
+    "seconds": 127.28603735099932
+  },
+  {
+    "epoch": 65,
+    "lr": 5e-05,
+    "train_pressure": 0.2073039203286171,
+    "train_saturation": 0.07206005170941353,
+    "val_pressure": 0.2516162138670049,
+    "val_saturation": 0.12769293951544355,
+    "val_total": 0.3793091533824484,
+    "seconds": 126.7584583530006
+  },
+  {
+    "epoch": 66,
+    "lr": 5e-05,
+    "train_pressure": 0.19512596542494637,
+    "train_saturation": 0.06909281664235252,
+    "val_pressure": 0.2727661212470303,
+    "val_saturation": 0.13336902040433377,
+    "val_total": 0.4061351416513641,
+    "seconds": 127.13881286500146
+  },
+  {
+    "epoch": 67,
+    "lr": 5e-05,
+    "train_pressure": 0.1916033287218639,
+    "train_saturation": 0.06987540599278041,
+    "val_pressure": 0.2348273570867295,
+    "val_saturation": 0.12785450222485878,
+    "val_total": 0.36268185931158825,
+    "seconds": 126.96530930799963
+  },
+  {
+    "epoch": 68,
+    "lr": 5e-05,
+    "train_pressure": 0.1873374996270452,
+    "train_saturation": 0.0682646079489163,
+    "val_pressure": 0.2331686258474563,
+    "val_saturation": 0.12517588948236502,
+    "val_total": 0.3583445153298213,
+    "seconds": 126.61893441700158
+  },
+  {
+    "epoch": 69,
+    "lr": 5e-05,
+    "train_pressure": 0.18003792120729173,
+    "train_saturation": 0.06598718822002411,
+    "val_pressure": 0.23728912438642472,
+    "val_saturation": 0.127255791481188,
+    "val_total": 0.36454491586761273,
+    "seconds": 126.25497812300091
+  },
+  {
+    "epoch": 70,
+    "lr": 5e-05,
+    "train_pressure": 0.17873556547505515,
+    "train_saturation": 0.06675245987091746,
+    "val_pressure": 0.24265311063921197,
+    "val_saturation": 0.12998398496432506,
+    "val_total": 0.372637095603537,
+    "seconds": 127.2576222789994
+  },
+  {
+    "epoch": 71,
+    "lr": 5e-05,
+    "train_pressure": 0.17399467697313853,
+    "train_saturation": 0.06573631957599095,
+    "val_pressure": 0.2115257880551384,
+    "val_saturation": 0.12329367199476729,
+    "val_total": 0.3348194600499057,
+    "seconds": 127.30626731200027
+  },
+  {
+    "epoch": 72,
+    "lr": 5e-05,
+    "train_pressure": 0.16581998851469584,
+    "train_saturation": 0.06364054178340095,
+    "val_pressure": 0.20492736147122181,
+    "val_saturation": 0.12217075328164279,
+    "val_total": 0.3270981147528646,
+    "seconds": 127.15143945599993
+  },
+  {
+    "epoch": 73,
+    "lr": 5e-05,
+    "train_pressure": 0.15776882198027203,
+    "train_saturation": 0.062358674334628245,
+    "val_pressure": 0.2695061845823805,
+    "val_saturation": 0.13987107895948786,
+    "val_total": 0.4093772635418684,
+    "seconds": 127.25474211599976
+  },
+  {
+    "epoch": 74,
+    "lr": 5e-05,
+    "train_pressure": 0.14771331029278892,
+    "train_saturation": 0.059934533170291356,
+    "val_pressure": 0.21169260647544202,
+    "val_saturation": 0.13244710747707397,
+    "val_total": 0.34413971395251597,
+    "seconds": 126.67468255800122
+  },
+  {
+    "epoch": 75,
+    "lr": 5e-05,
+    "train_pressure": 0.14774947018282755,
+    "train_saturation": 0.05989954890523638,
+    "val_pressure": 0.23468807533858937,
+    "val_saturation": 0.12738898820541006,
+    "val_total": 0.36207706354399943,
+    "seconds": 126.76162336200105
+  },
+  {
+    "epoch": 76,
+    "lr": 5e-05,
+    "train_pressure": 0.13840522880213602,
+    "train_saturation": 0.057646270053727286,
+    "val_pressure": 0.18630905810030216,
+    "val_saturation": 0.12174823800934122,
+    "val_total": 0.3080572961096434,
+    "seconds": 126.39276363099998
+  },
+  {
+    "epoch": 77,
+    "lr": 5e-05,
+    "train_pressure": 0.13683674193280085,
+    "train_saturation": 0.05790887015206473,
+    "val_pressure": 0.21074746572907935,
+    "val_saturation": 0.12483957744738523,
+    "val_total": 0.3355870431764646,
+    "seconds": 126.34358704899932
+  },
+  {
+    "epoch": 78,
+    "lr": 5e-05,
+    "train_pressure": 0.13435006606578828,
+    "train_saturation": 0.05708532441939627,
+    "val_pressure": 0.21905722659319005,
+    "val_saturation": 0.1255907090182634,
+    "val_total": 0.34464793561145346,
+    "seconds": 126.43774010800007
+  },
+  {
+    "epoch": 79,
+    "lr": 5e-05,
+    "train_pressure": 0.12457740019900458,
+    "train_saturation": 0.05472153899925096,
+    "val_pressure": 0.19820887999648742,
+    "val_saturation": 0.12599723066817572,
+    "val_total": 0.32420611066466315,
+    "seconds": 126.78583967600025
+  },
+  {
+    "epoch": 80,
+    "lr": 5e-05,
+    "train_pressure": 0.13229988081114633,
+    "train_saturation": 0.05639236778446606,
+    "val_pressure": 0.21078301268689176,
+    "val_saturation": 0.12508144695311785,
+    "val_total": 0.3358644596400096,
+    "seconds": 126.97574505699959
+  },
+  {
+    "epoch": 81,
+    "lr": 5e-05,
+    "train_pressure": 0.1275978519661086,
+    "train_saturation": 0.05485784766077995,
+    "val_pressure": 0.21497380729526916,
+    "val_saturation": 0.13803144609753756,
+    "val_total": 0.35300525339280675,
+    "seconds": 127.16582960699998
+  },
+  {
+    "epoch": 82,
+    "lr": 5e-05,
+    "train_pressure": 0.11793608729328428,
+    "train_saturation": 0.05262426418066025,
+    "val_pressure": 0.2256481566248422,
+    "val_saturation": 0.13479376259319326,
+    "val_total": 0.3604419192180355,
+    "seconds": 127.08610936699915
+  },
+  {
+    "epoch": 83,
+    "lr": 5e-05,
+    "train_pressure": 0.12001317948954446,
+    "train_saturation": 0.054535853803157806,
+    "val_pressure": 0.19821943013750493,
+    "val_saturation": 0.1250463479020177,
+    "val_total": 0.3232657780395226,
+    "seconds": 127.15765404600097
+  },
+  {
+    "epoch": 84,
+    "lr": 5e-05,
+    "train_pressure": 0.1261241917525019,
+    "train_saturation": 0.05506143773027829,
+    "val_pressure": 0.21691029788331784,
+    "val_saturation": 0.13514775178454658,
+    "val_total": 0.3520580496678644,
+    "seconds": 127.0147401459999
+  },
+  {
+    "epoch": 85,
+    "lr": 5e-05,
+    "train_pressure": 0.12017579105922153,
+    "train_saturation": 0.05404004304749625,
+    "val_pressure": 0.18536803199652027,
+    "val_saturation": 0.1233549075637092,
+    "val_total": 0.30872293956022945,
+    "seconds": 127.14644060499995
+  },
+  {
+    "epoch": 86,
+    "lr": 5e-05,
+    "train_pressure": 0.11936262740407672,
+    "train_saturation": 0.05415061897465161,
+    "val_pressure": 0.19479091524919298,
+    "val_saturation": 0.12477265904716989,
+    "val_total": 0.31956357429636284,
+    "seconds": 127.1242994639997
+  },
+  {
+    "epoch": 87,
+    "lr": 5e-05,
+    "train_pressure": 0.11282283015762057,
+    "train_saturation": 0.051403497419187004,
+    "val_pressure": 0.21161901970651556,
+    "val_saturation": 0.1298064845713212,
+    "val_total": 0.3414255042778368,
+    "seconds": 127.54305669300084
+  },
+  {
+    "epoch": 88,
+    "lr": 5e-05,
+    "train_pressure": 0.11198090601818902,
+    "train_saturation": 0.05178032973834446,
+    "val_pressure": 0.19461409145213188,
+    "val_saturation": 0.12964415288668998,
+    "val_total": 0.3242582443388219,
+    "seconds": 127.08812626799954
+  },
+  {
+    "epoch": 89,
+    "lr": 5e-05,
+    "train_pressure": 0.10912262117436954,
+    "train_saturation": 0.05061612894705364,
+    "val_pressure": 0.2120495009771053,
+    "val_saturation": 0.13886498632107644,
+    "val_total": 0.35091448729818175,
+    "seconds": 126.87336929699995
+  },
+  {
+    "epoch": 90,
+    "lr": 5e-05,
+    "train_pressure": 0.11110472903507096,
+    "train_saturation": 0.05103339992250715,
+    "val_pressure": 0.2075170227821837,
+    "val_saturation": 0.12805263052119853,
+    "val_total": 0.33556965330338223,
+    "seconds": 126.91910323800039
+  },
+  {
+    "epoch": 91,
+    "lr": 5e-05,
+    "train_pressure": 0.10440819509966033,
+    "train_saturation": 0.04935835712296622,
+    "val_pressure": 0.24201665204414663,
+    "val_saturation": 0.1424093778304597,
+    "val_total": 0.38442602987460633,
+    "seconds": 126.83409805700103
+  },
+  {
+    "epoch": 92,
+    "lr": 5e-05,
+    "train_pressure": 0.10264535346201488,
+    "train_saturation": 0.04875330515844482,
+    "val_pressure": 0.19247856260614193,
+    "val_saturation": 0.12392705302447715,
+    "val_total": 0.3164056156306191,
+    "seconds": 127.08839928999987
+  },
+  {
+    "epoch": 93,
+    "lr": 5e-05,
+    "train_pressure": 0.1038916690008981,
+    "train_saturation": 0.049066775854144776,
+    "val_pressure": 0.18577692140527863,
+    "val_saturation": 0.12479869783558745,
+    "val_total": 0.3105756192408661,
+    "seconds": 126.91167875100109
+  },
+  {
+    "epoch": 94,
+    "lr": 5e-05,
+    "train_pressure": 0.10459274819493294,
+    "train_saturation": 0.04886104902625084,
+    "val_pressure": 0.1907324618957144,
+    "val_saturation": 0.12530425299910156,
+    "val_total": 0.316036714894816,
+    "seconds": 126.87658498100063
+  },
+  {
+    "epoch": 95,
+    "lr": 5e-05,
+    "train_pressure": 0.10493412042515618,
+    "train_saturation": 0.049255170115402765,
+    "val_pressure": 0.20003705432123325,
+    "val_saturation": 0.12881193232742397,
+    "val_total": 0.32884898664865725,
+    "seconds": 126.8098702089992
+  },
+  {
+    "epoch": 96,
+    "lr": 5e-05,
+    "train_pressure": 0.10307089834979602,
+    "train_saturation": 0.0481301377415657,
+    "val_pressure": 0.1926538757187255,
+    "val_saturation": 0.1301090537788386,
+    "val_total": 0.32276292949756413,
+    "seconds": 126.56827446999887
+  },
+  {
+    "epoch": 97,
+    "lr": 5e-05,
+    "train_pressure": 0.10471285757848195,
+    "train_saturation": 0.04904670632311276,
+    "val_pressure": 0.1897076047719159,
+    "val_saturation": 0.1261041825835375,
+    "val_total": 0.3158117873554534,
+    "seconds": 126.59107398100059
+  },
+  {
+    "epoch": 98,
+    "lr": 5e-05,
+    "train_pressure": 0.10346568187219755,
+    "train_saturation": 0.04818642895136561,
+    "val_pressure": 0.20624160437666356,
+    "val_saturation": 0.13513862359476217,
+    "val_total": 0.34138022797142575,
+    "seconds": 127.3987396449993
+  },
+  {
+    "epoch": 99,
+    "lr": 2.5e-05,
+    "train_pressure": 0.10299263794081552,
+    "train_saturation": 0.04872235257284982,
+    "val_pressure": 0.2084258832037449,
+    "val_saturation": 0.1367253063524023,
+    "val_total": 0.3451511895561472,
+    "seconds": 127.33887329500067
+  },
+  {
+    "epoch": 100,
+    "lr": 2.5e-05,
+    "train_pressure": 0.08284597807696888,
+    "train_saturation": 0.041775646158627104,
+    "val_pressure": 0.2192136224042228,
+    "val_saturation": 0.1426501642476688,
+    "val_total": 0.36186378665189156,
+    "seconds": 126.92064267400019
+  },
+  {
+    "epoch": 101,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07928498763271741,
+    "train_saturation": 0.040562162405678205,
+    "val_pressure": 0.18669858784910212,
+    "val_saturation": 0.12912742032649668,
+    "val_total": 0.3158260081755988,
+    "seconds": 126.70896601499953
+  },
+  {
+    "epoch": 102,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07808928431783403,
+    "train_saturation": 0.03999489178827831,
+    "val_pressure": 0.2511195229723098,
+    "val_saturation": 0.149341382086277,
+    "val_total": 0.40046090505858684,
+    "seconds": 127.19234489399969
+  },
+  {
+    "epoch": 103,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07927904037918364,
+    "train_saturation": 0.040452873930335045,
+    "val_pressure": 0.1843552423759978,
+    "val_saturation": 0.12711458498651676,
+    "val_total": 0.31146982736251455,
+    "seconds": 127.14969259600002
+  },
+  {
+    "epoch": 104,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07579277258259909,
+    "train_saturation": 0.0394642146059445,
+    "val_pressure": 0.18751450192103994,
+    "val_saturation": 0.12856566608744732,
+    "val_total": 0.31608016800848726,
+    "seconds": 127.2400623149988
+  },
+  {
+    "epoch": 105,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07867333232930729,
+    "train_saturation": 0.03992948114871979,
+    "val_pressure": 0.24891933862199175,
+    "val_saturation": 0.15472448926339757,
+    "val_total": 0.40364382788538933,
+    "seconds": 127.23771086200031
+  },
+  {
+    "epoch": 106,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07594952490074294,
+    "train_saturation": 0.03916876216658524,
+    "val_pressure": 0.20652893732519859,
+    "val_saturation": 0.13752911420182345,
+    "val_total": 0.34405805152702207,
+    "seconds": 126.94005354100045
+  },
+  {
+    "epoch": 107,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07538275129028729,
+    "train_saturation": 0.03891605411469937,
+    "val_pressure": 0.18671144913644233,
+    "val_saturation": 0.12934558256033887,
+    "val_total": 0.31605703169678123,
+    "seconds": 126.50186665399997
+  },
+  {
+    "epoch": 108,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07609241830876895,
+    "train_saturation": 0.03951540729403496,
+    "val_pressure": 0.19949203856447909,
+    "val_saturation": 0.13329047071648406,
+    "val_total": 0.33278250928096315,
+    "seconds": 126.63180429699969
+  },
+  {
+    "epoch": 109,
+    "lr": 2.5e-05,
+    "train_pressure": 0.0737985052040645,
+    "train_saturation": 0.038765991042767255,
+    "val_pressure": 0.21224058391724496,
+    "val_saturation": 0.13181849141070184,
+    "val_total": 0.3440590753279468,
+    "seconds": 126.69739977900099
+  },
+  {
+    "epoch": 110,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07915887599331992,
+    "train_saturation": 0.04023985094683511,
+    "val_pressure": 0.1877664190697226,
+    "val_saturation": 0.13007254979791158,
+    "val_total": 0.3178389688676342,
+    "seconds": 126.54369361600038
+  },
+  {
+    "epoch": 111,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07190016692025321,
+    "train_saturation": 0.037733528428844046,
+    "val_pressure": 0.18484288521428058,
+    "val_saturation": 0.12798106127438394,
+    "val_total": 0.3128239464886645,
+    "seconds": 126.80230814300012
+  },
+  {
+    "epoch": 112,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07527239045075008,
+    "train_saturation": 0.0390683000428336,
+    "val_pressure": 0.1978001468517679,
+    "val_saturation": 0.13170124717215273,
+    "val_total": 0.32950139402392065,
+    "seconds": 126.93581426799938
+  },
+  {
+    "epoch": 113,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07582905529226576,
+    "train_saturation": 0.038849056333303454,
+    "val_pressure": 0.18883795887628135,
+    "val_saturation": 0.13080778438597918,
+    "val_total": 0.31964574326226053,
+    "seconds": 127.22773765800048
+  },
+  {
+    "epoch": 114,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07197209150024823,
+    "train_saturation": 0.038058947963374,
+    "val_pressure": 0.18457327291686484,
+    "val_saturation": 0.12914746815457623,
+    "val_total": 0.3137207410714411,
+    "seconds": 126.78315536599985
+  },
+  {
+    "epoch": 115,
+    "lr": 2.5e-05,
+    "train_pressure": 0.0712366637289524,
+    "train_saturation": 0.03785734877628939,
+    "val_pressure": 0.21161500237723616,
+    "val_saturation": 0.1410729513761211,
+    "val_total": 0.35268795375335726,
+    "seconds": 126.38387195200085
+  },
+  {
+    "epoch": 116,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07416580325790814,
+    "train_saturation": 0.03900778004527092,
+    "val_pressure": 0.2508947887715507,
+    "val_saturation": 0.1474751211465039,
+    "val_total": 0.3983699099180546,
+    "seconds": 126.38726504999977
+  },
+  {
+    "epoch": 117,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07038391142232077,
+    "train_saturation": 0.03727637056367738,
+    "val_pressure": 0.2280501735178714,
+    "val_saturation": 0.13612515106797218,
+    "val_total": 0.36417532458584356,
+    "seconds": 126.65029875300024
+  },
+  {
+    "epoch": 118,
+    "lr": 2.5e-05,
+    "train_pressure": 0.06817875683307648,
+    "train_saturation": 0.03700239298173359,
+    "val_pressure": 0.19372563825008718,
+    "val_saturation": 0.1328122146982462,
+    "val_total": 0.3265378529483334,
+    "seconds": 126.5007083569999
+  },
+  {
+    "epoch": 119,
+    "lr": 2.5e-05,
+    "train_pressure": 0.07053435398851123,
+    "train_saturation": 0.03708609452843666,
+    "val_pressure": 0.19266185798543564,
+    "val_saturation": 0.1327502881672154,
+    "val_total": 0.325412146152651,
+    "seconds": 126.63127497599999
+  }
+]

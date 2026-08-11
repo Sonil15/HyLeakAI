@@ -1,0 +1,81 @@
+{
+  "horizon": 3,
+  "n_rows": 15911,
+  "n_simulations": 150,
+  "simulator": {
+    "classification": {
+      "auc": 0.9998657850513263,
+      "pr_auc": 0.9941477096825486,
+      "positive_rate": 0.019357677549123764,
+      "n": 15911
+    },
+    "regression": {
+      "r2": 0.9714114207538938,
+      "rmse": 0.7388784885406494,
+      "mae": 0.22159956395626068,
+      "n": 15911
+    }
+  },
+  "unet": {
+    "classification": {
+      "auc": 0.999628776017932,
+      "pr_auc": 0.984245783563486,
+      "positive_rate": 0.019357677549123764,
+      "n": 15911
+    },
+    "regression": {
+      "r2": 0.9199860377656558,
+      "rmse": 1.2361171245574951,
+      "mae": 0.3926713466644287,
+      "n": 15911
+    }
+  },
+  "delta": {
+    "pr_auc": -0.009901926119062598,
+    "r2": -0.051425382988237955,
+    "pr_auc_retention": 0.9900397838041346
+  },
+  "feature_distortion": {
+    "boundary_hpv_fraction": 763443.3125,
+    "boundary_saturation_max": 9588.466796875,
+    "plume_front_speed_m_per_year": 0.4928489327430725,
+    "dp_dt_bar_per_year": 0.1860414296388626,
+    "hpv_rate_m3_per_year": 0.17748059332370758,
+    "plume_centroid_offset_m": 0.12230650335550308,
+    "fault_delta_p_bar": 0.12085910141468048,
+    "fault_krg": 0.10725529491901398,
+    "p_grad_max_bar_per_m": 0.09863562881946564,
+    "fault_overpressure_bar": 0.09699773788452148,
+    "hpv_total_m3": 0.08946466445922852,
+    "s_mean": 0.08865243196487427,
+    "plume_area_m2": 0.0774216428399086,
+    "plume_cell_count": 0.077421635389328,
+    "fault_s": 0.0772131010890007,
+    "plume_max_radius_m": 0.07141873240470886,
+    "distance_plume_to_fault_m": 0.06651104241609573,
+    "caprock_margin": 0.06570148468017578,
+    "delta_p_bar": 0.06570147722959518,
+    "p_well_bar": 0.03231264650821686,
+    "p_min_bar": 0.02735293284058571,
+    "s_max": 0.020611366257071495,
+    "p_max_bar": 0.012320595793426037,
+    "fault_p_bar": 0.008711572736501694,
+    "p_p95_bar": 0.008277813903987408,
+    "p_mean_bar": 0.0027736166957765818,
+    "timestep": 0.0,
+    "step_in_cycle": 0.0,
+    "poro_std": 0.0,
+    "poro_mean": 0.0,
+    "logk_std": 0.0,
+    "logk_mean": 0.0,
+    "fault_width_m": 0.0,
+    "fault_radius_from_well_m": 0.0,
+    "fault_poro": 0.0,
+    "fault_logk": 0.0,
+    "fault_log10_perm_m2": 0.0,
+    "fault_length_m": 0.0,
+    "fault_area_m2": 0.0,
+    "cycle_number": 0.0,
+    "cycle_index": 0.0
+  }
+}

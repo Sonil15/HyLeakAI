@@ -1,0 +1,410 @@
+{
+  "horizons": {
+    "1": {
+      "months": 2,
+      "cycles": 0.16666666666666666,
+      "usable_rows": 1180000,
+      "same_phase": false,
+      "full": {
+        "classification": {
+          "auc": 0.9998749837208742,
+          "pr_auc": 0.9948866362773365,
+          "positive_rate": 0.02221468836069107,
+          "n": 177000
+        },
+        "regression": {
+          "r2": 0.9669480764799642,
+          "rmse": 0.792763888835907,
+          "mae": 0.23354235291481018,
+          "n": 177000
+        }
+      },
+      "weak_baseline": {
+        "classification": {
+          "auc": 0.8791203021158854,
+          "pr_auc": 0.099383950938602,
+          "positive_rate": 0.02221468836069107,
+          "n": 177000
+        },
+        "regression": {
+          "r2": 0.48359596994723253,
+          "rmse": 3.1335763931274414,
+          "mae": 2.3857064247131348,
+          "n": 177000
+        }
+      },
+      "persistence": {
+        "classification": {
+          "auc": 0.8603244107932242,
+          "pr_auc": 0.4223930127938519,
+          "positive_rate": 0.02221468836069107,
+          "n": 177000
+        },
+        "regression": {
+          "r2": 0.32686276959609295,
+          "rmse": 3.5776453018188477,
+          "mae": 1.3157416582107544,
+          "n": 177000
+        }
+      },
+      "gain_over_persistence": {
+        "pr_auc": 0.5724936234834846,
+        "r2": 0.6400853068838712
+      }
+    },
+    "3": {
+      "months": 6,
+      "cycles": 0.5,
+      "usable_rows": 1140000,
+      "same_phase": false,
+      "full": {
+        "classification": {
+          "auc": 0.9998290036522239,
+          "pr_auc": 0.9931344282676601,
+          "positive_rate": 0.022245613858103752,
+          "n": 171000
+        },
+        "regression": {
+          "r2": 0.9711298018604623,
+          "rmse": 0.7406433820724487,
+          "mae": 0.2175581157207489,
+          "n": 171000
+        }
+      },
+      "weak_baseline": {
+        "classification": {
+          "auc": 0.9298896428916527,
+          "pr_auc": 0.15461567172333143,
+          "positive_rate": 0.022245613858103752,
+          "n": 171000
+        },
+        "regression": {
+          "r2": 0.5239351955192062,
+          "rmse": 3.0075807571411133,
+          "mae": 2.491971731185913,
+          "n": 171000
+        }
+      },
+      "persistence": {
+        "classification": {
+          "auc": 0.4015244507733659,
+          "pr_auc": 0.02175050749710928,
+          "positive_rate": 0.022245613858103752,
+          "n": 171000
+        },
+        "regression": {
+          "r2": -0.7641824723326307,
+          "rmse": 5.789699554443359,
+          "mae": 3.0961673259735107,
+          "n": 171000
+        }
+      },
+      "gain_over_persistence": {
+        "pr_auc": 0.9713839207705508,
+        "r2": 1.735312274193093
+      }
+    },
+    "6": {
+      "months": 12,
+      "cycles": 1.0,
+      "usable_rows": 1080000,
+      "same_phase": true,
+      "full": {
+        "classification": {
+          "auc": 0.9999371296497629,
+          "pr_auc": 0.9974944384892659,
+          "positive_rate": 0.023290123790502548,
+          "n": 162000
+        },
+        "regression": {
+          "r2": 0.9850324997773618,
+          "rmse": 0.5425693392753601,
+          "mae": 0.11992121487855911,
+          "n": 162000
+        }
+      },
+      "weak_baseline": {
+        "classification": {
+          "auc": 0.9400290209992314,
+          "pr_auc": 0.18720826949370095,
+          "positive_rate": 0.023290123790502548,
+          "n": 162000
+        },
+        "regression": {
+          "r2": 0.5497176320401227,
+          "rmse": 2.9759325981140137,
+          "mae": 2.4984209537506104,
+          "n": 162000
+        }
+      },
+      "persistence": {
+        "classification": {
+          "auc": 0.9992525575839553,
+          "pr_auc": 0.991755065789614,
+          "positive_rate": 0.023290123790502548,
+          "n": 162000
+        },
+        "regression": {
+          "r2": 0.9198406155954992,
+          "rmse": 1.2556188106536865,
+          "mae": 0.2347988337278366,
+          "n": 162000
+        }
+      },
+      "gain_over_persistence": {
+        "pr_auc": 0.005739372699651857,
+        "r2": 0.06519188418186261
+      }
+    },
+    "12": {
+      "months": 24,
+      "cycles": 2.0,
+      "usable_rows": 960000,
+      "same_phase": true,
+      "full": {
+        "classification": {
+          "auc": 0.9998932129720388,
+          "pr_auc": 0.995999202283303,
+          "positive_rate": 0.02427777834236622,
+          "n": 144000
+        },
+        "regression": {
+          "r2": 0.9757476257790815,
+          "rmse": 0.700148344039917,
+          "mae": 0.19327250123023987,
+          "n": 144000
+        }
+      },
+      "weak_baseline": {
+        "classification": {
+          "auc": 0.9412958458245965,
+          "pr_auc": 0.19542441064117738,
+          "positive_rate": 0.02427777834236622,
+          "n": 144000
+        },
+        "regression": {
+          "r2": 0.5592629316105502,
+          "rmse": 2.9847140312194824,
+          "mae": 2.504464864730835,
+          "n": 144000
+        }
+      },
+      "persistence": {
+        "classification": {
+          "auc": 0.9970577398970767,
+          "pr_auc": 0.9757880314905228,
+          "positive_rate": 0.02427777834236622,
+          "n": 144000
+        },
+        "regression": {
+          "r2": 0.8405397620591217,
+          "rmse": 1.7953087091445923,
+          "mae": 0.4364638924598694,
+          "n": 144000
+        }
+      },
+      "gain_over_persistence": {
+        "pr_auc": 0.02021117079278012,
+        "r2": 0.13520786371995974
+      }
+    },
+    "30": {
+      "months": 60,
+      "cycles": 5.0,
+      "usable_rows": 600000,
+      "same_phase": true,
+      "full": {
+        "classification": {
+          "auc": 0.9997464254771297,
+          "pr_auc": 0.9917713047221509,
+          "positive_rate": 0.026366665959358215,
+          "n": 90000
+        },
+        "regression": {
+          "r2": 0.9555529796095732,
+          "rmse": 0.9738614559173584,
+          "mae": 0.34835806488990784,
+          "n": 90000
+        }
+      },
+      "weak_baseline": {
+        "classification": {
+          "auc": 0.9470209612708727,
+          "pr_auc": 0.2209510036358726,
+          "positive_rate": 0.026366665959358215,
+          "n": 90000
+        },
+        "regression": {
+          "r2": 0.5578970790627631,
+          "rmse": 3.0714080333709717,
+          "mae": 2.5903053283691406,
+          "n": 90000
+        }
+      },
+      "persistence": {
+        "classification": {
+          "auc": 0.9824127904397442,
+          "pr_auc": 0.9125462651122712,
+          "positive_rate": 0.026366665959358215,
+          "n": 90000
+        },
+        "regression": {
+          "r2": 0.6101336510778161,
+          "rmse": 2.8842554092407227,
+          "mae": 0.9942896962165833,
+          "n": 90000
+        }
+      },
+      "gain_over_persistence": {
+        "pr_auc": 0.0792250396098797,
+        "r2": 0.34541932853175705
+      }
+    }
+  },
+  "report_horizon": 30,
+  "features": [
+    "p_max_bar",
+    "p_min_bar",
+    "p_mean_bar",
+    "p_p95_bar",
+    "p_well_bar",
+    "delta_p_bar",
+    "p_grad_max_bar_per_m",
+    "dp_dt_bar_per_year",
+    "s_max",
+    "s_mean",
+    "hpv_total_m3",
+    "plume_area_m2",
+    "plume_cell_count",
+    "plume_centroid_offset_m",
+    "plume_max_radius_m",
+    "plume_front_speed_m_per_year",
+    "hpv_rate_m3_per_year",
+    "boundary_saturation_max",
+    "boundary_hpv_fraction",
+    "caprock_margin",
+    "poro_mean",
+    "poro_std",
+    "logk_mean",
+    "logk_std",
+    "fault_p_bar",
+    "fault_s",
+    "fault_krg",
+    "fault_overpressure_bar",
+    "fault_delta_p_bar",
+    "distance_plume_to_fault_m",
+    "fault_poro",
+    "fault_logk",
+    "fault_log10_perm_m2",
+    "fault_length_m",
+    "fault_width_m",
+    "fault_area_m2",
+    "fault_radius_from_well_m",
+    "timestep",
+    "cycle_number",
+    "cycle_index",
+    "step_in_cycle"
+  ],
+  "importance_gain": {
+    "fault_overpressure_bar": 211.65830993652344,
+    "fault_p_bar": 181.6728515625,
+    "fault_delta_p_bar": 156.3883514404297,
+    "fault_log10_perm_m2": 104.38162231445312,
+    "fault_krg": 36.165794372558594,
+    "fault_s": 25.23596954345703,
+    "cycle_number": 24.68906021118164,
+    "fault_area_m2": 23.753597259521484,
+    "fault_width_m": 23.107450485229492,
+    "fault_length_m": 22.961326599121094,
+    "fault_radius_from_well_m": 14.635480880737305,
+    "timestep": 12.967113494873047,
+    "fault_logk": 7.502691745758057,
+    "p_mean_bar": 7.229712009429932,
+    "fault_poro": 6.190406799316406,
+    "p_p95_bar": 5.617511749267578,
+    "p_min_bar": 5.030389785766602,
+    "step_in_cycle": 4.743431091308594,
+    "distance_plume_to_fault_m": 4.572221279144287,
+    "delta_p_bar": 3.3999931812286377,
+    "poro_mean": 3.129180908203125,
+    "p_well_bar": 3.0535073280334473,
+    "caprock_margin": 2.957064628601074,
+    "logk_mean": 2.8973987102508545,
+    "logk_std": 2.7603166103363037,
+    "p_max_bar": 2.759235382080078,
+    "s_max": 2.619513750076294,
+    "hpv_rate_m3_per_year": 2.6042861938476562,
+    "s_mean": 2.483527421951294,
+    "plume_max_radius_m": 2.4771053791046143,
+    "plume_front_speed_m_per_year": 2.404937505722046,
+    "poro_std": 2.334440231323242,
+    "p_grad_max_bar_per_m": 2.2943334579467773,
+    "plume_cell_count": 2.2045271396636963,
+    "dp_dt_bar_per_year": 2.1961355209350586,
+    "plume_area_m2": 1.988173246383667,
+    "hpv_total_m3": 1.9542285203933716,
+    "plume_centroid_offset_m": 1.9362367391586304,
+    "boundary_hpv_fraction": 1.3594564199447632
+  },
+  "table_meta": {
+    "source": "truth",
+    "n_sims": 1000,
+    "n_faults_per_sim": 20,
+    "horizons_steps": [
+      1,
+      3,
+      6,
+      12,
+      30
+    ],
+    "horizons_months": [
+      2,
+      6,
+      12,
+      24,
+      60
+    ],
+    "leak_thresholds_m3_s": {
+      "1": 1.7573367357254028,
+      "3": 1.7326843738555908,
+      "6": 1.7603861093521118,
+      "12": 1.7705729007720947,
+      "30": 1.7842148542404175
+    },
+    "leak_quantile": 0.9,
+    "build_seconds": 105.875,
+    "leakage_config": {
+      "boundary_ring_cells": 4,
+      "plume_saturation_threshold": 0.05,
+      "frac_gradient_bar_per_m": 0.17,
+      "frac_gradient_sweep": [
+        0.15,
+        0.17,
+        0.2
+      ],
+      "caprock_thickness_m": 50.0,
+      "h2_viscosity_pa_s": 9.5e-06,
+      "corey_swr": 0.2,
+      "corey_sgr": 0.05,
+      "corey_ng": 2.0,
+      "n_faults_per_sim": 20,
+      "fault_perm_m2_range": [
+        1e-15,
+        1e-12
+      ],
+      "fault_length_m_range": [
+        200.0,
+        2000.0
+      ],
+      "fault_width_m_range": [
+        1.0,
+        10.0
+      ],
+      "fault_radius_m_range": [
+        200.0,
+        3000.0
+      ],
+      "rng_seed": 20260809
+    }
+  }
+}

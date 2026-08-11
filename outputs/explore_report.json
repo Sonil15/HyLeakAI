@@ -1,0 +1,45 @@
+{
+  "well": {
+    "injection_median_cell": [
+      63.0,
+      63.0
+    ],
+    "withdrawal_median_cell": [
+      63.0,
+      63.0
+    ],
+    "offset_cells_injection": 0.7071067811865476,
+    "offset_cells_withdrawal": 0.7071067811865476,
+    "well_is_centred": true
+  },
+  "cyclic": {
+    "injection_well_rank": 0.9999092203776042,
+    "withdrawal_well_rank": 8.14208984375e-05,
+    "cyclic_index_correct": true
+  },
+  "fields": {
+    "n_sims_sampled": 100,
+    "pressure_min_bar": 97.13749694824219,
+    "pressure_max_bar": 289.88751220703125,
+    "saturation_max": 0.77587890625,
+    "plume_area_first_km2": 0.800784,
+    "plume_area_last_km2": 6.0606,
+    "max_equivalent_plume_radius_m": 1454.1598801444156,
+    "domain_half_width_m": 3840.0,
+    "peak_caprock_margin": 0.7592595398453955,
+    "caprock_exceeded_at_default_gradient": false
+  },
+  "t1": {
+    "n_sims": 1000,
+    "threshold": 0.05,
+    "ring_cells": 4,
+    "n_sims_with_breach": 0,
+    "breach_rate": 0.0,
+    "boundary_saturation_max_overall": 0.003894805908203125,
+    "boundary_saturation_mean_of_sim_max": 1.0735273361206055e-05,
+    "max_ring_hpv_fraction": 0.0,
+    "earliest_breach_timestep": null,
+    "T1_VIABLE": false,
+    "verdict": "T1 NOT usable: only 0/1000 simulations show boundary saturation above 0.05. The plume stays well inside the 7,680 m domain, so lateral containment loss carries no signal. Drop T1 and say so; T2 and T3 carry the project."
+  }
+}
