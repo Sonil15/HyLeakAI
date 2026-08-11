@@ -13,8 +13,7 @@ from pathlib import Path
 
 
 DEFAULT_URL = (
-    "https://github.com/Sonil15/HyLeakAI/releases/download/"
-    "hyleak-api-artifacts-v0.1.0/hyleak-api-artifacts-v0.1.0.zip"
+    "https://api.github.com/repos/Sonil15/HyLeakAI/releases/assets/510448743"
 )
 
 
@@ -36,9 +35,13 @@ def main() -> None:
     args.output.mkdir(parents=True, exist_ok=True)
     print(f"Downloading inference artifacts from {args.url}")
     token = os.getenv("HYLEAK_GITHUB_TOKEN")
-    headers = {"Accept": "application/octet-stream"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    if not token:
+        raise SystemExit("HYLEAK_GITHUB_TOKEN is required to download the private release asset.")
+    headers = {
+        "Accept": "application/octet-stream",
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "HyLeakAI-Render-Build",
+    }
     request = urllib.request.Request(args.url, headers=headers)
     with urllib.request.urlopen(request) as response, archive.open("wb") as target:
         shutil.copyfileobj(response, target)
