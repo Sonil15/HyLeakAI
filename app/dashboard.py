@@ -310,6 +310,81 @@ else:
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
+# ---- spatial risk map ----
+st.divider()
+st.subheader("Where would a fault be dangerous?")
+st.caption(
+    "Each cell answers: *if a fault existed here, how likely is elevated leakage "
+    f"{horizon_months if horizon_months else ''} months from now?* It is a "
+    "**conditional** surface — the simulations contain no faults at all, so this "
+    "is not a claim that faults exist anywhere in particular. Fault permeability, "
+    "length, width and orientation are unknown, so each cell is averaged over "
+    "several random property draws rather than fixing one arbitrary fault."
+)
+
+if clf is None or not feat_names:
+    st.info("Train the risk model to enable this map "
+            "(`python -m src.build_features` then `python -m src.train_xgb`).")
+else:
+    mc1, mc2, mc3 = st.columns([1, 1, 2])
+    map_grid = mc1.select_slider("Map resolution", options=[16, 24, 32, 48], value=24,
+                                 help="Candidate fault positions per axis. "
+                                      "Cost grows as the square.")
+    map_samples = mc2.select_slider("Property draws per cell", options=[4, 8, 16],
+                                    value=8)
+    reduce = mc3.radio("Combine draws by", ["mean", "p90", "max"], horizontal=True,
+                       help="mean = typical fault; p90/max = worst-case fault.")
+    run_map = st.checkbox("Compute risk map", value=False,
+                          help="Takes a few seconds; off by default to keep the "
+                               "rest of the page responsive.")
+
+    if run_map:
+        from src.leakage.risk_map import distance_from_well_km, leakage_risk_map
+
+        with st.spinner(f"Scoring {map_grid**2 * map_samples:,} fault hypotheses..."):
+            rm = leakage_risk_map(
+                pressure[i], saturation[i], poro, perm, timestep,
+                clf, feat_names, grid=map_grid, n_samples=map_samples,
+                reduce=reduce,
+                prev_pressure_bar=pressure[i - 1] if i > 0 else None,
+                prev_saturation=saturation[i - 1] if i > 0 else None,
+            )
+
+        left, right = st.columns([3, 1])
+        with left:
+            fig, ax = plt.subplots(figsize=(6, 5))
+            im = ax.imshow(rm["risk"], cmap="inferno", origin="lower",
+                           extent=rm["extent_km"], vmin=0, vmax=1)
+            cs = ax.contour(
+                np.linspace(0, C.DOMAIN_M / 1000, saturation[i].shape[1]),
+                np.linspace(0, C.DOMAIN_M / 1000, saturation[i].shape[0]),
+                saturation[i], levels=[LEAKAGE.plume_saturation_threshold],
+                colors="cyan", linewidths=1.4,
+            )
+            ax.clabel(cs, fmt={LEAKAGE.plume_saturation_threshold: "plume edge"},
+                      fontsize=7)
+            ax.plot(C.DOMAIN_M / 2000, C.DOMAIN_M / 2000, "w*", ms=15, mec="k")
+            hx, hy = rm["hotspot_xy_m"]
+            ax.plot(hx / 1000, hy / 1000, "o", mfc="none", mec="lime", ms=14, mew=2)
+            ax.set_xlabel("km"); ax.set_ylabel("km")
+            ax.set_title(f"P(elevated leakage) by fault location — {reduce} of "
+                         f"{map_samples} draws", fontsize=10)
+            plt.colorbar(im, ax=ax, fraction=0.046, label="risk")
+            st.pyplot(fig, use_container_width=True)
+            plt.close(fig)
+        with right:
+            st.metric("Peak risk", f"{rm['risk_max']:.3f}")
+            st.metric("Mean over domain", f"{rm['risk_mean']:.3f}")
+            st.metric("Hotspot distance", f"{distance_from_well_km(hx, hy):.2f} km",
+                      help="From the injection well at the domain centre.")
+            st.caption(f"Cell size {rm['cell_size_m']:,.0f} m. "
+                       f"White star = well, green circle = hotspot, cyan = plume edge.")
+            if rm["risk_max"] < 0.01:
+                st.info(f"Risk is ~0 everywhere. Timestep {timestep} forecasts into a "
+                        f"**withdrawal** stage, where pressure sits below the initial "
+                        f"reservoir pressure — there is no upward driving force, so "
+                        f"hydrogen does not migrate up a fault.")
+
 # ---- trajectory ----
 st.divider()
 st.subheader("Ten-year risk trajectory")
