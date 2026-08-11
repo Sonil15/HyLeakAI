@@ -1,0 +1,1661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HyLeakAI — Frontend Design Direction</title>
+<meta name="description" content="Interactive design direction for the HyLeakAI frontend: a client-side screening instrument for underground hydrogen storage.">
+<meta name="color-scheme" content="light dark">
+<style>html,body{margin:0;padding:0}</style>
+</head>
+<body>
+<style>
+/* ------------------------------------------------------------------ *
+ * Tokens. Light is the default; dark is redefined at token level only.
+ * The accent hues are lifted from the two scientific colormaps the
+ * pipeline already uses: viridis (H2 saturation) and inferno (pressure).
+ * ------------------------------------------------------------------ */
+:root {
+  --ground:      #EDF1F2;
+  --panel:       #FFFFFF;
+  --panel-sunk:  #F5F8F8;
+  --line:        #CBD6D9;
+  --line-soft:   #E0E8EA;
+  --text:        #131C20;
+  --text-dim:    #4E626A;
+  --text-faint:  #7C9099;
+
+  --h2:          #10836A;   /* viridis mid — hydrogen, capacity, "good" */
+  --h2-glow:     #22A884;
+  --press:       #C4471B;   /* inferno mid — pressure, flux, "hot" */
+  --caution:     #A5720A;
+  --critical:    #C31F3C;
+
+  --shadow: 0 1px 0 rgba(19,28,32,.04), 0 8px 24px -16px rgba(19,28,32,.35);
+  --grid-ink: rgba(19,28,32,.07);
+
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --font-sans: "Helvetica Neue", Helvetica, -apple-system, system-ui, Arial, sans-serif;
+
+  --w: 1180px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground:      #080D10;
+    --panel:       #0E161A;
+    --panel-sunk:  #0A1114;
+    --line:        #22323A;
+    --line-soft:   #16232A;
+    --text:        #DCE8EC;
+    --text-dim:    #8CA3AC;
+    --text-faint:  #5D737C;
+
+    --h2:          #35D0A5;
+    --h2-glow:     #6BF0C8;
+    --press:       #FF7A45;
+    --caution:     #E8B33A;
+    --critical:    #FF4D6A;
+
+    --shadow: 0 0 0 1px rgba(53,208,165,.03), 0 20px 50px -30px rgba(0,0,0,.9);
+    --grid-ink: rgba(140,163,172,.09);
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #080D10;
+  --panel:       #0E161A;
+  --panel-sunk:  #0A1114;
+  --line:        #22323A;
+  --line-soft:   #16232A;
+  --text:        #DCE8EC;
+  --text-dim:    #8CA3AC;
+  --text-faint:  #5D737C;
+
+  --h2:          #35D0A5;
+  --h2-glow:     #6BF0C8;
+  --press:       #FF7A45;
+  --caution:     #E8B33A;
+  --critical:    #FF4D6A;
+
+  --shadow: 0 0 0 1px rgba(53,208,165,.03), 0 20px 50px -30px rgba(0,0,0,.9);
+  --grid-ink: rgba(140,163,172,.09);
+}
+
+:root[data-theme="light"] {
+  --ground:      #EDF1F2;
+  --panel:       #FFFFFF;
+  --panel-sunk:  #F5F8F8;
+  --line:        #CBD6D9;
+  --line-soft:   #E0E8EA;
+  --text:        #131C20;
+  --text-dim:    #4E626A;
+  --text-faint:  #7C9099;
+
+  --h2:          #10836A;
+  --h2-glow:     #22A884;
+  --press:       #C4471B;
+  --caution:     #A5720A;
+  --critical:    #C31F3C;
+
+  --shadow: 0 1px 0 rgba(19,28,32,.04), 0 8px 24px -16px rgba(19,28,32,.35);
+  --grid-ink: rgba(19,28,32,.07);
+}
+
+/* ------------------------------------------------------------------ */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--w);
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* --- shared type roles ------------------------------------------- */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+h1 {
+  font-family: var(--font-mono);
+  font-size: clamp(30px, 5.2vw, 54px);
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1.02;
+}
+
+h2 {
+  font-family: var(--font-mono);
+  font-size: clamp(19px, 2.6vw, 25px);
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+}
+
+h3 {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+p { margin: 0; max-width: 66ch; }
+.lede { color: var(--text-dim); font-size: 16px; }
+
+/* --- masthead ----------------------------------------------------- */
+
+.mast {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.mast .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 54px;
+  flex-wrap: wrap;
+}
+.mark {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.mark i {
+  width: 9px; height: 9px;
+  background: var(--h2);
+  display: block;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--h2) 18%, transparent);
+}
+
+.hero {
+  padding: 76px 0 56px;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--h2) 4%, transparent), transparent 340px),
+    var(--panel);
+}
+.hero-grid { display: grid; gap: 26px; }
+.hero h1 span { color: var(--h2); }
+
+/* --- palette strip ------------------------------------------------ */
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--line);
+  margin-top: 8px;
+  overflow: hidden;
+}
+.sw {
+  flex: 1 1 150px;
+  padding: 12px 14px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--panel-sunk);
+}
+.sw:last-child { border-right: 0; }
+.sw b {
+  display: block;
+  height: 5px;
+  margin-bottom: 10px;
+}
+.sw .k {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: block;
+}
+.sw .v {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  display: block;
+  margin-top: 3px;
+}
+
+/* --- act sections ------------------------------------------------- */
+
+.act { padding: 62px 0; border-bottom: 1px solid var(--line); }
+.act-head {
+  display: flex;
+  gap: 18px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.act-index {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .16em;
+  color: var(--h2);
+  white-space: nowrap;
+  padding-top: 4px;
+}
+.act-body { margin-top: 14px; display: grid; gap: 22px; }
+
+/* --- instrument panel --------------------------------------------- */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  position: relative;
+}
+.panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-sunk);
+}
+.panel-pad { padding: 18px; }
+
+/* --- data-source badge -------------------------------------------- */
+
+.src {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.src.real  { color: var(--h2); }
+.src.stub  { color: var(--caution); }
+
+/* --- provenance chips (mirrors config.py tags) -------------------- */
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  vertical-align: 2px;
+  cursor: help;
+  white-space: nowrap;
+}
+.chip.dataset { color: var(--h2); }
+.chip.derived { color: var(--text-faint); }
+.chip.assumed { color: var(--caution); }
+
+/* --- controls ------------------------------------------------------ */
+
+.seg { display: flex; border: 1px solid var(--line); }
+.seg button {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 6px 11px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 0;
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--h2) 16%, var(--panel));
+  color: var(--text);
+}
+.seg button:hover { color: var(--text); }
+:where(button, [tabindex]):focus-visible {
+  outline: 2px solid var(--h2);
+  outline-offset: 2px;
+}
+
+/* --- metric readouts ---------------------------------------------- */
+
+.readouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  border-top: 1px solid var(--line);
+}
+.ro {
+  padding: 13px 15px 15px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.ro .lbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.ro .val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 25px;
+  letter-spacing: -.03em;
+  line-height: 1;
+}
+.ro .sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+.ro.hot .val { color: var(--press); }
+.ro.good .val { color: var(--h2); }
+
+/* --- canvases ------------------------------------------------------ */
+
+.canvas-host { position: relative; line-height: 0; }
+canvas { display: block; width: 100%; height: auto; }
+
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 7px 9px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  white-space: pre;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity .1s;
+  z-index: 5;
+  box-shadow: var(--shadow);
+}
+.tip.on { opacity: 1; }
+
+/* --- cycle ribbon --------------------------------------------------- */
+
+.ribbon-host { padding: 16px 18px 18px; border-top: 1px solid var(--line); }
+.ribbon {
+  display: grid;
+  grid-template-columns: repeat(60, 1fr);
+  gap: 1px;
+  height: 34px;
+  cursor: ew-resize;
+  border: 1px solid var(--line);
+  background: var(--line-soft);
+}
+.tick { background: var(--panel-sunk); position: relative; }
+.tick.inj { background: color-mix(in srgb, var(--h2) 20%, var(--panel-sunk)); }
+.tick.past.inj { background: color-mix(in srgb, var(--h2) 55%, var(--panel-sunk)); }
+.tick.past { background: color-mix(in srgb, var(--text-dim) 22%, var(--panel-sunk)); }
+.tick.now { background: var(--press); }
+.ribbon-axis {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  letter-spacing: .08em;
+}
+.ribbon-axis span { border-left: 1px solid var(--line-soft); padding-left: 5px; }
+
+/* --- two-column layouts ------------------------------------------- */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+/* --- waterfall ------------------------------------------------------ */
+
+.wf { display: grid; gap: 7px; padding: 16px 18px; }
+.wf-row {
+  display: grid;
+  grid-template-columns: 172px 1fr 62px;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.wf-row .nm { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wf-track { position: relative; height: 15px; background: var(--panel-sunk); border: 1px solid var(--line-soft); }
+.wf-bar { position: absolute; top: 0; bottom: 0; }
+.wf-bar.up { background: var(--press); }
+.wf-bar.dn { background: var(--h2); }
+.wf-zero { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+.wf-row .amt { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* --- idea list ------------------------------------------------------ */
+
+.ideas { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.idea {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.idea .n {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--h2);
+  padding-top: 3px;
+}
+.idea h3 { margin-bottom: 4px; }
+.idea p { color: var(--text-dim); font-size: 14px; }
+
+/* --- notes / footer ------------------------------------------------ */
+
+.note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  border-left: 2px solid var(--caution);
+  padding-left: 13px;
+  max-width: 78ch;
+}
+.stack { display: grid; gap: 14px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+footer { padding: 46px 0 70px; }
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  letter-spacing: .06em;
+}
+.legend i { display: inline-block; width: 20px; height: 4px; vertical-align: 2px; margin-right: 6px; }
+
+.tbl-host { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: 11.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+th { color: var(--text-faint); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; font-size: 9.5px; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr.sel td { background: color-mix(in srgb, var(--h2) 12%, transparent); }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="mark"><i></i>HYLEAKAI</div>
+    <p class="eyebrow">Frontend design direction &nbsp;·&nbsp; interactive mockup &nbsp;·&nbsp; not the shipped app</p>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <p class="eyebrow">Replacing the Streamlit dashboard</p>
+    <h1>An instrument,<br>not a <span>dashboard</span>.</h1>
+    <p class="lede">
+      The pipeline turns a multi-hour reservoir simulation into a sub-second screening pass.
+      A frontend that renders that as static matplotlib PNGs throws the whole point away.
+      This is the argument for a client-side instrument: the field animates, the fault
+      ensemble is spatial, and every number wears its provenance.
+    </p>
+
+    <div class="swatches" role="list" aria-label="Palette derivation">
+      <div class="sw" role="listitem">
+        <b style="background:var(--h2)"></b>
+        <span class="k">H2 / capacity</span>
+        <span class="v">viridis mid · saturation maps</span>
+      </div>
+      <div class="sw" role="listitem">
+        <b style="background:var(--press)"></b>
+        <span class="k">Pressure / flux</span>
+        <span class="v">inferno mid · pressure maps</span>
+      </div>
+      <div class="sw" role="listitem">
+        <b style="background:var(--caution)"></b>
+        <span class="k">Assumed</span>
+        <span class="v">every [ASSUMED] constant</span>
+      </div>
+      <div class="sw" role="listitem">
+        <b style="background:var(--critical)"></b>
+        <span class="k">Exceedance</span>
+        <span class="v">caprock margin &gt; 1</span>
+      </div>
+      <div class="sw" role="listitem">
+        <b style="background:var(--text-faint)"></b>
+        <span class="k">Slate neutral</span>
+        <span class="v">cool-biased, not grey</span>
+      </div>
+    </div>
+    <p class="note">
+      The accents are not chosen for taste. They are sampled from viridis and inferno — the two
+      colormaps <code>app/dashboard.py</code> already uses for saturation and pressure. A legend
+      colour and a UI colour meaning the same thing is the cheapest kind of coherence.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ ACT 1 ============================ -->
+<section class="act">
+  <div class="wrap">
+    <div class="act-head">
+      <span class="act-index">01 / SCREEN</span>
+      <h2>The Storage Atlas</h2>
+    </div>
+    <p class="lede">
+      1,000 realisations, ranked. Not a table with a scroll bar — a scatter you read like a
+      nomograph, with iso-score lines drawn straight from the scoring weights. Click a point
+      and it becomes the site every panel below is about.
+    </p>
+
+    <div class="act-body">
+      <div class="panel">
+        <div class="panel-bar">
+          <p class="eyebrow">Capacity &times; seal risk &nbsp;·&nbsp; n = 1000</p>
+          <div class="row">
+            <div class="seg" id="wseg" role="group" aria-label="Weighting">
+              <button type="button" data-w="default" aria-pressed="true">0.5 / 0.3 / 0.2</button>
+              <button type="button" data-w="seal" aria-pressed="false">Seal-led</button>
+              <button type="button" data-w="cap" aria-pressed="false">Capacity-led</button>
+            </div>
+            <span class="src real">Real output · site_suitability_ranking.csv</span>
+          </div>
+        </div>
+        <div class="canvas-host">
+          <canvas id="atlas" data-h="410" aria-label="Scatter of 1000 geological realisations, capacity against seal risk, coloured by suitability score"></canvas>
+          <div class="tip" id="atlas-tip"></div>
+        </div>
+        <div class="readouts" id="atlas-readouts"></div>
+      </div>
+
+      <div class="split">
+        <div class="panel">
+          <div class="panel-bar"><p class="eyebrow">Top of the ranking</p><span class="eyebrow" id="rank-note">click a row to select</span></div>
+          <div class="tbl-host">
+            <table id="rank-tbl">
+              <thead><tr><th>Rank</th><th>Sim</th><th class="n">Score</th><th class="n">Capacity</th><th class="n">Seal risk</th><th class="n">Heterog.</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="panel panel-pad stack">
+            <h3>Why the weight toggle is the point</h3>
+            <p style="font-size:14px;color:var(--text-dim)">
+              The three weights are <span class="chip assumed" title="Not in the paper or dataset — our choice, disclosed and sweepable">ASSUMED</span>,
+              and re-scoring under different weightings moves the top ten by 2–5 seats. A static
+              leaderboard hides that. A toggle that visibly reshuffles the ranking in front of the
+              audience makes the caveat impossible to miss — and turns a weakness in the method
+              into the most memorable interaction on the page.
+            </p>
+          </div>
+          <p class="note">
+            Tier bands, not ranks, are what survive the sweep. Say “this site is in the top decile,”
+            never “site 468 is the best site.”
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ ACT 2 ============================ -->
+<section class="act">
+  <div class="wrap">
+    <div class="act-head">
+      <span class="act-index">02 / SIMULATE</span>
+      <h2>The breathing reservoir</h2>
+    </div>
+    <p class="lede">
+      Ten annual cycles of injection and withdrawal is a rhythm, and the plume grows and shrinks
+      with it. That is the most characteristic motion in this entire dataset and no static figure
+      can show it. Here the timeline is not a slider — it is the cycle structure itself.
+    </p>
+
+    <div class="act-body">
+      <div class="panel">
+        <div class="panel-bar">
+          <p class="eyebrow">Reservoir slab &nbsp;·&nbsp; 7,680 m &times; 7,680 m &times; 100 m &nbsp;·&nbsp; <span id="sim-label">sim —</span></p>
+          <div class="row">
+            <div class="seg" id="fseg" role="group" aria-label="Field">
+              <button type="button" data-f="sat" aria-pressed="true">H&#8322; saturation</button>
+              <button type="button" data-f="pres" aria-pressed="false">Pressure</button>
+              <button type="button" data-f="perm" aria-pressed="false">Permeability</button>
+            </div>
+            <span class="src stub">Mockup field · procedural stand-in</span>
+          </div>
+        </div>
+        <div class="canvas-host">
+          <canvas id="slab" data-h="500" aria-label="Tilted 3D view of the reservoir slab with the hydrogen plume, the caprock above it, and sampled faults piercing the seal"></canvas>
+          <div class="tip" id="slab-tip"></div>
+        </div>
+
+        <div class="ribbon-host">
+          <div class="row" style="justify-content:space-between;margin-bottom:9px">
+            <p class="eyebrow">Cycle ribbon &nbsp;·&nbsp; 60 steps &times; 2 months = 10 years</p>
+            <div class="row">
+              <span class="eyebrow" id="step-label">step 30 · cycle 5 · withdrawal</span>
+              <div class="seg"><button type="button" id="play" aria-pressed="true">Pause</button></div>
+            </div>
+          </div>
+          <div class="ribbon" id="ribbon" tabindex="0" role="slider" aria-label="Timestep" aria-valuemin="1" aria-valuemax="60" aria-valuenow="30"></div>
+          <div class="ribbon-axis" id="ribbon-axis"></div>
+          <div class="legend" style="margin-top:12px">
+            <span><i style="background:color-mix(in srgb, var(--h2) 55%, var(--panel-sunk))"></i>injection stage</span>
+            <span><i style="background:color-mix(in srgb, var(--text-dim) 22%, var(--panel-sunk))"></i>withdrawal stage</span>
+            <span><i style="background:var(--press)"></i>now</span>
+          </div>
+        </div>
+        <div class="readouts" id="slab-readouts"></div>
+      </div>
+
+      <div class="split">
+        <div class="stack">
+          <div class="panel panel-pad stack">
+            <h3>The fault swarm replaces the histogram</h3>
+            <p style="font-size:14px;color:var(--text-dim)">
+              Today the Monte-Carlo ensemble is a histogram of 25 probabilities — an abstraction of
+              something inherently spatial. Draw the sampled faults <em>where they are</em>, coloured
+              by risk, and the physics reads itself: the dangerous ones sit on the plume front, near
+              the pressure ridge. Hover any segment on the slab above. The worst-case fault is
+              extruded up through the caprock, because that vertical path <em>is</em> the leak.
+            </p>
+          </div>
+          <p class="note">
+            The fault is not in the simulation. It is overlaid on the predicted fields — which is
+            exactly what makes a live sweep of unknown fault properties affordable in the browser.
+          </p>
+        </div>
+        <div class="panel">
+          <div class="panel-bar"><p class="eyebrow">Selected fault</p></div>
+          <div class="readouts" id="fault-readouts" style="grid-template-columns:1fr 1fr"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ ACT 3 ============================ -->
+<section class="act">
+  <div class="wrap">
+    <div class="act-head">
+      <span class="act-index">03 / EXPLAIN</span>
+      <h2>Provenance as a design system</h2>
+    </div>
+    <p class="lede">
+      <code>src/config.py</code> already tags every constant <span class="chip dataset" title="Read from the Mao et al. dataset or stated in the paper">DATASET</span>
+      <span class="chip derived" title="Computed from a DATASET value by an explicit stated calculation">DERIVED</span>
+      <span class="chip assumed" title="Not in the paper or dataset — our choice, disclosed and sweepable">ASSUMED</span>.
+      Promote that taxonomy into the interface and the honesty stops being a yellow warning banner
+      nobody reads — it becomes a chip attached to every number, hoverable, unavoidable, and unlike
+      anything else in the room.
+    </p>
+
+    <div class="act-body split">
+      <div class="panel">
+        <div class="panel-bar">
+          <p class="eyebrow">Attribution &nbsp;·&nbsp; base rate &rarr; P(elevated leakage in 6 months)</p>
+          <span class="src stub">Mockup values · layout only</span>
+        </div>
+        <div class="wf" id="waterfall"></div>
+        <div class="readouts" id="risk-readouts"></div>
+      </div>
+
+      <div class="stack">
+        <div class="panel panel-pad stack">
+          <h3>Put the latency on screen</h3>
+          <p style="font-size:14px;color:var(--text-dim)">
+            “Sub-second instead of multi-hour” is the core claim and it currently lives in the README.
+            Measure it and print it. Every recompute on this page is timed for real:
+          </p>
+          <div class="row">
+            <span class="num" style="font-size:30px;color:var(--h2)" id="lat">—</span>
+            <span class="eyebrow" style="max-width:22ch;line-height:1.5">measured, this browser · a reservoir simulator: hours</span>
+          </div>
+        </div>
+        <p class="note">
+          Attribution values here are placeholders for layout. Wire the real ones from
+          <code>outputs/shap_features.json</code> before this goes anywhere near a judge.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ BUILD ============================ -->
+<section class="act">
+  <div class="wrap">
+    <div class="act-head">
+      <span class="act-index">04 / BUILD</span>
+      <h2>How this ships without a backend</h2>
+    </div>
+    <p class="lede">
+      The 12.38 GB dataset is not on the laptop and the disk is nearly full, so a live-inference
+      backend is the wrong shape. Everything above runs client-side, which also means it deploys
+      as a static site and demos with the Wi-Fi off.
+    </p>
+
+    <div class="ideas">
+      <div class="idea">
+        <span class="n">01</span>
+        <div>
+          <h3>Ship a demo pack, not a dataset</h3>
+          <p>Export ~24 test-set simulations from the Kaggle kernel — where the data already lives —
+          as quantised uint8 sprite sheets of pressure and saturation. 24 sims &times; 60 steps &times; 128&sup2;
+          &times; 2 fields is trivially small once PNG-compressed, and that is the entire field
+          payload the frontend ever needs.</p>
+        </div>
+      </div>
+      <div class="idea">
+        <span class="n">02</span>
+        <div>
+          <h3>Run XGBoost in the browser</h3>
+          <p>Dump the booster to JSON and walk the trees in ~150 lines of TypeScript. Then the
+          fault Monte-Carlo is interactive: drag a fault, re-sample the ensemble, watch probabilities
+          move at frame rate. That interaction is impossible against a Python round-trip and it is
+          the single strongest demo moment available.</p>
+        </div>
+      </div>
+      <div class="idea">
+        <span class="n">03</span>
+        <div>
+          <h3>Port the Darcy flux to JS</h3>
+          <p><code>fault_leakage_flux</code> is closed-form. Reimplemented in JS it is a handful of
+          lines, and it keeps the physics — not just the ML — live under the user's hands. Guard it
+          with the same monotonicity self-checks <code>src/leakage/labels.py</code> already runs.</p>
+        </div>
+      </div>
+      <div class="idea">
+        <span class="n">04</span>
+        <div>
+          <h3>Keep the U-Net optional</h3>
+          <p>The surrogate is the one piece that genuinely wants a GPU. Precompute its predictions
+          into the same demo pack and expose the simulator-vs-surrogate toggle the Streamlit app
+          already has — the 99.0% PR-AUC retention is a result worth showing, not hiding.</p>
+        </div>
+      </div>
+      <div class="idea">
+        <span class="n">05</span>
+        <div>
+          <h3>Vite + TypeScript, canvas over chart libraries</h3>
+          <p>Every visual here is a canvas and a few hundred lines of arithmetic. A charting library
+          would fight the projection, the colormaps and the ribbon, and would still not draw the
+          slab. Reach for one only if a plain line chart appears — and it probably will not.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap stack">
+    <p class="eyebrow">Status of the data on this page</p>
+    <p class="note" style="border-left-color:var(--h2)">
+      REAL — the 1,000-site atlas, its scores, ranks and criteria, read from
+      <code>outputs/site_suitability_ranking.csv</code>.
+    </p>
+    <p class="note">
+      MOCKUP — the reservoir fields, the fault ensemble and the attribution bars. The source dataset
+      is not on this machine, so these are procedural stand-ins that demonstrate the visual language
+      and the interaction, not model output. Nothing on this page should be quoted as a result.
+    </p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------- *
+   * Real data: [sim_id, capacity, seal_risk, heterogeneity, score, rank]
+   * ---------------------------------------------------------------- */
+  var SITES = [[468,0.9932,0.5508,0.3525,100.0,1],[725,0.9848,0.3603,0.6174,99.99,2],[874,0.9758,0.4869,0.4297,99.1,3],[848,0.8983,0.3348,0.5051,97.61,4],[322,0.7532,0.0,0.6716,96.63,5],[150,1.0,0.5721,0.4451,96.09,6],[991,0.6903,0.0974,0.4267,94.51,7],[93,0.8172,0.3077,0.4323,94.37,8],[999,0.9631,0.5991,0.3904,93.26,9],[587,0.7401,0.2232,0.4129,92.68,10],[167,0.989,0.6077,0.4646,92.45,11],[194,0.8183,0.177,0.7334,90.66,12],[643,0.7463,0.3788,0.2903,89.21,13],[201,0.8579,0.4414,0.4885,88.74,14],[871,0.8778,0.4016,0.6281,87.65,15],[185,0.8663,0.4428,0.5784,86.17,16],[396,0.7538,0.4257,0.3454,85.35,17],[301,0.8111,0.5124,0.3744,84.78,18],[503,0.8223,0.6105,0.2551,84.78,19],[377,0.8906,0.6944,0.3136,84.29,20],[462,0.7043,0.3077,0.4319,84.14,21],[856,0.9295,0.8067,0.2525,83.92,22],[501,0.8334,0.5394,0.4162,83.81,23],[622,0.9565,0.7456,0.4268,83.37,24],[341,0.7434,0.4058,0.4042,83.35,25],[450,0.6431,0.2722,0.3588,83.17,26],[777,0.7639,0.4243,0.4421,82.83,27],[728,0.7839,0.4755,0.4202,82.65,28],[50,0.6608,0.4442,0.1638,82.5,29],[888,0.7357,0.3746,0.479,81.64,30],[277,0.8583,0.6119,0.4309,81.58,31],[977,0.8202,0.4897,0.5598,80.11,32],[116,0.6356,0.2935,0.4164,79.24,33],[315,0.8295,0.5764,0.4781,79.19,34],[484,0.7063,0.4968,0.2944,79.01,35],[132,0.6731,0.3461,0.4537,78.42,36],[105,0.6323,0.2523,0.4931,78.4,37],[574,0.9787,0.7242,0.6571,78.19,38],[159,0.672,0.2516,0.6044,78.01,39],[784,0.93,0.7015,0.5823,77.72,40],[619,0.7658,0.4542,0.5585,77.15,41],[554,0.8867,0.7896,0.3661,76.84,42],[832,0.801,0.4783,0.6233,76.68,43],[292,0.7177,0.5025,0.3844,76.48,44],[221,0.4899,0.2395,0.2176,76.18,45],[799,0.7862,0.5821,0.4501,75.97,46],[932,0.813,0.5892,0.5178,75.56,47],[141,0.7453,0.4542,0.5554,75.41,48],[33,0.7923,0.4542,0.6751,75.33,49],[184,0.5839,0.2189,0.5108,75.19,50],[957,0.5156,0.1613,0.4378,74.77,51],[407,0.6845,0.3049,0.6471,74.68,52],[26,0.7759,0.4925,0.6067,74.23,53],[873,0.4758,0.123,0.4156,74.06,54],[165,0.8762,0.7356,0.4984,74.03,55],[761,0.7992,0.5935,0.5236,73.86,56],[175,0.6928,0.4058,0.5394,73.85,57],[386,0.8247,0.656,0.5066,73.4,58],[982,0.488,0.0519,0.5729,73.32,59],[885,0.7348,0.5778,0.4037,73.22,60],[23,0.6545,0.5096,0.3069,73.17,61],[968,0.7289,0.6532,0.2835,72.96,62],[834,0.682,0.494,0.4135,72.64,63],[312,0.6474,0.3873,0.4876,72.62,64],[591,0.7517,0.592,0.4517,72.24,65],[456,0.7577,0.5821,0.4826,72.21,66],[152,0.5663,0.2722,0.4709,72.14,67],[261,0.684,0.3006,0.7244,72.07,68],[206,0.6093,0.3177,0.5152,71.95,69],[850,0.5514,0.1493,0.6232,71.95,70],[753,0.6964,0.6404,0.2504,71.9,71],[138,0.6565,0.2438,0.7569,71.49,72],[535,0.6579,0.4414,0.4639,71.49,73],[97,0.587,0.3717,0.3924,71.45,74],[524,0.7202,0.6859,0.2566,71.36,75],[68,0.7593,0.5338,0.5891,71.12,76],[401,0.7691,0.5807,0.5507,70.85,77],[279,0.6897,0.376,0.6609,70.79,78],[174,0.654,0.4542,0.4558,70.74,79],[496,0.7453,0.5736,0.5054,70.72,80],[472,0.7783,0.6816,0.426,70.71,81],[195,0.4896,0.1812,0.4572,70.63,82],[409,0.755,0.7114,0.3254,70.63,83],[287,0.689,0.3561,0.6935,70.62,84],[804,0.6338,0.4925,0.3525,70.56,85],[876,0.8286,0.6546,0.5965,70.56,86],[176,0.5538,0.253,0.5131,70.51,87],[585,0.7325,0.43,0.7009,70.28,88],[455,0.7144,0.4968,0.5601,70.11,89],[91,0.6786,0.5011,0.4709,69.86,90],[251,0.7122,0.5451,0.4892,69.86,91],[418,0.7404,0.5224,0.5954,69.8,92],[64,0.8472,0.6944,0.6078,69.67,93],[120,0.6227,0.538,0.2828,69.61,94],[198,0.6027,0.312,0.5733,69.56,95],[202,0.6818,0.3006,0.7881,69.56,96],[445,0.7783,0.6105,0.5648,69.54,97],[330,0.6642,0.619,0.2675,69.51,98],[572,0.6378,0.4471,0.46,69.5,99],[789,0.6757,0.5338,0.4284,69.37,100],[831,0.7135,0.5437,0.51,69.29,101],[749,0.6102,0.4016,0.4692,69.14,102],[760,0.6905,0.592,0.3842,69.13,103],[884,0.6331,0.3262,0.6408,69.09,104],[53,0.6241,0.4172,0.4823,69.08,105],[680,0.7061,0.4001,0.7137,69.04,106],[89,0.5781,0.2324,0.6458,69.02,107],[78,0.5326,0.2296,0.5466,68.65,108],[822,0.7604,0.548,0.6429,68.49,109],[199,0.6944,0.5423,0.4867,68.48,110],[674,0.7189,0.6233,0.4269,68.46,111],[419,0.5711,0.3845,0.4206,68.28,112],[556,0.5092,0.1706,0.5899,68.17,113],[870,0.6142,0.3348,0.6066,68.16,114],[388,0.6439,0.4741,0.4718,68.15,115],[311,0.642,0.4314,0.5325,68.1,116],[29,0.6062,0.4399,0.431,68.07,117],[207,0.632,0.5181,0.3791,68.04,118],[71,0.7775,0.7925,0.3348,67.91,119],[324,0.5601,0.2921,0.5431,67.87,120],[886,0.6929,0.565,0.467,67.82,121],[534,0.6235,0.4385,0.4862,67.72,122],[835,0.8038,0.7825,0.4286,67.44,123],[630,0.5109,0.2459,0.5054,67.28,124],[507,0.4666,0.1564,0.5301,67.25,125],[898,0.7769,0.6219,0.6147,66.99,126],[471,0.7062,0.5252,0.585,66.92,127],[736,0.5496,0.3163,0.5118,66.74,128],[9,0.6557,0.5281,0.4646,66.55,129],[364,0.4191,0.2793,0.2466,66.54,130],[244,0.6699,0.6389,0.3378,66.4,131],[528,0.6408,0.511,0.4662,66.06,132],[293,0.5325,0.3149,0.4955,65.86,133],[964,0.6889,0.5878,0.4781,65.82,134],[431,0.7501,0.5864,0.6366,65.7,135],[363,0.6628,0.6205,0.368,65.67,136],[123,0.5897,0.3646,0.5711,65.59,137],[182,0.5939,0.4129,0.5107,65.53,138],[900,0.682,0.4598,0.6606,65.53,139],[708,0.4629,0.258,0.4163,65.51,140],[704,0.6681,0.4897,0.5843,65.42,141],[231,0.6595,0.4243,0.6622,65.37,142],[296,0.8423,0.8152,0.5334,65.35,143],[954,0.6721,0.5409,0.5247,65.16,144],[732,0.5431,0.2033,0.7116,65.04,145],[41,0.3658,0.1215,0.3951,64.9,146],[602,0.5046,0.2992,0.4788,64.79,147],[265,0.4635,0.2374,0.4694,64.76,148],[827,0.6486,0.5721,0.4327,64.66,149],[209,0.5676,0.5181,0.3142,64.55,150],[102,0.7007,0.6631,0.4331,64.42,151],[428,0.5097,0.2751,0.5382,64.41,152],[469,0.6341,0.629,0.3205,64.32,153],[218,0.5985,0.3916,0.5881,64.3,154],[737,0.7903,0.8067,0.4449,64.3,155],[590,0.5382,0.4072,0.4152,64.25,156],[902,0.5739,0.457,0.4324,64.16,157],[305,0.7337,0.5764,0.6556,64.06,158],[405,0.544,0.3433,0.5324,64.01,159],[774,0.7408,0.7711,0.3827,64.0,160],[270,0.5838,0.4101,0.539,63.75,161],[222,0.496,0.3191,0.457,63.7,162],[826,0.4365,0.2978,0.3403,63.7,163],[69,0.7037,0.4257,0.8183,63.64,164],[599,0.5899,0.3532,0.6429,63.63,165],[129,0.6139,0.4471,0.5622,63.62,166],[380,0.6395,0.5224,0.5147,63.57,167],[889,0.5445,0.4627,0.3702,63.44,168],[997,0.7801,0.8067,0.4482,63.26,169],[427,0.4242,0.1756,0.5084,63.15,170],[588,0.7103,0.7143,0.4151,63.15,171],[282,0.6779,0.6446,0.4402,63.1,172],[751,0.3893,0.1457,0.4689,63.03,173],[748,0.5217,0.4016,0.4166,63.02,174],[342,0.469,0.3333,0.3878,63.0,175],[323,0.5983,0.6048,0.3044,62.98,176],[473,0.5891,0.5025,0.4361,62.93,177],[705,0.7991,0.828,0.4747,62.86,178],[994,0.6426,0.5181,0.5619,62.37,179],[555,0.7369,0.6418,0.6137,62.31,180],[906,0.6968,0.6631,0.483,62.25,181],[17,0.643,0.7015,0.2932,62.18,182],[867,0.6746,0.6731,0.4168,62.1,183],[939,0.4624,0.4414,0.2349,62.06,184],[61,0.3704,0.0171,0.6439,61.98,185],[187,0.7629,0.7072,0.5903,61.96,186],[967,0.6878,0.5053,0.7065,61.92,187],[593,0.5468,0.3447,0.5955,61.9,188],[10,0.7548,0.838,0.3758,61.89,189],[796,0.4773,0.2097,0.6256,61.85,190],[558,0.4271,0.2637,0.4211,61.78,191],[649,0.5182,0.403,0.4422,61.69,192],[756,0.6022,0.5181,0.4795,61.69,193],[393,0.6454,0.4925,0.6279,61.62,194],[511,0.499,0.5224,0.2179,61.59,195],[74,0.7504,0.6461,0.6622,61.54,196],[24,0.5445,0.4314,0.4709,61.49,197],[684,0.5283,0.43,0.4325,61.49,198],[722,0.634,0.5849,0.4679,61.36,199],[668,0.5368,0.3575,0.5682,61.28,200],[72,0.6709,0.5693,0.5868,61.24,201],[67,0.7262,0.5579,0.7424,61.23,202],[34,0.4135,0.1009,0.6479,61.17,203],[170,0.7286,0.7783,0.4238,61.02,204],[385,0.5171,0.3177,0.5886,60.92,205],[156,0.6945,0.6915,0.4753,60.78,206],[951,0.584,0.4698,0.5323,60.76,207],[631,0.7358,0.6802,0.5979,60.69,208],[423,0.6104,0.5949,0.4143,60.62,209],[579,0.3392,0.0952,0.4863,60.61,210],[740,0.6871,0.6063,0.5911,60.55,211],[880,0.6955,0.6745,0.5103,60.53,212],[806,0.702,0.8024,0.336,60.48,213],[3,0.5843,0.3873,0.6657,60.43,214],[633,0.6108,0.4527,0.6338,60.43,215],[891,0.5726,0.6134,0.2974,60.43,216],[85,0.509,0.5338,0.2582,60.41,217],[362,0.332,0.2978,0.1708,60.38,218],[752,0.5726,0.4627,0.5261,60.33,219],[430,0.7124,0.6489,0.6004,60.18,220],[632,0.514,0.5139,0.3077,60.16,221],[235,0.5842,0.5295,0.4599,60.15,222],[87,0.5403,0.4087,0.5347,60.03,223],[550,0.7575,0.737,0.5852,60.03,224],[669,0.4369,0.2445,0.5232,60.01,225],[672,0.6802,0.5849,0.622,59.96,226],[243,0.6803,0.7541,0.3694,59.93,227],[639,0.6583,0.7342,0.3454,59.89,228],[226,0.5513,0.3646,0.6326,59.88,229],[741,0.6207,0.5849,0.4767,59.83,230],[839,0.4453,0.3205,0.436,59.79,231],[79,0.4715,0.4442,0.3162,59.78,232],[258,0.462,0.3646,0.4131,59.74,233],[130,0.4306,0.3461,0.3627,59.73,234],[567,0.596,0.4641,0.5989,59.73,235],[302,0.486,0.4641,0.3243,59.72,236],[895,0.5055,0.4343,0.4215,59.59,237],[466,0.7005,0.7456,0.4426,59.57,238],[440,0.3864,0.2424,0.4149,59.47,239],[983,0.6369,0.5864,0.5251,59.47,240],[14,0.6095,0.4883,0.6051,59.42,241],[112,0.5422,0.4556,0.4858,59.42,242],[841,0.6784,0.5025,0.7567,59.4,243],[952,0.4182,0.3077,0.3996,59.35,244],[614,0.7954,0.6986,0.7581,59.29,245],[290,0.7103,0.7342,0.4933,59.24,246],[523,0.5192,0.3945,0.5272,59.17,247],[758,0.6018,0.4129,0.706,59.16,248],[514,0.7098,0.7157,0.5244,59.07,249],[374,0.5259,0.5707,0.2836,59.02,250],[604,0.5427,0.619,0.255,58.95,251],[529,0.6484,0.5181,0.6715,58.92,252],[931,0.6841,0.8124,0.3224,58.81,253],[803,0.6774,0.7797,0.3558,58.77,254],[701,0.6211,0.5679,0.5411,58.46,255],[679,0.3826,0.2878,0.3656,58.44,256],[688,0.6089,0.3873,0.7842,58.37,257],[531,0.4281,0.3021,0.4613,58.32,258],[724,0.6311,0.6318,0.4761,58.25,259],[136,0.4982,0.3589,0.5534,58.24,260],[603,0.5503,0.43,0.5776,58.22,261],[914,0.6937,0.5935,0.6911,58.22,262],[608,0.5048,0.3547,0.5774,58.2,263],[738,0.693,0.6787,0.5629,58.16,264],[620,0.6982,0.6048,0.6906,58.02,265],[103,0.6594,0.6887,0.4687,57.99,266],[144,0.4999,0.339,0.5951,57.97,267],[402,0.472,0.4627,0.3401,57.96,268],[6,0.5064,0.4925,0.3826,57.91,269],[598,0.5564,0.5494,0.4227,57.89,270],[824,0.6478,0.5338,0.6752,57.87,271],[493,0.5437,0.4897,0.4872,57.65,272],[616,0.6075,0.7242,0.2978,57.55,273],[281,0.5398,0.4925,0.4794,57.43,274],[101,0.3512,0.2225,0.4134,57.41,275],[148,0.4317,0.2978,0.504,57.33,276],[666,0.3367,0.3021,0.2611,57.3,277],[516,0.7164,0.7285,0.5717,57.26,278],[394,0.4822,0.4087,0.4687,57.16,279],[73,0.3727,0.2331,0.4603,57.08,280],[592,0.5061,0.5423,0.3306,57.06,281],[515,0.5664,0.467,0.5948,57.05,282],[840,0.5061,0.4982,0.3975,57.04,283],[180,0.4836,0.4229,0.4581,56.89,284],[875,0.6194,0.4243,0.7959,56.88,285],[403,0.5957,0.5394,0.5674,56.76,286],[487,0.6047,0.6119,0.4836,56.67,287],[149,0.644,0.6645,0.5045,56.61,288],[727,0.3695,0.3191,0.3423,56.39,289],[694,0.5457,0.548,0.4414,56.32,290],[980,0.8545,0.9247,0.6491,56.3,291],[817,0.5318,0.3888,0.647,56.27,292],[356,0.5447,0.5068,0.5023,56.26,293],[291,0.6954,0.7896,0.4551,56.25,294],[809,0.5504,0.4556,0.5953,56.2,295],[56,0.5176,0.5636,0.3535,56.11,296],[626,0.464,0.3035,0.61,56.1,297],[390,0.6436,0.7129,0.4465,56.04,298],[971,0.5172,0.3333,0.6999,56.04,299],[354,0.604,0.6347,0.4681,55.93,300],[224,0.5179,0.4698,0.5032,55.82,301],[878,0.4705,0.4129,0.471,55.78,302],[13,0.4359,0.2779,0.5872,55.77,303],[698,0.5822,0.4911,0.6379,55.6,304],[310,0.4426,0.3731,0.4766,55.21,305],[697,0.6159,0.7072,0.4152,54.98,306],[924,0.4504,0.494,0.3249,54.85,307],[765,0.6179,0.5011,0.7363,54.72,308],[521,0.3021,0.2203,0.3688,54.7,309],[43,0.7885,0.8706,0.6107,54.64,310],[770,0.4813,0.4712,0.4422,54.63,311],[464,0.7143,0.8209,0.5009,54.6,312],[665,0.414,0.4101,0.367,54.58,313],[331,0.4611,0.4286,0.4575,54.56,314],[426,0.6156,0.6318,0.541,54.49,315],[479,0.5819,0.6048,0.4995,54.41,316],[597,0.493,0.4513,0.5076,54.4,317],[232,0.4445,0.2878,0.6323,54.37,318],[5,0.6218,0.6475,0.5368,54.35,319],[699,0.6806,0.6532,0.6753,54.35,320],[586,0.6077,0.7313,0.3762,54.33,321],[915,0.4655,0.3063,0.6619,54.2,322],[498,0.5686,0.5963,0.4869,54.12,323],[158,0.4662,0.3049,0.6682,54.11,324],[640,0.5091,0.4726,0.5239,54.11,325],[667,0.4006,0.3561,0.4277,54.11,326],[721,0.3966,0.4897,0.2173,54.1,327],[437,0.6844,0.6958,0.6292,54.05,328],[339,0.6123,0.6716,0.4853,54.04,329],[227,0.5389,0.4869,0.5794,54.03,330],[391,0.542,0.5792,0.4487,54.02,331],[559,0.5044,0.5579,0.3874,54.0,332],[858,0.5687,0.6318,0.4376,53.99,333],[773,0.4868,0.4186,0.5536,53.95,334],[179,0.4556,0.4115,0.4887,53.86,335],[808,0.6987,0.8351,0.4619,53.83,336],[70,0.3951,0.2381,0.5991,53.8,337],[435,0.5463,0.4556,0.6516,53.78,338],[661,0.5814,0.5537,0.5923,53.77,339],[526,0.4136,0.366,0.4552,53.74,340],[486,0.7872,0.9033,0.586,53.64,341],[110,0.5655,0.6759,0.3732,53.63,342],[230,0.5981,0.5323,0.6708,53.6,343],[317,0.4863,0.5323,0.3914,53.6,344],[905,0.3803,0.4797,0.2061,53.57,345],[638,0.4856,0.4499,0.5156,53.51,346],[319,0.5078,0.4115,0.6293,53.5,347],[325,0.425,0.4542,0.3614,53.38,348],[100,0.4268,0.3475,0.5261,53.37,349],[855,0.7032,0.8053,0.5305,53.37,350],[742,0.3883,0.3902,0.3673,53.32,351],[577,0.5878,0.6077,0.5401,53.31,352],[757,0.7223,0.9204,0.4099,53.22,353],[973,0.6444,0.6304,0.65,53.22,354],[490,0.5754,0.6176,0.4974,53.19,355],[520,0.5653,0.5466,0.5789,53.19,356],[726,0.5323,0.6347,0.3643,53.18,357],[163,0.5794,0.619,0.508,53.1,358],[358,0.3898,0.3163,0.4892,53.05,359],[422,0.5559,0.5338,0.579,53.02,360],[147,0.5727,0.7456,0.304,53.0,361],[910,0.6365,0.8166,0.3581,52.96,362],[673,0.6003,0.6006,0.5928,52.92,363],[45,0.5888,0.6432,0.5017,52.86,364],[453,0.5556,0.5167,0.6093,52.83,365],[655,0.5256,0.3859,0.7309,52.82,366],[641,0.5434,0.521,0.5741,52.77,367],[676,0.4051,0.467,0.3096,52.77,368],[539,0.5784,0.457,0.7586,52.74,369],[269,0.547,0.6347,0.4136,52.73,370],[576,0.5854,0.6205,0.5323,52.68,371],[492,0.5545,0.5451,0.5705,52.59,372],[298,0.5834,0.6588,0.4748,52.5,373],[712,0.5833,0.5693,0.61,52.45,374],[946,0.7002,0.6446,0.7894,52.45,375],[169,0.54,0.6006,0.4557,52.43,376],[648,0.5267,0.6731,0.3137,52.43,377],[442,0.4441,0.4698,0.4131,52.39,378],[249,0.4053,0.4371,0.3659,52.36,379],[31,0.635,0.7285,0.5036,52.34,380],[859,0.4546,0.4101,0.5309,52.32,381],[645,0.4567,0.4286,0.5115,52.21,382],[212,0.4722,0.2665,0.795,52.14,383],[702,0.6199,0.6958,0.5205,52.13,384],[913,0.4522,0.4897,0.4147,51.98,385],[200,0.4772,0.4797,0.4924,51.97,386],[845,0.5689,0.6859,0.4129,51.96,387],[480,0.4209,0.4257,0.4341,51.92,388],[309,0.6455,0.8109,0.4184,51.9,389],[671,0.6916,0.774,0.589,51.9,390],[658,0.4756,0.5707,0.3562,51.82,391],[663,0.4994,0.6077,0.363,51.72,392],[729,0.5254,0.5878,0.458,51.72,393],[537,0.3301,0.2992,0.4026,51.71,394],[605,0.5547,0.7143,0.3416,51.71,395],[606,0.4849,0.4314,0.5932,51.65,396],[734,0.5726,0.6077,0.5482,51.64,397],[512,0.6586,0.6915,0.6379,51.62,398],[154,0.5742,0.6219,0.5328,51.56,399],[365,0.4703,0.4641,0.5102,51.55,400],[745,0.4211,0.339,0.5778,51.44,401],[894,0.3395,0.2978,0.4379,51.36,402],[314,0.42,0.3689,0.535,51.27,403],[723,0.5461,0.4883,0.6724,51.23,404],[569,0.4174,0.3788,0.5158,51.19,405],[972,0.5252,0.5707,0.4974,51.19,406],[801,0.541,0.6006,0.4928,51.17,407],[860,0.3651,0.2623,0.5608,51.16,408],[548,0.5691,0.764,0.321,51.06,409],[164,0.6381,0.747,0.52,51.02,410],[107,0.65,0.747,0.5504,51.0,411],[746,0.6046,0.7214,0.4756,50.99,412],[168,0.6044,0.6645,0.5609,50.97,413],[122,0.5521,0.6503,0.4517,50.96,414],[783,0.6445,0.7598,0.5188,50.95,415],[792,0.4683,0.3049,0.7606,50.95,416],[958,0.4513,0.5053,0.4174,50.95,417],[656,0.6098,0.6816,0.5496,50.94,418],[439,0.5473,0.6105,0.5022,50.86,419],[368,0.6242,0.7186,0.5327,50.85,420],[807,0.3088,0.548,0.0,50.85,421],[755,0.6089,0.7413,0.4613,50.82,422],[86,0.4556,0.4016,0.5894,50.75,423],[99,0.3704,0.3873,0.3978,50.75,424],[4,0.3634,0.3248,0.4747,50.72,425],[890,0.3547,0.4172,0.3148,50.71,426],[868,0.5018,0.6077,0.3974,50.69,427],[851,0.8339,0.8905,0.8051,50.62,428],[903,0.5701,0.7612,0.3397,50.62,429],[0,0.4618,0.5551,0.3787,50.6,430],[483,0.5943,0.6944,0.5077,50.36,431],[700,0.4842,0.6176,0.3488,50.32,432],[533,0.6382,0.737,0.5584,50.18,433],[793,0.5292,0.5977,0.4957,50.15,434],[768,0.693,0.8095,0.5906,50.04,435],[337,0.5276,0.5764,0.5297,49.93,436],[461,0.5225,0.5167,0.6089,49.85,437],[504,0.3378,0.3276,0.4308,49.84,438],[713,0.5367,0.7171,0.3466,49.74,439],[425,0.6248,0.7342,0.5419,49.72,440],[762,0.5503,0.5892,0.5748,49.65,441],[204,0.5033,0.592,0.4535,49.64,442],[573,0.5767,0.6304,0.5794,49.64,443],[670,0.6919,0.828,0.5742,49.52,444],[582,0.5132,0.619,0.4419,49.48,445],[80,0.5672,0.5721,0.6493,49.42,446],[329,0.5415,0.5878,0.5634,49.35,447],[506,0.5899,0.6759,0.5526,49.34,448],[505,0.5166,0.6418,0.4216,49.29,449],[411,0.6536,0.6901,0.6932,49.23,450],[864,0.5572,0.6645,0.4961,49.04,451],[276,0.5442,0.6603,0.4709,49.0,452],[771,0.3152,0.2651,0.4938,48.9,453],[361,0.3716,0.3191,0.5547,48.88,454],[288,0.6182,0.7982,0.453,48.86,455],[571,0.471,0.393,0.6952,48.77,456],[962,0.5748,0.6091,0.6346,48.63,457],[417,0.6564,0.8323,0.5076,48.49,458],[869,0.5529,0.619,0.571,48.41,459],[938,0.4525,0.5707,0.3941,48.35,460],[463,0.5375,0.6148,0.5407,48.34,461],[172,0.4877,0.5281,0.5497,48.22,462],[38,0.418,0.5764,0.3034,48.2,463],[318,0.4612,0.5835,0.402,48.16,464],[750,0.5161,0.5579,0.5787,48.12,465],[119,0.6121,0.791,0.4701,48.07,466],[186,0.4104,0.4527,0.4755,48.0,467],[284,0.5772,0.7413,0.4603,47.97,468],[286,0.4867,0.5181,0.5696,47.95,469],[162,0.5547,0.629,0.5745,47.9,470],[687,0.3483,0.3262,0.5142,47.85,471],[203,0.5158,0.6546,0.4406,47.83,472],[104,0.392,0.521,0.3344,47.73,473],[370,0.4079,0.4314,0.5086,47.73,474],[830,0.6209,0.6759,0.6744,47.73,475],[306,0.557,0.6674,0.5282,47.7,476],[735,0.515,0.6901,0.3893,47.69,477],[847,0.4949,0.5977,0.478,47.68,478],[125,0.2951,0.2708,0.4697,47.65,479],[392,0.5808,0.6489,0.619,47.57,480],[802,0.4355,0.4641,0.5329,47.57,481],[191,0.4901,0.5906,0.4825,47.47,482],[241,0.5988,0.7186,0.5634,47.43,483],[717,0.4171,0.4399,0.5286,47.37,484],[90,0.6857,0.8351,0.6078,47.36,485],[247,0.4345,0.5949,0.3405,47.34,486],[664,0.6822,0.8451,0.5847,47.33,487],[355,0.442,0.4755,0.5394,47.3,488],[772,0.6288,0.619,0.7915,47.29,489],[686,0.4157,0.5949,0.2953,47.28,490],[711,0.2684,0.3234,0.3343,47.28,491],[289,0.461,0.5366,0.4976,47.22,492],[653,0.528,0.6389,0.5118,47.21,493],[610,0.6014,0.6375,0.6979,47.2,494],[352,0.5286,0.5437,0.6586,47.12,495],[436,0.3415,0.4172,0.3813,47.1,496],[264,0.5993,0.7584,0.5158,47.03,497],[621,0.5258,0.6859,0.4424,46.98,498],[171,0.6131,0.6574,0.7039,46.95,499],[183,0.3236,0.4542,0.2863,46.91,500],[779,0.4347,0.467,0.5449,46.91,501],[825,0.472,0.5665,0.4896,46.88,502],[25,0.3819,0.4726,0.4066,46.83,503],[502,0.5637,0.7086,0.5072,46.83,504],[660,0.5595,0.6446,0.5929,46.82,505],[414,0.4173,0.4755,0.4917,46.79,506],[706,0.5036,0.6119,0.5039,46.76,507],[66,0.4255,0.5238,0.4428,46.69,508],[454,0.5052,0.5437,0.6146,46.6,509],[349,0.5637,0.6148,0.6548,46.57,510],[353,0.3488,0.3433,0.5252,46.56,511],[715,0.4589,0.6048,0.4085,46.55,512],[27,0.6245,0.683,0.7055,46.53,513],[530,0.3638,0.4556,0.3949,46.53,514],[489,0.6154,0.6574,0.7216,46.52,515],[933,0.3429,0.2992,0.5806,46.41,516],[509,0.4104,0.4556,0.5155,46.38,517],[238,0.3392,0.3248,0.5342,46.37,518],[260,0.6452,0.6915,0.749,46.37,519],[935,0.4985,0.6859,0.3913,46.36,520],[49,0.4986,0.4996,0.6716,46.33,521],[335,0.6323,0.9872,0.2773,46.22,522],[81,0.3446,0.3376,0.5344,46.16,523],[872,0.5873,0.8223,0.414,46.15,524],[703,0.5105,0.4513,0.7791,46.13,525],[517,0.4391,0.5153,0.5115,45.89,526],[474,0.5123,0.6077,0.5567,45.86,527],[759,0.4876,0.4456,0.7378,45.86,528],[62,0.4787,0.4911,0.649,45.81,529],[975,0.5029,0.7768,0.2807,45.81,530],[177,0.3961,0.5409,0.3681,45.8,531],[696,0.5758,0.7285,0.5359,45.8,532],[956,0.6662,0.8252,0.6171,45.79,533],[20,0.5983,0.8195,0.4593,45.67,534],[420,0.5636,0.7399,0.4922,45.66,535],[607,0.4627,0.4982,0.6027,45.65,536],[857,0.4413,0.5068,0.5364,45.65,537],[307,0.5058,0.4911,0.7245,45.52,538],[564,0.4698,0.5935,0.4845,45.39,539],[131,0.4566,0.5679,0.491,45.36,540],[842,0.3425,0.3689,0.5059,45.29,541],[976,0.4547,0.6205,0.4097,45.27,542],[549,0.6382,0.8792,0.4825,45.19,543],[128,0.4938,0.6077,0.5296,45.17,544],[778,0.4081,0.5252,0.4392,45.16,545],[911,0.4415,0.4883,0.5779,45.16,546],[196,0.268,0.4755,0.1645,45.12,547],[376,0.3723,0.4968,0.3935,45.12,548],[408,0.6521,0.7555,0.7051,45.11,549],[866,0.6475,0.8664,0.5272,45.11,550],[340,0.4599,0.5338,0.5581,45.08,551],[545,0.3881,0.5181,0.4023,45.07,552],[733,0.5678,0.6901,0.5944,45.04,553],[948,0.6797,0.8749,0.5977,45.02,554],[899,0.3874,0.3674,0.6293,44.97,555],[652,0.3921,0.4769,0.4791,44.89,556],[412,0.541,0.7129,0.498,44.86,557],[926,0.2129,0.1478,0.5262,44.83,558],[635,0.3237,0.4129,0.4067,44.79,559],[28,0.6221,0.8294,0.529,44.76,560],[108,0.5449,0.8408,0.3205,44.7,561],[716,0.4152,0.6375,0.3025,44.65,562],[852,0.5134,0.6546,0.5234,44.61,563],[140,0.5993,0.7896,0.5373,44.55,564],[992,0.456,0.5238,0.5791,44.51,565],[947,0.4531,0.6418,0.3959,44.46,566],[350,0.4782,0.6148,0.4997,44.45,567],[816,0.3919,0.4655,0.5104,44.35,568],[618,0.3168,0.4414,0.3598,44.32,569],[21,0.566,0.693,0.6056,44.31,570],[416,0.6344,0.7711,0.6595,44.31,571],[811,0.4108,0.5153,0.4848,44.29,572],[609,0.3789,0.6048,0.2714,44.26,573],[518,0.2591,0.2807,0.4608,44.16,574],[930,0.5137,0.7427,0.4045,44.16,575],[237,0.4573,0.6489,0.4048,44.13,576],[283,0.4816,0.511,0.6726,44.13,577],[934,0.3484,0.5039,0.3502,44.13,578],[252,0.5928,0.7768,0.5537,44.06,579],[677,0.4648,0.5864,0.5215,43.99,580],[246,0.5953,0.7541,0.5986,43.9,581],[434,0.5475,0.6986,0.5632,43.86,582],[877,0.4148,0.5864,0.4018,43.79,583],[720,0.462,0.5736,0.5409,43.73,584],[432,0.4497,0.565,0.5238,43.69,585],[863,0.3754,0.5849,0.3105,43.61,586],[44,0.5096,0.6716,0.517,43.57,587],[990,0.5617,0.7328,0.5587,43.46,588],[766,0.4663,0.5679,0.5679,43.45,589],[36,0.4806,0.7527,0.3272,43.42,590],[953,0.4256,0.3902,0.7357,43.34,591],[2,0.4225,0.5252,0.5264,43.3,592],[542,0.3659,0.4755,0.4594,43.3,593],[546,0.5373,0.6588,0.6134,43.28,594],[814,0.3337,0.4215,0.4606,43.28,595],[47,0.3258,0.521,0.2918,43.27,596],[239,0.7386,0.8038,0.9009,43.22,597],[821,0.5706,0.7413,0.5752,43.2,598],[303,0.6162,0.7669,0.6525,43.14,599],[109,0.5031,0.8109,0.3054,43.08,600],[447,0.5209,0.7186,0.4886,43.07,601],[451,0.6117,0.8166,0.569,43.06,602],[94,0.5319,0.5494,0.7705,43.05,603],[60,0.5398,0.72,0.5347,43.04,604],[215,0.5276,0.619,0.6571,42.99,605],[476,0.5707,0.8579,0.4076,42.95,606],[525,0.4916,0.5195,0.7173,42.94,607],[642,0.5288,0.7569,0.4557,42.89,608],[217,0.3993,0.4584,0.5805,42.87,609],[488,0.492,0.457,0.8146,42.86,610],[347,0.5969,0.8479,0.4909,42.85,611],[327,0.4031,0.6901,0.2433,42.83,612],[657,0.4103,0.6105,0.3814,42.81,613],[334,0.3855,0.5394,0.4264,42.8,614],[444,0.259,0.295,0.4772,42.78,615],[966,0.6134,0.9062,0.4466,42.78,616],[522,0.4835,0.5295,0.6872,42.77,617],[627,0.4012,0.5693,0.4216,42.77,618],[245,0.4311,0.6802,0.3309,42.75,619],[19,0.5229,0.6375,0.6257,42.7,620],[321,0.5288,0.747,0.477,42.66,621],[929,0.4257,0.5864,0.4605,42.65,622],[46,0.4816,0.6162,0.5572,42.59,623],[155,0.5178,0.5608,0.7317,42.57,624],[651,0.4839,0.6773,0.4746,42.47,625],[225,0.4379,0.5622,0.5332,42.43,626],[798,0.5752,0.6688,0.7168,42.43,627],[404,0.4575,0.5025,0.6721,42.42,628],[690,0.4867,0.7697,0.3477,42.3,629],[395,0.5987,0.8692,0.4787,42.29,630],[854,0.485,0.6162,0.5752,42.25,631],[541,0.3328,0.4072,0.5087,42.23,632],[213,0.4414,0.6674,0.3909,42.19,633],[161,0.4053,0.5693,0.4482,42.18,634],[923,0.3556,0.3802,0.6099,42.1,635],[254,0.2813,0.4783,0.2782,42.05,636],[963,0.6316,0.8109,0.6568,41.99,637],[965,0.4346,0.6262,0.4416,41.98,638],[343,0.4673,0.6873,0.4348,41.86,639],[106,0.5092,0.7925,0.3821,41.85,640],[297,0.2973,0.4627,0.3487,41.79,641],[58,0.4939,0.6262,0.5962,41.75,642],[998,0.6801,0.9303,0.6081,41.66,643],[188,0.4561,0.5537,0.6134,41.64,644],[552,0.5975,0.8195,0.5693,41.6,645],[133,0.5084,0.6276,0.6353,41.57,646],[65,0.6279,0.791,0.689,41.56,647],[328,0.3781,0.494,0.5112,41.53,648],[662,0.4455,0.5949,0.5285,41.52,649],[920,0.4334,0.6588,0.4042,41.45,650],[695,0.4846,0.8024,0.3189,41.38,651],[118,0.5674,0.6716,0.7226,41.35,652],[272,0.4214,0.6574,0.379,41.35,653],[313,0.4516,0.5807,0.5698,41.34,654],[143,0.4614,0.5991,0.5688,41.26,655],[57,0.468,0.6517,0.5072,41.24,656],[137,0.5789,0.7541,0.6309,41.24,657],[617,0.4572,0.6546,0.4761,41.23,658],[743,0.3993,0.4996,0.5638,41.22,659],[134,0.3927,0.5935,0.4072,41.2,660],[565,0.4804,0.5451,0.7074,40.9,661],[818,0.3506,0.5835,0.3266,40.85,662],[410,0.585,0.7854,0.6138,40.71,663],[636,0.3425,0.5366,0.3846,40.57,664],[494,0.3772,0.5394,0.4671,40.56,665],[157,0.5543,0.7896,0.5364,40.5,666],[536,0.3129,0.4428,0.454,40.47,667],[124,0.6305,0.838,0.6556,40.46,668],[346,0.322,0.5736,0.2833,40.37,669],[551,0.2479,0.3817,0.3877,40.31,670],[98,0.4694,0.7484,0.3918,40.29,671],[262,0.5292,0.5693,0.8118,40.22,672],[919,0.5526,0.7157,0.6524,40.16,673],[22,0.4011,0.5409,0.5363,40.15,674],[42,0.6652,0.8678,0.7072,40.11,675],[853,0.4214,0.6034,0.4953,40.07,676],[278,0.3525,0.484,0.504,40.0,677],[433,0.677,0.9019,0.6899,39.95,678],[589,0.4277,0.6859,0.3914,39.92,679],[578,0.3744,0.6176,0.362,39.87,680],[30,0.4969,0.6532,0.6171,39.8,681],[754,0.373,0.5068,0.5269,39.8,682],[650,0.4994,0.7726,0.4459,39.74,683],[497,0.5134,0.7569,0.5047,39.73,684],[943,0.2698,0.467,0.3308,39.71,685],[862,0.2997,0.4471,0.4363,39.69,686],[584,0.4405,0.6503,0.4841,39.66,687],[267,0.4103,0.4982,0.638,39.61,688],[887,0.5443,0.7512,0.5939,39.6,689],[429,0.489,0.7257,0.4945,39.58,690],[764,0.4682,0.5636,0.6857,39.57,691],[566,0.4986,0.7129,0.5388,39.54,692],[654,0.2928,0.5281,0.3017,39.53,693],[908,0.355,0.3817,0.6771,39.52,694],[458,0.4454,0.6489,0.5049,39.42,695],[583,0.4739,0.7058,0.4921,39.38,696],[988,0.3564,0.5338,0.4566,39.37,697],[40,0.5473,0.892,0.397,39.35,698],[211,0.6258,0.8294,0.6898,39.26,699],[776,0.4205,0.6588,0.4324,39.26,700],[263,0.5737,0.8294,0.5601,39.24,701],[142,0.5057,0.7129,0.5659,39.2,702],[253,0.5437,0.7768,0.565,39.2,703],[113,0.5759,0.8479,0.5393,39.19,704],[925,0.3437,0.4741,0.5195,39.19,705],[111,0.3815,0.6702,0.3231,39.06,706],[400,0.308,0.484,0.42,39.02,707],[12,0.3289,0.511,0.4357,38.87,708],[767,0.3536,0.5366,0.4606,38.82,709],[625,0.4235,0.5707,0.586,38.75,710],[92,0.2155,0.3788,0.3542,38.74,711],[937,0.6337,0.99,0.4842,38.69,712],[782,0.2974,0.4527,0.4505,38.65,713],[882,0.3338,0.467,0.5221,38.58,714],[449,0.4455,0.7257,0.415,38.52,715],[139,0.4018,0.5963,0.5003,38.5,716],[189,0.2898,0.5394,0.3071,38.44,717],[294,0.3525,0.6389,0.3152,38.42,718],[121,0.3702,0.5053,0.5628,38.32,719],[562,0.4571,0.7683,0.3863,38.29,720],[881,0.3804,0.5366,0.5425,38.28,721],[96,0.314,0.5153,0.4103,38.21,722],[446,0.5356,0.764,0.5911,38.21,723],[897,0.3228,0.494,0.4652,38.18,724],[181,0.4064,0.7299,0.322,38.12,725],[820,0.3123,0.6375,0.2253,38.11,726],[477,0.4402,0.6546,0.5206,38.08,727],[682,0.2993,0.4854,0.4222,38.07,728],[399,0.27,0.4996,0.3286,38.04,729],[538,0.645,0.9147,0.6439,38.02,730],[805,0.2463,0.4058,0.4107,38.01,731],[16,0.4428,0.7584,0.3757,37.92,732],[892,0.4283,0.5593,0.6383,37.91,733],[268,0.6049,0.9332,0.5198,37.88,734],[744,0.3594,0.4897,0.5726,37.83,735],[59,0.4496,0.6716,0.5271,37.77,736],[849,0.3398,0.4698,0.555,37.77,737],[178,0.3226,0.5835,0.3452,37.64,738],[780,0.5894,0.9446,0.4708,37.63,739],[240,0.3924,0.5309,0.5997,37.6,740],[763,0.4368,0.5991,0.6098,37.55,741],[117,0.3479,0.6347,0.3347,37.52,742],[781,0.2416,0.4016,0.4201,37.48,743],[594,0.4141,0.5466,0.634,37.47,744],[508,0.4101,0.6404,0.485,37.41,745],[475,0.3765,0.6859,0.335,37.33,746],[52,0.4062,0.4584,0.7514,37.29,747],[485,0.2865,0.467,0.4392,37.29,748],[379,0.4163,0.8109,0.2483,37.28,749],[351,0.3665,0.6347,0.3947,37.04,750],[628,0.4079,0.629,0.5074,37.02,751],[928,0.3325,0.5636,0.417,37.02,752],[470,0.3869,0.5466,0.5787,37.01,753],[790,0.3657,0.4513,0.6693,36.98,754],[624,0.2958,0.5195,0.3947,36.89,755],[527,0.4305,0.6333,0.5614,36.87,756],[916,0.4209,0.5394,0.6783,36.87,757],[236,0.5871,0.7854,0.7283,36.75,758],[685,0.4667,0.6617,0.6138,36.71,759],[126,0.4416,0.7015,0.4947,36.59,760],[371,0.5551,0.9389,0.4225,36.59,761],[15,0.4091,0.7328,0.3716,36.4,762],[229,0.2789,0.4755,0.4337,36.34,763],[193,0.4985,0.7754,0.5345,36.28,764],[600,0.3462,0.6446,0.3502,36.27,765],[160,0.2739,0.3873,0.557,36.22,766],[295,0.3581,0.6517,0.3713,36.2,767],[223,0.4229,0.6574,0.5256,36.17,768],[37,0.5239,0.7768,0.5999,36.14,769],[372,0.4873,0.7228,0.5893,36.14,770],[714,0.5528,0.7783,0.6702,36.13,771],[8,0.4016,0.6048,0.553,36.11,772],[348,0.5463,0.801,0.6214,36.07,773],[397,0.3529,0.5977,0.4445,36.01,774],[51,0.1633,0.4186,0.2411,35.94,775],[375,0.4178,0.6517,0.5295,35.87,776],[730,0.4393,0.7157,0.4905,35.75,777],[823,0.3963,0.6503,0.4818,35.73,778],[978,0.4258,0.6233,0.5968,35.71,779],[274,0.3382,0.4812,0.5913,35.7,780],[448,0.4943,0.9161,0.3297,35.67,781],[949,0.3659,0.4783,0.6654,35.67,782],[979,0.4939,0.6532,0.7232,35.67,783],[775,0.3923,0.5949,0.5576,35.63,784],[568,0.4585,0.7413,0.5069,35.51,785],[995,0.4476,0.619,0.6686,35.31,786],[499,0.5609,0.8166,0.6574,35.24,787],[76,0.2041,0.4655,0.2929,35.21,788],[11,0.6328,0.9033,0.709,35.17,789],[384,0.4983,0.693,0.6883,35.17,790],[304,0.5565,0.9403,0.464,35.13,791],[909,0.3884,0.6318,0.5065,35.13,792],[441,0.4962,0.6546,0.7442,35.04,793],[135,0.1231,0.4101,0.1786,35.03,794],[75,0.4898,0.8493,0.4374,35.0,795],[927,0.3064,0.6262,0.3137,34.99,796],[693,0.381,0.565,0.5945,34.89,797],[332,0.2983,0.6176,0.3113,34.81,798],[146,0.1748,0.393,0.3414,34.73,799],[769,0.2907,0.4129,0.6037,34.65,800],[259,0.2116,0.5508,0.1993,34.64,801],[941,0.1553,0.4883,0.1524,34.64,802],[467,0.4349,0.7797,0.4157,34.59,803],[718,0.4569,0.7711,0.4843,34.56,804],[794,0.5436,0.8095,0.644,34.54,805],[846,0.4998,0.7129,0.6815,34.47,806],[326,0.367,0.6787,0.4017,34.43,807],[989,0.3563,0.6901,0.3604,34.34,808],[787,0.3991,0.6787,0.4893,34.16,809],[257,0.3969,0.5167,0.7273,34.15,810],[300,0.5681,0.8479,0.6604,34.08,811],[959,0.3299,0.5693,0.4829,34.08,812],[127,0.3329,0.5736,0.4859,34.01,813],[896,0.3192,0.5494,0.4907,33.9,814],[987,0.1851,0.4399,0.3238,33.75,815],[83,0.4267,0.6901,0.5532,33.73,816],[843,0.3752,0.6517,0.4821,33.73,817],[192,0.3717,0.4741,0.7451,33.54,818],[731,0.4226,0.6347,0.6338,33.45,819],[812,0.3666,0.7015,0.3947,33.41,820],[460,0.2771,0.6773,0.2099,33.32,821],[452,0.4795,0.7228,0.6483,33.3,822],[359,0.5585,0.9559,0.5005,33.13,823],[553,0.4175,0.6915,0.5463,33.07,824],[255,0.1327,0.3447,0.3546,33.06,825],[961,0.3949,0.7811,0.3559,33.06,826],[788,0.4997,0.8778,0.4732,33.05,827],[275,0.251,0.5636,0.3237,33.0,828],[570,0.4251,0.7242,0.5213,32.89,829],[344,0.3911,0.5522,0.6974,32.77,830],[580,0.5326,0.8635,0.5884,32.62,831],[901,0.4663,0.6688,0.7155,32.6,832],[166,0.4301,0.7854,0.4518,32.54,833],[63,0.4992,0.8806,0.4871,32.34,834],[647,0.549,0.8479,0.6622,32.28,835],[689,0.1435,0.3703,0.3665,32.23,836],[710,0.6209,0.9119,0.7497,32.15,837],[443,0.449,0.7114,0.6228,32.07,838],[596,0.3567,0.6219,0.5324,31.85,839],[357,0.4771,0.737,0.6621,31.8,840],[644,0.2948,0.6276,0.371,31.78,841],[481,0.5489,0.9289,0.5569,31.68,842],[421,0.546,0.8507,0.669,31.61,843],[575,0.4235,0.7114,0.5723,31.59,844],[398,0.3946,0.7328,0.472,31.45,845],[308,0.38,0.5537,0.7063,31.36,846],[381,0.2492,0.4044,0.6045,31.32,847],[382,0.2506,0.5579,0.378,31.31,848],[945,0.4049,0.71,0.5357,31.31,849],[234,0.3962,0.6688,0.5791,31.19,850],[299,0.4775,0.6887,0.7527,31.18,851],[320,0.4123,0.7313,0.5262,31.16,852],[904,0.4319,0.7711,0.516,31.14,853],[316,0.4868,0.8408,0.5509,31.07,854],[981,0.6343,0.9673,0.7302,31.06,855],[540,0.5265,0.8507,0.6382,30.96,856],[921,0.2522,0.5593,0.3926,30.85,857],[986,0.36,0.6873,0.4745,30.69,858],[918,0.3743,0.6901,0.5084,30.61,859],[336,0.3346,0.6617,0.4537,30.54,860],[495,0.3703,0.7982,0.338,30.54,861],[719,0.4327,0.7228,0.6075,30.52,862],[256,0.3926,0.6731,0.5833,30.47,863],[360,0.4014,0.6006,0.7146,30.45,864],[675,0.2944,0.5565,0.5187,30.25,865],[197,0.3513,0.6162,0.5722,30.22,866],[791,0.2651,0.5338,0.4835,30.11,867],[785,0.4339,0.7925,0.5182,30.09,868],[984,0.3198,0.6233,0.493,29.86,869],[500,0.3905,0.7214,0.5251,29.77,870],[173,0.3369,0.5736,0.613,29.76,871],[950,0.2791,0.6802,0.3089,29.75,872],[561,0.3425,0.6418,0.5263,29.7,873],[114,0.2419,0.403,0.6332,29.69,874],[266,0.4012,0.7399,0.5274,29.65,875],[883,0.3558,0.7171,0.4496,29.58,876],[747,0.4416,0.801,0.5395,29.55,877],[285,0.4084,0.8095,0.4443,29.52,878],[861,0.3622,0.6901,0.509,29.48,879],[865,0.348,0.7271,0.4255,29.22,880],[250,0.3359,0.6731,0.4784,29.14,881],[940,0.4461,0.7186,0.6867,29.1,882],[543,0.2372,0.6176,0.3163,29.08,883],[547,0.3907,0.7996,0.428,29.05,884],[210,0.4153,0.7313,0.5929,29.01,885],[970,0.3004,0.5849,0.5257,28.99,886],[478,0.2756,0.693,0.3075,28.78,887],[985,0.4947,0.8109,0.6783,28.78,888],[242,0.3102,0.7129,0.3646,28.77,889],[681,0.2592,0.5423,0.4951,28.69,890],[813,0.3513,0.7029,0.4907,28.46,891],[459,0.2012,0.5679,0.3198,28.39,892],[833,0.4025,0.6702,0.6701,28.37,893],[438,0.3536,0.6759,0.5406,28.33,894],[960,0.392,0.7001,0.6017,28.28,895],[969,0.2292,0.5451,0.4275,28.26,896],[563,0.4709,0.8749,0.5391,28.2,897],[955,0.3108,0.6063,0.5445,28.1,898],[54,0.4,0.7669,0.5271,28.08,899],[646,0.5082,0.8308,0.7031,28.02,900],[7,0.3837,0.7811,0.4679,27.97,901],[35,0.4759,0.8181,0.6447,27.91,902],[922,0.3003,0.6731,0.4243,27.87,903],[413,0.359,0.71,0.5207,27.69,904],[601,0.5237,0.8195,0.7745,27.46,905],[707,0.1718,0.5053,0.3663,27.45,906],[82,0.5149,0.9104,0.6165,27.44,907],[151,0.2606,0.5238,0.5611,27.42,908],[800,0.3741,0.8067,0.4238,27.31,909],[557,0.444,0.8778,0.4983,27.08,910],[683,0.3392,0.6631,0.5585,27.07,911],[912,0.3763,0.7086,0.5831,27.07,912],[32,0.4416,0.892,0.4751,26.93,913],[55,0.4614,0.575,1.0,26.93,914],[836,0.2105,0.5935,0.3496,26.77,915],[338,0.3833,0.6006,0.7719,26.73,916],[88,0.4281,0.7896,0.6017,26.68,917],[406,0.3278,0.656,0.5519,26.66,918],[424,0.4924,0.8252,0.716,26.43,919],[829,0.2139,0.4769,0.5436,26.38,920],[678,0.2192,0.5565,0.4401,26.28,921],[18,0.281,0.5807,0.5615,26.17,922],[786,0.2611,0.4655,0.6862,26.11,923],[634,0.3454,0.8124,0.3772,26.09,924],[613,0.408,0.7129,0.689,25.87,925],[907,0.47,0.8365,0.661,25.78,926],[153,0.3177,0.6844,0.5135,25.6,927],[615,0.1482,0.4655,0.4182,25.59,928],[271,0.3609,0.6375,0.6951,25.48,929],[95,0.2275,0.4456,0.6544,25.3,930],[84,0.5227,0.9005,0.7109,25.27,931],[145,0.2381,0.592,0.468,25.05,932],[795,0.0,0.3461,0.2416,25.05,933],[844,0.1252,0.4016,0.4724,25.02,934],[482,0.3107,0.6887,0.5098,24.86,935],[233,0.3128,0.7043,0.496,24.7,936],[837,0.3802,0.7925,0.5342,24.63,937],[595,0.419,0.7953,0.6312,24.47,938],[115,0.3527,0.8081,0.4477,24.43,939],[797,0.1671,0.5977,0.3069,24.15,940],[739,0.2332,0.4243,0.7327,24.13,941],[879,0.2471,0.6205,0.4821,23.81,942],[367,0.4354,0.9048,0.5273,23.77,943],[457,0.4288,0.8621,0.5761,23.73,944],[280,0.339,0.7015,0.5931,23.71,945],[383,0.4294,0.8977,0.5263,23.66,946],[993,0.2092,0.5338,0.524,23.57,947],[917,0.3472,0.8664,0.3738,23.43,948],[378,0.3545,0.8081,0.4821,23.34,949],[692,0.3673,0.7171,0.6574,23.09,950],[659,0.2651,0.6716,0.4721,23.02,951],[389,0.3308,0.8834,0.3234,22.84,952],[611,0.2808,0.5622,0.6833,22.73,953],[532,0.2041,0.7342,0.2381,22.57,954],[581,0.3519,0.8053,0.5037,22.47,955],[48,0.1005,0.4698,0.3829,22.31,956],[220,0.3489,0.828,0.4665,22.31,957],[810,0.2418,0.7228,0.3572,22.29,958],[39,0.2449,0.7569,0.3156,22.22,959],[544,0.1523,0.7129,0.1535,22.11,960],[77,0.3906,0.8849,0.4928,22.05,961],[519,0.4589,0.8138,0.7838,21.55,962],[373,0.3394,0.7441,0.5924,21.45,963],[996,0.2279,0.5437,0.6183,21.3,964],[819,0.2125,0.6986,0.37,20.48,965],[345,0.0853,0.5323,0.3054,20.34,966],[387,0.2468,0.8266,0.2703,20.25,967],[893,0.4234,0.7626,0.8087,20.21,968],[273,0.449,0.8223,0.792,19.89,969],[208,0.0848,0.5622,0.272,19.88,970],[623,0.3872,0.9517,0.4481,19.72,971],[415,0.1175,0.6404,0.2469,19.5,972],[216,0.1478,0.6205,0.3532,19.48,973],[612,0.2363,0.6731,0.5038,19.18,974],[369,0.4394,0.9033,0.6672,19.14,975],[942,0.1915,0.5935,0.5287,18.54,976],[228,0.4896,0.9104,0.8147,17.95,977],[214,0.2353,0.7612,0.4067,17.82,978],[838,0.0973,0.6034,0.298,17.82,979],[190,0.207,0.7342,0.3969,17.07,980],[709,0.0813,0.5096,0.4273,16.79,981],[513,0.3356,0.8934,0.4953,16.5,982],[465,0.1678,0.6631,0.4324,16.1,983],[205,0.2725,0.7967,0.4981,15.94,984],[560,0.3426,0.9275,0.4808,15.8,985],[944,0.1853,0.5693,0.6315,15.56,986],[936,0.0002,0.5096,0.2928,14.31,987],[491,0.4339,0.8522,0.9169,12.36,988],[333,0.2145,0.7953,0.4699,11.78,989],[691,0.3412,1.0,0.4812,11.72,990],[219,0.1534,0.683,0.507,11.0,991],[366,0.1052,0.6418,0.4569,10.69,992],[510,0.2941,0.919,0.5174,10.54,993],[248,0.144,0.7114,0.4635,10.17,994],[1,0.1046,0.6546,0.4633,9.7,995],[828,0.0759,0.7342,0.311,8.29,996],[815,0.1656,0.7342,0.5594,7.41,997],[637,0.0072,0.8124,0.2096,1.48,998],[629,0.1789,0.9687,0.4091,1.31,999],[974,0.1096,0.801,0.5237,0.0,1000]];
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* --- colormaps, sampled from the matplotlib originals ------------ */
+  var VIRIDIS = [[68,1,84],[65,68,135],[42,120,142],[34,168,132],[122,209,81],[253,231,37]];
+  var INFERNO = [[0,0,4],[87,16,110],[188,55,84],[249,142,9],[252,255,164]];
+  var CIVIDIS = [[0,32,77],[60,77,110],[113,121,126],[173,169,135],[253,231,55]];
+
+  function ramp(stops, t) {
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    var x = t * (stops.length - 1), i = Math.min(Math.floor(x), stops.length - 2), f = x - i;
+    var a = stops[i], b = stops[i + 1];
+    return [
+      Math.round(a[0] + (b[0] - a[0]) * f),
+      Math.round(a[1] + (b[1] - a[1]) * f),
+      Math.round(a[2] + (b[2] - a[2]) * f)
+    ];
+  }
+  function rgb(c, alpha) {
+    return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + (alpha === undefined ? 1 : alpha) + ")";
+  }
+  function css(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  /* ---------------------------------------------------------------- *
+   * State
+   * ---------------------------------------------------------------- */
+  var state = {
+    site: null,          // index into SITES
+    weights: "default",
+    field: "sat",
+    step: 30,            // 1..60
+    fault: 0,
+    playing: !reduceMotion
+  };
+
+  var WEIGHTS = {
+    "default": { capacity: 0.5, seal: 0.3, het: 0.2, label: "0.5 / 0.3 / 0.2" },
+    "seal":    { capacity: 0.3, seal: 0.55, het: 0.15, label: "seal-led" },
+    "cap":     { capacity: 0.7, seal: 0.2, het: 0.1, label: "capacity-led" }
+  };
+
+  /* Recompute scores under a weighting, mapped to 0-100 like the Python does. */
+  function scored(key) {
+    var w = WEIGHTS[key], raw = new Float64Array(SITES.length);
+    var lo = Infinity, hi = -Infinity, i;
+    for (i = 0; i < SITES.length; i++) {
+      raw[i] = w.capacity * SITES[i][1] - w.seal * SITES[i][2] - w.het * SITES[i][3];
+      if (raw[i] < lo) lo = raw[i];
+      if (raw[i] > hi) hi = raw[i];
+    }
+    var span = hi - lo || 1, out = new Array(SITES.length);
+    for (i = 0; i < SITES.length; i++) out[i] = 100 * (raw[i] - lo) / span;
+    return out;
+  }
+
+  var scores = scored("default");
+  var order = [];
+
+  function reorder() {
+    scores = scored(state.weights);
+    order = SITES.map(function (_, i) { return i; });
+    order.sort(function (a, b) { return scores[b] - scores[a]; });
+    if (state.site === null) state.site = order[0];
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Canvas helper: DPR-aware sizing
+   * ---------------------------------------------------------------- */
+  function fit(cv) {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = cv.clientWidth || 900;
+    /* Logical height lives in data-h, NOT the height attribute: assigning
+       canvas.height reflects back to the attribute, so reading it here would
+       compound the DPR scale on every redraw. */
+    var h = parseInt(cv.dataset.h, 10);
+    cv.style.height = h + "px";
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  /* ================================================================ *
+   * ACT 1 — Storage Atlas
+   * ================================================================ */
+  var atlas = document.getElementById("atlas");
+  var atlasTip = document.getElementById("atlas-tip");
+  var atlasPts = [];   /* {x,y,i} in logical px */
+
+  function drawAtlas() {
+    var g = fit(atlas), ctx = g.ctx, W = g.w, H = g.h;
+    var pad = { l: 62, r: 26, t: 22, b: 46 };
+    var pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+    var ink = css("--text-faint"), grid = css("--grid-ink"), line = css("--line");
+
+    ctx.clearRect(0, 0, W, H);
+
+    /* grid */
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    for (var k = 0; k <= 10; k++) {
+      var gx = pad.l + pw * k / 10, gy = pad.t + ph * k / 10;
+      ctx.beginPath(); ctx.moveTo(gx, pad.t); ctx.lineTo(gx, pad.t + ph); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(pad.l + pw, gy); ctx.stroke();
+    }
+
+    /* iso-score lines at the population-median heterogeneity: the scoring
+       weights drawn as geometry, so the ranking is legible as a field. */
+    var w = WEIGHTS[state.weights];
+    var hetMed = 0.5027;
+    var loRaw = Infinity, hiRaw = -Infinity, i;
+    for (i = 0; i < SITES.length; i++) {
+      var r = w.capacity * SITES[i][1] - w.seal * SITES[i][2] - w.het * SITES[i][3];
+      if (r < loRaw) loRaw = r; if (r > hiRaw) hiRaw = r;
+    }
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = line;
+    ctx.font = "9px " + css("--font-mono");
+    ctx.fillStyle = ink;
+    [25, 50, 75].forEach(function (s) {
+      var target = loRaw + (hiRaw - loRaw) * s / 100 + w.het * hetMed;
+      /* w.cap*c - w.seal*sr = target  ->  sr = (w.cap*c - target)/w.seal */
+      var pts = [];
+      for (var c = 0; c <= 1.001; c += 0.02) {
+        var sr = (w.capacity * c - target) / w.seal;
+        if (sr >= 0 && sr <= 1) pts.push([c, sr]);
+      }
+      if (pts.length < 2) return;
+      ctx.beginPath();
+      pts.forEach(function (p, n) {
+        var X = pad.l + p[0] * pw, Y = pad.t + p[1] * ph;
+        n ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+      });
+      ctx.stroke();
+      var last = pts[pts.length - 1];
+      ctx.fillText("score " + s, pad.l + last[0] * pw - 46, pad.t + last[1] * ph - 5);
+    });
+    ctx.restore();
+
+    /* points */
+    atlasPts.length = 0;
+    for (i = 0; i < SITES.length; i++) {
+      var s = SITES[i];
+      var X = pad.l + s[1] * pw;
+      var Y = pad.t + s[2] * ph;
+      atlasPts.push({ x: X, y: Y, i: i });
+      var col = ramp(VIRIDIS, scores[i] / 100);
+      ctx.fillStyle = rgb(col, 0.72);
+      ctx.beginPath(); ctx.arc(X, Y, 2.6, 0, 6.2832); ctx.fill();
+    }
+
+    /* selection crosshair */
+    if (state.site !== null) {
+      var p = atlasPts[state.site];
+      ctx.strokeStyle = css("--press"); ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(pad.l, p.y); ctx.lineTo(pad.l + pw, p.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x, pad.t); ctx.lineTo(p.x, pad.t + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, 6.2832); ctx.stroke();
+      ctx.fillStyle = css("--press");
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, 6.2832); ctx.fill();
+    }
+
+    /* axes */
+    ctx.strokeStyle = line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + ph); ctx.lineTo(pad.l + pw, pad.t + ph); ctx.stroke();
+    ctx.fillStyle = ink;
+    ctx.font = "10px " + css("--font-mono");
+    ctx.fillText("CAPACITY  (mean porosity, normalised)  →", pad.l, H - 14);
+    ctx.save();
+    ctx.translate(15, pad.t + ph);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("SEAL RISK  (peak caprock margin)  →  worse", 0, 0);
+    ctx.restore();
+
+    /* colour key */
+    var kx = pad.l + pw - 148, ky = pad.t + 12;
+    for (var q = 0; q < 120; q++) {
+      ctx.fillStyle = rgb(ramp(VIRIDIS, q / 119));
+      ctx.fillRect(kx + q, ky, 1.4, 7);
+    }
+    ctx.fillStyle = ink;
+    ctx.font = "9px " + css("--font-mono");
+    ctx.fillText("0", kx - 8, ky + 7);
+    ctx.fillText("100", kx + 124, ky + 7);
+    ctx.fillText("SUITABILITY", kx + 30, ky - 5);
+  }
+
+  function nearestPt(mx, my) {
+    var best = null, bd = 100;
+    for (var i = 0; i < atlasPts.length; i++) {
+      var d = (atlasPts[i].x - mx) * (atlasPts[i].x - mx) + (atlasPts[i].y - my) * (atlasPts[i].y - my);
+      if (d < bd) { bd = d; best = atlasPts[i]; }
+    }
+    return best;
+  }
+
+  atlas.addEventListener("mousemove", function (e) {
+    var r = atlas.getBoundingClientRect();
+    var p = nearestPt(e.clientX - r.left, e.clientY - r.top);
+    if (!p) { atlasTip.classList.remove("on"); return; }
+    var s = SITES[p.i];
+    atlasTip.textContent =
+      "sim #" + s[0] + "\nscore   " + scores[p.i].toFixed(1) +
+      "\ncap     " + s[1].toFixed(3) +
+      "\nseal    " + s[2].toFixed(3) +
+      "\nhetero  " + s[3].toFixed(3);
+    atlasTip.style.left = Math.min(p.x + 14, atlas.clientWidth - 130) + "px";
+    atlasTip.style.top = (p.y + 12) + "px";
+    atlasTip.classList.add("on");
+  });
+  atlas.addEventListener("mouseleave", function () { atlasTip.classList.remove("on"); });
+  atlas.addEventListener("click", function (e) {
+    var r = atlas.getBoundingClientRect();
+    var p = nearestPt(e.clientX - r.left, e.clientY - r.top);
+    if (p) selectSite(p.i);
+  });
+
+  /* --- weight toggle ----------------------------------------------- */
+  document.getElementById("wseg").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    state.weights = b.dataset.w;
+    [].forEach.call(this.querySelectorAll("button"), function (x) {
+      x.setAttribute("aria-pressed", String(x === b));
+    });
+    reorder();
+    drawAtlas(); renderTable(); renderAtlasReadouts();
+  });
+
+  /* --- ranking table ------------------------------------------------ */
+  function renderTable() {
+    var tb = document.querySelector("#rank-tbl tbody");
+    var rows = order.slice(0, 12).map(function (i, n) {
+      var s = SITES[i];
+      return '<tr data-i="' + i + '"' + (i === state.site ? ' class="sel"' : '') + '>' +
+        "<td>" + (n + 1) + "</td><td>#" + s[0] + '</td>' +
+        '<td class="n">' + scores[i].toFixed(1) + "</td>" +
+        '<td class="n">' + s[1].toFixed(3) + "</td>" +
+        '<td class="n">' + s[2].toFixed(3) + "</td>" +
+        '<td class="n">' + s[3].toFixed(3) + "</td></tr>";
+    }).join("");
+    tb.innerHTML = rows;
+  }
+  document.querySelector("#rank-tbl tbody").addEventListener("click", function (e) {
+    var tr = e.target.closest("tr"); if (tr) selectSite(+tr.dataset.i);
+  });
+
+  function tier(score) {
+    if (score >= 90) return ["top decile", "good"];
+    if (score >= 70) return ["upper tier", "good"];
+    if (score >= 40) return ["mid tier", ""];
+    return ["lower tier", "hot"];
+  }
+
+  function ro(label, chip, value, sub, cls) {
+    return '<div class="ro ' + (cls || "") + '"><div class="lbl">' + label +
+      (chip ? ' <span class="chip ' + chip[0] + '" title="' + chip[2] + '">' + chip[1] + "</span>" : "") +
+      '</div><div class="val">' + value + "</div>" +
+      (sub ? '<div class="sub">' + sub + "</div>" : "") + "</div>";
+  }
+
+  var C_DATASET = ["dataset", "DATASET", "Read from the Mao et al. dataset or stated in the paper"];
+  var C_DERIVED = ["derived", "DERIVED", "Computed from a DATASET value by an explicit stated calculation"];
+  var C_ASSUMED = ["assumed", "ASSUMED", "Not in the paper or dataset — our choice, disclosed and sweepable"];
+
+  function renderAtlasReadouts() {
+    var i = state.site, s = SITES[i], t = tier(scores[i]);
+    var rank = order.indexOf(i) + 1;
+    document.getElementById("atlas-readouts").innerHTML =
+      ro("Selected site", C_DATASET, "#" + s[0], "geological realisation") +
+      ro("Suitability", C_ASSUMED, scores[i].toFixed(1), t[0] + " under " + WEIGHTS[state.weights].label, t[1]) +
+      ro("Rank", null, rank + " / 1000", "moves with the weighting") +
+      ro("Capacity", C_DERIVED, s[1].toFixed(3), "mean porosity, normalised") +
+      ro("Seal risk", C_ASSUMED, s[2].toFixed(3), "peak caprock margin", s[2] > 0.75 ? "hot" : "") +
+      ro("Heterogeneity", C_DERIVED, s[3].toFixed(3), "within-realisation σ");
+  }
+
+  function selectSite(i) {
+    state.site = i;
+    buildFields();
+    drawAtlas(); renderTable(); renderAtlasReadouts();
+    document.getElementById("sim-label").textContent = "sim #" + SITES[i][0];
+    drawSlab(); renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
+  }
+
+  /* ================================================================ *
+   * ACT 2 — reservoir slab
+   *
+   * MOCKUP FIELDS. Procedural stand-ins with the right qualitative
+   * behaviour (heterogeneous permeability, plume that grows on
+   * injection and retreats on withdrawal, pressure peaking at the end
+   * of each injection stage). Not model output.
+   * ================================================================ */
+  var N = 96;                       /* mockup grid; the real one is 128 */
+  var perm = new Float32Array(N * N);
+  var sat = new Float32Array(N * N);
+  var pres = new Float32Array(N * N);
+  var faults = [];
+  var lastLatency = 0;
+
+  function mulberry(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function smoothNoise(rnd, res) {
+    var g = new Float32Array((res + 1) * (res + 1)), i;
+    for (i = 0; i < g.length; i++) g[i] = rnd();
+    var out = new Float32Array(N * N);
+    for (var y = 0; y < N; y++) {
+      for (var x = 0; x < N; x++) {
+        var fx = x / N * res, fy = y / N * res;
+        var x0 = Math.floor(fx), y0 = Math.floor(fy);
+        var tx = fx - x0, ty = fy - y0;
+        tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+        var a = g[y0 * (res + 1) + x0], b = g[y0 * (res + 1) + x0 + 1];
+        var c = g[(y0 + 1) * (res + 1) + x0], d = g[(y0 + 1) * (res + 1) + x0 + 1];
+        out[y * N + x] = (a + (b - a) * tx) + ((c + (d - c) * tx) - (a + (b - a) * tx)) * ty;
+      }
+    }
+    return out;
+  }
+
+  /* Cumulative stored volume: +1 per injection step, -0.72 per withdrawal.
+     Net positive, so the plume grows year over year — as it does in the data. */
+  function storedVolume(step) {
+    var v = 0;
+    for (var t = 1; t <= step; t++) {
+      var inj = ((t - 1) % 6) < 3;
+      v += inj ? 1 : -0.72;
+      if (v < 0) v = 0;
+    }
+    return v;
+  }
+
+  function buildFields() {
+    var s = SITES[state.site];
+    var rnd = mulberry(s[0] * 7919 + 13);
+    var n1 = smoothNoise(rnd, 6), n2 = smoothNoise(rnd, 14), n3 = smoothNoise(rnd, 28);
+    /* mean permeability tracks the site's real capacity value */
+    var base = 0.28 + 0.5 * s[1];
+    var rough = 0.25 + 0.8 * s[3];
+    for (var i = 0; i < N * N; i++) {
+      var v = base + rough * (0.55 * (n1[i] - 0.5) + 0.32 * (n2[i] - 0.5) + 0.13 * (n3[i] - 0.5));
+      perm[i] = v < 0.02 ? 0.02 : v > 1 ? 1 : v;
+    }
+    /* fault ensemble: sampled position, orientation, length, permeability */
+    faults.length = 0;
+    for (var f = 0; f < 22; f++) {
+      var u = 0.12 + rnd() * 0.76, w = 0.12 + rnd() * 0.76;
+      var ang = rnd() * Math.PI, len = 0.07 + rnd() * 0.2;
+      faults.push({
+        u: u, v: w, ang: ang, len: len,
+        logk: -15.5 + rnd() * 3.2,
+        width: 6 + rnd() * 34
+      });
+    }
+    state.fault = 0;
+  }
+
+  function updateFields() {
+    var t0 = performance.now();
+    var step = state.step;
+    var vol = storedVolume(step);
+    var volMax = storedVolume(60);
+    var R = 0.055 + 0.20 * Math.sqrt(vol / volMax);     /* plume radius, fraction of domain */
+    var inj = ((step - 1) % 6) < 3;
+    var phase = ((step - 1) % 3) + 1;                    /* 1..3 within the stage */
+    var amp = inj ? (0.42 + 0.58 * phase / 3) : (0.30 * (1 - phase / 3) + 0.06);
+    var i, x, y;
+
+    for (y = 0; y < N; y++) {
+      for (x = 0; x < N; x++) {
+        i = y * N + x;
+        var dx = (x + 0.5) / N - 0.5, dy = (y + 0.5) / N - 0.5;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        /* permeability steers the front: high-k cells let the plume run */
+        var dEff = d / (0.55 + 0.95 * perm[i]);
+        var edge = (R - dEff) / (0.30 * R);
+        var sv = edge <= 0 ? 0 : edge >= 1 ? 1 : edge * edge * (3 - 2 * edge);
+        sat[i] = sv * (0.35 + 0.65 * perm[i]);
+        /* pressure: initial + a well-centred cone scaled by the cycle phase */
+        pres[i] = 0.30 + amp * (0.62 / (1 + Math.pow(d / 0.11, 1.7))) + 0.06 * (perm[i] - 0.5);
+      }
+    }
+
+    /* score the fault ensemble against the current fields */
+    for (var f = 0; f < faults.length; f++) {
+      var fl = faults[f];
+      var ix = Math.min(N - 1, Math.max(0, Math.floor(fl.u * N)));
+      var iy = Math.min(N - 1, Math.max(0, Math.floor(fl.v * N)));
+      var j = iy * N + ix;
+      var over = Math.max(0, pres[j] - 0.30);
+      var krg = Math.pow(Math.max(0, (sat[j] - 0.10) / 0.90), 3);   /* Corey-style */
+      var q = over * krg * Math.pow(10, fl.logk + 15.5) * fl.len * fl.width * 4e-4;
+      fl.q = q;
+      /* Logistic on log-flux, not on flux: q spans orders of magnitude, so a
+         linear squash would peg almost every fault at 1.000. Faults outside
+         the plume have krg = 0 and stay at exactly zero — which is why most
+         of the ensemble reads as no risk at all, as in the label set. */
+      fl.risk = q <= 0 ? 0 : 1 / (1 + Math.exp(-(Math.log(q) / Math.LN10 + 1.1) * 1.35));
+      fl.sat = sat[j]; fl.pres = pres[j]; fl.krg = krg; fl.over = over;
+    }
+    lastLatency = performance.now() - t0;
+  }
+
+  /* --- projection: unit plan-view square -> tilted diamond ---------- */
+  var PROJ = { sx: 0, sy: 0, cx: 0, cy: 0, thick: 0, cap: 0 };
+
+  function px(u, v) { return PROJ.cx + (u - 0.5) * PROJ.sx - (v - 0.5) * PROJ.sx; }
+  function py(u, v) { return PROJ.cy + (u - 0.5) * PROJ.sy + (v - 0.5) * PROJ.sy; }
+
+  var off = document.createElement("canvas");
+  off.width = N; off.height = N;
+  var offCtx = off.getContext("2d");
+  var offImg = offCtx.createImageData(N, N);
+
+  var slab = document.getElementById("slab");
+  var slabTip = document.getElementById("slab-tip");
+
+  function drawSlab() {
+    var g = fit(slab), ctx = g.ctx, W = g.w, H = g.h;
+    updateFields();
+
+    PROJ.sx = Math.min(W * 0.40, 330);
+    PROJ.sy = PROJ.sx * 0.35;
+    PROJ.cx = W / 2;
+    PROJ.cy = H * 0.62;
+    PROJ.thick = 44;
+    PROJ.cap = 96;
+
+    ctx.clearRect(0, 0, W, H);
+
+    /* ---- field texture into the offscreen ---- */
+    var src = state.field === "sat" ? sat : state.field === "pres" ? pres : perm;
+    var stops = state.field === "sat" ? VIRIDIS : state.field === "pres" ? INFERNO : CIVIDIS;
+    /* FIXED colour domains, deliberately not per-frame min/max. Renormalising
+       every frame would keep the plume equally bright at every timestep and
+       erase the growth-and-retreat this panel exists to show. */
+    var lo, hi, i;
+    if (state.field === "sat") { lo = 0; hi = 1; }
+    else if (state.field === "pres") { lo = 0.24; hi = 0.98; }
+    else {
+      lo = Infinity; hi = -Infinity;
+      for (i = 0; i < N * N; i++) { if (perm[i] < lo) lo = perm[i]; if (perm[i] > hi) hi = perm[i]; }
+    }
+    var span = (hi - lo) || 1;
+    for (i = 0; i < N * N; i++) {
+      var c = ramp(stops, (src[i] - lo) / span);
+      offImg.data[i * 4] = c[0];
+      offImg.data[i * 4 + 1] = c[1];
+      offImg.data[i * 4 + 2] = c[2];
+      offImg.data[i * 4 + 3] = 255;
+    }
+    offCtx.putImageData(offImg, 0, 0);
+
+    var c00 = [px(0, 0), py(0, 0)], c10 = [px(1, 0), py(1, 0)];
+    var c01 = [px(0, 1), py(0, 1)], c11 = [px(1, 1), py(1, 1)];
+
+    /* ---- slab side walls (extrusion) ---- */
+    var T = PROJ.thick;
+    ctx.fillStyle = css("--panel-sunk");
+    ctx.strokeStyle = css("--line");
+    ctx.lineWidth = 1;
+    [[c01, c11], [c11, c10]].forEach(function (e, n) {
+      ctx.beginPath();
+      ctx.moveTo(e[0][0], e[0][1]);
+      ctx.lineTo(e[1][0], e[1][1]);
+      ctx.lineTo(e[1][0], e[1][1] + T);
+      ctx.lineTo(e[0][0], e[0][1] + T);
+      ctx.closePath();
+      ctx.fillStyle = n === 0
+        ? "rgba(120,140,150,.30)"
+        : "rgba(90,110,120,.42)";
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.fillStyle = css("--text-faint");
+    ctx.font = "9px " + css("--font-mono");
+    ctx.fillText("100 m", c11[0] + 12, c11[1] + T * 0.72);
+
+    /* ---- the reservoir surface ---- */
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(c00[0], c00[1]); ctx.lineTo(c10[0], c10[1]);
+    ctx.lineTo(c11[0], c11[1]); ctx.lineTo(c01[0], c01[1]); ctx.closePath();
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    var a = PROJ.sx / N, b = PROJ.sy / N;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    ctx.setTransform(dpr * a, dpr * b, dpr * -a, dpr * b, dpr * PROJ.cx, dpr * (PROJ.cy - PROJ.sy));
+    ctx.drawImage(off, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.restore();
+
+    ctx.strokeStyle = css("--line");
+    ctx.beginPath();
+    ctx.moveTo(c00[0], c00[1]); ctx.lineTo(c10[0], c10[1]);
+    ctx.lineTo(c11[0], c11[1]); ctx.lineTo(c01[0], c01[1]); ctx.closePath();
+    ctx.stroke();
+
+    /* ---- the caprock: a translucent lid above the reservoir ---- */
+    var CAP = PROJ.cap;
+    ctx.save();
+    ctx.translate(0, -CAP);
+    ctx.beginPath();
+    ctx.moveTo(c00[0], c00[1]); ctx.lineTo(c10[0], c10[1]);
+    ctx.lineTo(c11[0], c11[1]); ctx.lineTo(c01[0], c01[1]); ctx.closePath();
+    ctx.fillStyle = "rgba(125,145,155,.13)";
+    ctx.fill();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = css("--text-faint");
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    ctx.fillStyle = css("--text-faint");
+    ctx.fillText("CAPROCK  —  sealed in the simulation", c00[0] - 88, c00[1] - CAP - 12);
+
+    /* ---- faults, drawn where they are ---- */
+    faults.forEach(function (f, n) {
+      var hu = Math.cos(f.ang) * f.len / 2, hv = Math.sin(f.ang) * f.len / 2;
+      var u1 = f.u - hu, v1 = f.v - hv, u2 = f.u + hu, v2 = f.v + hv;
+      var A = [px(u1, v1), py(u1, v1)], B = [px(u2, v2), py(u2, v2)];
+      f._a = A; f._b = B;
+      var isSel = n === state.fault;
+      /* A dark casing under every segment, so the ensemble stays legible on
+         top of whichever field is showing. Inactive faults are neutral slate
+         rather than a dark end of the inferno ramp — otherwise the zero-risk
+         majority disappears into the plume's own colours. */
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "rgba(6,10,12,.65)";
+      ctx.lineWidth = (isSel ? 3.6 : 1.6 + 2.2 * f.risk) + 2.4;
+      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+
+      ctx.strokeStyle = f.risk < 0.02
+        ? "rgba(198,214,220,.62)"
+        : rgb(ramp(INFERNO, 0.45 + 0.45 * f.risk), isSel ? 1 : 0.9);
+      ctx.lineWidth = isSel ? 3.6 : 1.6 + 2.2 * f.risk;
+      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+      ctx.lineCap = "butt";
+    });
+
+    /* ---- the worst-case fault extruded through the seal ---- */
+    var worst = faults.reduce(function (p, c, n) { return c.risk > faults[p].risk ? n : p; }, 0);
+    state.fault = state.fault === null ? worst : state.fault;
+    var wf = faults[worst];
+    if (wf && wf._a) {
+      ctx.beginPath();
+      ctx.moveTo(wf._a[0], wf._a[1]);
+      ctx.lineTo(wf._b[0], wf._b[1]);
+      ctx.lineTo(wf._b[0], wf._b[1] - CAP);
+      ctx.lineTo(wf._a[0], wf._a[1] - CAP);
+      ctx.closePath();
+      var grd = ctx.createLinearGradient(0, wf._a[1], 0, wf._a[1] - CAP);
+      grd.addColorStop(0, rgb(ramp(INFERNO, 0.7), 0.80));
+      grd.addColorStop(0.55, rgb(ramp(INFERNO, 0.78), 0.34));
+      grd.addColorStop(1, rgb(ramp(INFERNO, 0.85), 0.10));
+      ctx.fillStyle = grd; ctx.fill();
+      ctx.strokeStyle = rgb(ramp(INFERNO, 0.82), 1);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      /* upward migration arrow — the leak path, stated as a direction */
+      var mx0 = (wf._a[0] + wf._b[0]) / 2, my0 = (wf._a[1] + wf._b[1]) / 2;
+      ctx.beginPath();
+      ctx.moveTo(mx0, my0 - 6); ctx.lineTo(mx0, my0 - CAP + 6);
+      ctx.moveTo(mx0 - 4, my0 - CAP + 13); ctx.lineTo(mx0, my0 - CAP + 6);
+      ctx.lineTo(mx0 + 4, my0 - CAP + 13);
+      ctx.stroke();
+      ctx.fillStyle = css("--press");
+      ctx.font = "9px " + css("--font-mono");
+      ctx.fillText("worst-case fault", wf._b[0] + 8, wf._b[1] - CAP * 0.55);
+    }
+
+    /* ---- the central well ---- */
+    var wx = px(0.5, 0.5), wy = py(0.5, 0.5);
+    ctx.strokeStyle = css("--text");
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(wx, wy - CAP - 34); ctx.lineTo(wx, wy + 8); ctx.stroke();
+    ctx.fillStyle = css("--text");
+    ctx.beginPath(); ctx.arc(wx, wy, 3.4, 0, 6.2832); ctx.fill();
+    ctx.font = "9px " + css("--font-mono");
+    ctx.fillText("WELL", wx + 7, wy - CAP - 30);
+
+    /* ---- scale + field key ---- */
+    ctx.fillStyle = css("--text-faint");
+    ctx.fillText("7,680 m", (c01[0] + c11[0]) / 2 - 40, (c01[1] + c11[1]) / 2 + T + 20);
+    var label = state.field === "sat" ? "H₂ SATURATION" : state.field === "pres" ? "PRESSURE" : "log₁₀ PERMEABILITY";
+    var kx = 22, ky = H - 24;
+    for (var q = 0; q < 110; q++) {
+      ctx.fillStyle = rgb(ramp(stops, q / 109));
+      ctx.fillRect(kx + q, ky, 1.4, 7);
+    }
+    ctx.fillStyle = css("--text-faint");
+    ctx.fillText(label, kx, ky - 6);
+    ctx.fillText("low", kx, ky + 18);
+    ctx.fillText("high", kx + 118, ky + 7);
+  }
+
+  slab.addEventListener("mousemove", function (e) {
+    var r = slab.getBoundingClientRect();
+    var mx = e.clientX - r.left, my = e.clientY - r.top;
+    var best = -1, bd = 15;
+    faults.forEach(function (f, n) {
+      if (!f._a) return;
+      var d = distToSeg(mx, my, f._a[0], f._a[1], f._b[0], f._b[1]);
+      if (d < bd) { bd = d; best = n; }
+    });
+    if (best < 0) { slabTip.classList.remove("on"); slab.style.cursor = "default"; return; }
+    var f = faults[best];
+    slab.style.cursor = "pointer";
+    slabTip.textContent =
+      "fault " + (best + 1) + " of " + faults.length +
+      "\nP(leak)   " + f.risk.toFixed(3) +
+      "\nlength    " + Math.round(f.len * 7680).toLocaleString() + " m" +
+      "\nlog10 k   " + f.logk.toFixed(2) + " m²" +
+      "\nkrg       " + f.krg.toFixed(3);
+    slabTip.style.left = Math.min(mx + 14, slab.clientWidth - 165) + "px";
+    slabTip.style.top = (my + 12) + "px";
+    slabTip.classList.add("on");
+  });
+  slab.addEventListener("mouseleave", function () { slabTip.classList.remove("on"); });
+  slab.addEventListener("click", function (e) {
+    var r = slab.getBoundingClientRect();
+    var mx = e.clientX - r.left, my = e.clientY - r.top;
+    var best = -1, bd = 15;
+    faults.forEach(function (f, n) {
+      if (!f._a) return;
+      var d = distToSeg(mx, my, f._a[0], f._a[1], f._b[0], f._b[1]);
+      if (d < bd) { bd = d; best = n; }
+    });
+    if (best >= 0) { state.fault = best; drawSlab(); renderFaultReadouts(); renderWaterfall(); }
+  });
+
+  function distToSeg(px_, py_, x1, y1, x2, y2) {
+    var dx = x2 - x1, dy = y2 - y1, L = dx * dx + dy * dy;
+    var t = L ? ((px_ - x1) * dx + (py_ - y1) * dy) / L : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    var qx = x1 + t * dx, qy = y1 + t * dy;
+    return Math.hypot(px_ - qx, py_ - qy);
+  }
+
+  /* --- field toggle -------------------------------------------------- */
+  document.getElementById("fseg").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    state.field = b.dataset.f;
+    [].forEach.call(this.querySelectorAll("button"), function (x) {
+      x.setAttribute("aria-pressed", String(x === b));
+    });
+    drawSlab();
+  });
+
+  /* --- cycle ribbon --------------------------------------------------- */
+  var ribbon = document.getElementById("ribbon");
+  (function buildRibbon() {
+    var html = "", t;
+    for (t = 1; t <= 60; t++) {
+      var inj = ((t - 1) % 6) < 3;
+      html += '<div class="tick' + (inj ? " inj" : "") + '" data-t="' + t + '"></div>';
+    }
+    ribbon.innerHTML = html;
+    var ax = "";
+    for (var y = 1; y <= 10; y++) ax += "<span>Y" + y + "</span>";
+    document.getElementById("ribbon-axis").innerHTML = ax;
+  })();
+
+  function paintRibbon() {
+    var kids = ribbon.children;
+    for (var t = 1; t <= 60; t++) {
+      var el = kids[t - 1];
+      el.classList.toggle("past", t < state.step);
+      el.classList.toggle("now", t === state.step);
+    }
+    var inj = ((state.step - 1) % 6) < 3;
+    var cyc = Math.floor((state.step - 1) / 6) + 1;
+    document.getElementById("step-label").textContent =
+      "step " + state.step + " · cycle " + cyc + " · " + (inj ? "injection" : "withdrawal");
+    ribbon.setAttribute("aria-valuenow", String(state.step));
+  }
+
+  function scrubTo(clientX) {
+    var r = ribbon.getBoundingClientRect();
+    var f = (clientX - r.left) / r.width;
+    var t = Math.round(f * 59) + 1;
+    setStep(Math.min(60, Math.max(1, t)));
+  }
+  var dragging = false;
+  ribbon.addEventListener("mousedown", function (e) { dragging = true; state.playing = false; syncPlay(); scrubTo(e.clientX); });
+  window.addEventListener("mousemove", function (e) { if (dragging) scrubTo(e.clientX); });
+  window.addEventListener("mouseup", function () { dragging = false; });
+  ribbon.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { setStep(Math.min(60, state.step + 1)); e.preventDefault(); }
+    if (e.key === "ArrowLeft") { setStep(Math.max(1, state.step - 1)); e.preventDefault(); }
+  });
+
+  function setStep(t) {
+    state.step = t;
+    paintRibbon(); drawSlab(); renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
+  }
+
+  var playBtn = document.getElementById("play");
+  function syncPlay() {
+    playBtn.textContent = state.playing ? "Pause" : "Play";
+    playBtn.setAttribute("aria-pressed", String(state.playing));
+  }
+  playBtn.addEventListener("click", function () { state.playing = !state.playing; syncPlay(); });
+
+  /* --- readouts ------------------------------------------------------ */
+  function renderSlabReadouts() {
+    var peak = 0, plume = 0, i;
+    for (i = 0; i < N * N; i++) { if (pres[i] > peak) peak = pres[i]; if (sat[i] > 0.05) plume++; }
+    var pbar = 180 + peak * 190;                       /* mockup mapping to bar */
+    var areaKm2 = plume / (N * N) * (7.68 * 7.68);
+    var margin = 0.28 + 0.62 * peak;
+    var nz = faults.filter(function (f) { return f.q > 1e-6; }).length;
+    document.getElementById("slab-readouts").innerHTML =
+      ro("Peak pressure", C_DERIVED, pbar.toFixed(1) + " bar", "+" + (pbar - 180).toFixed(1) + " vs initial", "hot") +
+      ro("Plume area", C_DERIVED, areaKm2.toFixed(2) + " km²", "cells with S &gt; 0.05") +
+      ro("Caprock margin", C_ASSUMED, margin.toFixed(3), "&gt; 1 would mean exceedance", margin > 0.85 ? "hot" : "") +
+      ro("Faults with flux", C_DERIVED, nz + " / " + faults.length, "non-zero Darcy flux now") +
+      ro("Recompute", null, lastLatency.toFixed(2) + " ms", "measured in this browser", "good");
+    document.getElementById("lat").textContent = lastLatency.toFixed(2) + " ms";
+  }
+
+  function renderFaultReadouts() {
+    var f = faults[state.fault]; if (!f) return;
+    document.getElementById("fault-readouts").innerHTML =
+      ro("P(elevated leak)", C_ASSUMED, f.risk.toFixed(3), "6-month horizon", f.risk > 0.5 ? "hot" : "good") +
+      ro("Fault length", C_ASSUMED, Math.round(f.len * 7680).toLocaleString() + " m", "sampled, not measured") +
+      ro("Fault log₁₀ k", C_ASSUMED, f.logk.toFixed(2), "m²") +
+      ro("Gas rel. perm", C_DERIVED, f.krg.toFixed(3), "Corey kᵣᵍ at the fault cell");
+  }
+
+  /* --- attribution waterfall (mockup values, real feature names) ----- */
+  function renderWaterfall() {
+    var f = faults[state.fault]; if (!f) return;
+    var base = 0.023;                                   /* the real base rate */
+    var contrib = [
+      ["fault_overpressure_bar", f.over * 1.15],
+      ["fault_krg", f.krg * 0.85],
+      ["distance_plume_to_fault_m", -0.34 * (1 - f.risk)],
+      ["fault_log10_perm_m2", (f.logk + 14) * 0.10],
+      ["caprock_margin", 0.12 * f.pres],
+      ["plume_area_m2", 0.06],
+      ["cycle_index", ((state.step - 1) % 6) < 3 ? 0.09 : -0.11]
+    ];
+    var maxAbs = Math.max.apply(null, contrib.map(function (c) { return Math.abs(c[1]); })) || 1;
+    var html = '<div class="wf-row"><div class="nm" style="color:var(--text)">base rate</div>' +
+      '<div class="wf-track"><div class="wf-zero" style="left:50%"></div></div>' +
+      '<div class="amt">' + base.toFixed(3) + "</div></div>";
+    contrib.forEach(function (c) {
+      var w = Math.abs(c[1]) / maxAbs * 48;
+      var up = c[1] >= 0;
+      html += '<div class="wf-row"><div class="nm">' + c[0] + "</div>" +
+        '<div class="wf-track"><div class="wf-zero" style="left:50%"></div>' +
+        '<div class="wf-bar ' + (up ? "up" : "dn") + '" style="left:' + (up ? 50 : 50 - w) + "%;width:" + w + '%"></div></div>' +
+        '<div class="amt">' + (up ? "+" : "−") + Math.abs(c[1]).toFixed(3) + "</div></div>";
+    });
+    document.getElementById("waterfall").innerHTML = html;
+
+    document.getElementById("risk-readouts").innerHTML =
+      ro("P(elevated leakage)", C_ASSUMED, f.risk.toFixed(3), "in 6 months, this fault", f.risk > 0.5 ? "hot" : "good") +
+      ro("Horizon", C_DERIVED, "3 steps", "half a storage cycle") +
+      ro("Base rate", C_DERIVED, "2.3 %", "positives in the label set");
+  }
+
+  /* ================================================================ *
+   * boot
+   * ================================================================ */
+  function boot() {
+    reorder();
+    state.site = order[0];
+    buildFields();
+    drawAtlas(); renderTable(); renderAtlasReadouts();
+    document.getElementById("sim-label").textContent = "sim #" + SITES[state.site][0];
+    paintRibbon(); drawSlab(); renderSlabReadouts();
+    state.fault = faults.reduce(function (p, c, n) { return c.risk > faults[p].risk ? n : p; }, 0);
+    renderFaultReadouts(); renderWaterfall();
+    syncPlay();
+  }
+
+  var acc = 0, last = 0;
+  function tick(ts) {
+    if (state.playing) {
+      if (!last) last = ts;
+      acc += ts - last;
+      if (acc > 420) { acc = 0; setStep(state.step >= 60 ? 1 : state.step + 1); }
+    }
+    last = ts;
+    requestAnimationFrame(tick);
+  }
+
+  var rt;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () { drawAtlas(); drawSlab(); }, 140);
+  });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+    drawAtlas(); drawSlab();
+  });
+  new MutationObserver(function () { drawAtlas(); drawSlab(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  boot();
+  requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>

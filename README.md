@@ -48,26 +48,30 @@ actually exists today and what doesn't:
 
 | # | Module | Status | What's built |
 |---|---|---|---|
-| 1 | **Geological / subsurface intelligence** — screen candidate sites for storage suitability (caprock stability, fault zones) | 🟡 **Prototype built** | `src/site_suitability.py` ranks all 1,000 realisations by a weighted composite of storage capacity, caprock seal risk, and heterogeneity — see `docs/SITE_SUITABILITY.md`. Clustering was tried first and dropped (weak silhouette, geology features are collinear — a continuum, not discrete site types). No frontend yet; backend/ranking only. |
+| 1 | **Geological / subsurface intelligence** — screen candidate sites for storage suitability (caprock stability, fault zones) | 🟡 **Prototype built** | `src/site_suitability.py` ranks all 1,000 realisations by a weighted composite of storage capacity, caprock seal risk, and heterogeneity — see `docs/SITE_SUITABILITY.md`. Clustering was tried first and dropped (weak silhouette, geology features are collinear — a continuum, not discrete site types). **Frontend built** — the Storage Atlas panel in `app/web/index.html` plots all 1,000 sites on real output, with live re-weighting. |
 | 2 | **AI leakage prediction engine** | ✅ **Built, narrower scope** | U-Net surrogate + XGBoost risk model + SHAP, described above. Predicts leakage risk for a hypothesised fault, not the full original list (no explicit "safe injection pressure limit" output yet, though the caprock margin feature it would come from already exists). |
-| 3 | **Digital twin & visualisation dashboard** | 🟡 **Partial** | `app/dashboard.py` shows risk trajectory, fault-ensemble sweep, and SHAP attribution. No 3D reservoir view, no fault-activation-zone map, no plan-view geology display. |
+| 3 | **Digital twin & visualisation dashboard** | 🟡 **Partial** | Two frontends, for two purposes. `app/dashboard.py` (Streamlit) is the local research tool — risk trajectory, fault-ensemble sweep, SHAP attribution — and needs the full 12.38 GB dataset, so it cannot be deployed. `app/web/index.html` is the deployable one: a self-contained page with a 2.5D reservoir slab, spatial fault swarm and cycle-ribbon timeline. Its site atlas runs on real output; **its reservoir and risk panels are labelled mockups** pending the demo-pack export. See `docs/FRONTEND.md`. |
 | 4 | **Economic & operational optimisation** | ❌ **Not started** | No code. A scoped-down spec (differential ROI, not full project NPV) exists in `Build_Plan.md`'s Economics section and is still a reasonable starting point if this gets built. |
 
 **Path ahead, in order:**
 
-1. **Site-suitability frontend — current priority.** The ranking exists
-   (`src/site_suitability.py`, `docs/SITE_SUITABILITY.md`); it has no
-   visualisation yet. Smallest lift: one scatter plot (capacity vs. seal
-   risk, coloured by score) plus a table of the top/bottom sites, either as
-   a standalone chart or a new dashboard panel.
-2. **Safe injection pressure limit.** Derive an explicit max-safe-pressure
+1. ~~**Site-suitability frontend.**~~ **Done** — the Storage Atlas panel in
+   `app/web/index.html`, on real output from
+   `outputs/site_suitability_ranking.csv`.
+2. **Make the web frontend's reservoir and risk panels real — current
+   priority.** They are procedural stand-ins today, clearly labelled as such
+   on the page. The blocker is a *demo pack*: ~24 held-out simulations
+   exported from Kaggle as quantised PNG sprite sheets, ≈2 MB per simulation,
+   which removes the 12.38 GB dependency from the deployed site entirely.
+   Full plan, arithmetic and open questions in `docs/FRONTEND.md`.
+3. **Safe injection pressure limit.** Derive an explicit max-safe-pressure
    number from the caprock margin feature that already exists, and surface
    it on the dashboard — closes most of the gap in module 2.
-3. **Economics module.** Port the differential-ROI spec from
+4. **Economics module.** Port the differential-ROI spec from
    `Build_Plan.md` (avoided loss + avoided intervention, minus system cost
    and false-positive cost — deliberately not a full project NPV) into
    working code.
-4. **Dashboard: geology/fault-zone map.** Add a plan-view panel (porosity,
+5. **Dashboard: geology/fault-zone map.** Add a plan-view panel (porosity,
    permeability, fault-activation zones) to close the gap toward an actual
    "digital twin" view, rather than just the risk-trajectory charts it has
    now.
@@ -147,9 +151,29 @@ python -m src.build_features --workers 12
 # 5. Risk model: horizon sweep vs persistence, then SHAP (~10 min)
 python -m src.train_xgb --table data/features.npy --n-jobs 12
 
-# 6. Dashboard
+# 6. Local research dashboard (needs the converted dataset from step 1)
 streamlit run app/dashboard.py
 ```
+
+## Frontend
+
+`app/web/index.html` is the deployable frontend: one self-contained file, no
+server, no build step, and **no dataset** — open it directly, or serve it
+anywhere static.
+
+```bash
+open app/web/index.html
+```
+
+Its Storage Atlas panel runs on real output (all 1,000 sites from
+`outputs/site_suitability_ranking.csv`). Its reservoir and risk panels are
+labelled mockups using procedural stand-in fields — **nothing on those two
+panels is model output, and the page says so on itself.** `docs/FRONTEND.md`
+records the design direction, exactly what is real, and the plan to make the
+rest real.
+
+Pushing to `main` deploys it to GitHub Pages via `.github/workflows/pages.yml`,
+which needs Settings → Pages → Source → GitHub Actions set once by hand.
 
 **U-Net training** goes on Kaggle — see below. There is no local GPU path worth
 taking: measured at ~4 hours per epoch on a 16-core CPU versus ~3–5 minutes on
@@ -192,8 +216,11 @@ src/
     features.py             41 physics features, multi-horizon labels
 kaggle/                     self-contained modules + notebook generator
 notebooks/                  kaggle_train_unet.ipynb
-app/dashboard.py            Streamlit screening dashboard
+app/dashboard.py            Streamlit dashboard (local only — needs the dataset)
+app/web/index.html          deployable frontend, self-contained, no dataset
 docs/FINDINGS.md            every measurement, including the negative results
+docs/SITE_SUITABILITY.md    the site-ranking module, including what didn't work
+docs/FRONTEND.md            frontend direction, what's real vs. mocked, next steps
 ```
 
 ## Verification built into the pipeline
