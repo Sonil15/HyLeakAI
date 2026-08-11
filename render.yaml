@@ -8,6 +8,10 @@ services:
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: HYLEAK_GITHUB_TOKEN
+        sync: false
       - key: HYLEAK_DATA_DIR
         value: runtime_artifacts/data
       - key: HYLEAK_CHECKPOINT

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import urllib.request
 import zipfile
@@ -34,7 +35,13 @@ def main() -> None:
     shutil.rmtree(args.output, ignore_errors=True)
     args.output.mkdir(parents=True, exist_ok=True)
     print(f"Downloading inference artifacts from {args.url}")
-    urllib.request.urlretrieve(args.url, archive)
+    token = os.getenv("HYLEAK_GITHUB_TOKEN")
+    headers = {"Accept": "application/octet-stream"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    request = urllib.request.Request(args.url, headers=headers)
+    with urllib.request.urlopen(request) as response, archive.open("wb") as target:
+        shutil.copyfileobj(response, target)
     with zipfile.ZipFile(archive) as bundle:
         bundle.extractall(args.output)
     manifest = json.loads((args.output / "MANIFEST.sha256.json").read_text())

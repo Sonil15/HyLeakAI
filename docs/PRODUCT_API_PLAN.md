@@ -61,7 +61,7 @@ Use a **Render Free Web Service** for the temporary FastAPI demo and GitHub Page
 
 Deployment is only authorised after local endpoint tests pass and the small inference artifact bundle is prepared. No artifact should be copied to a public service until its licensing and size are reviewed.
 
-The first bundle is published as the `hyleak-api-artifacts-v0.1.0` GitHub prerelease asset. Render downloads and SHA-256-verifies it during the build; the raw simulator state and LMDB files remain excluded.
+The first bundle is published as the `hyleak-api-artifacts-v0.1.0` GitHub prerelease asset. Render downloads and SHA-256-verifies it during the build; the raw simulator state and LMDB files remain excluded. When the repository is private, configure a read-only `HYLEAK_GITHUB_TOKEN` secret in Render so its build can access the release asset.
 
 ## Definition of usable
 
