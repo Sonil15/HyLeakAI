@@ -1,5 +1,14 @@
 # HyLeakAI — Compute Feasibility Assessment
 
+> **Superseded.** This benchmarks the custom Volve-based IMPES/VE simulator
+> from `Data_sources_research.md`. That simulator was never built — the
+> project pivoted to Mao et al.'s published UHS dataset (Zenodo 14029514)
+> with a U-Net surrogate + XGBoost risk model instead. See
+> [`README.md`](README.md) and [`docs/FINDINGS.md`](docs/FINDINGS.md) for
+> what actually shipped. Kept as historical record of the M1 hardware
+> benchmarks (import-order segfault, thermal throttling, parallel scaling),
+> which are still accurate for this machine.
+
 **Assessed:** 2026-08-09 · **Against:** `Data_sources_research.md` §4–§6
 **Method:** benchmarked on the actual target machine (M1 Air, 8 GB, 8 cores, fanless), not estimated.
 

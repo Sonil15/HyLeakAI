@@ -1,5 +1,13 @@
 # HyLeakAI — Data Sources & Build Plan
 
+> **Superseded.** This describes the original plan: a custom Volve-based 2D
+> IMPES/VE simulator generating synthetic leakage labels. That simulator was
+> never built. The project instead pivoted to Mao et al.'s published UHS
+> dataset (Zenodo 14029514) with a U-Net surrogate + XGBoost risk model — see
+> [`README.md`](README.md) for what actually shipped and
+> [`docs/FINDINGS.md`](docs/FINDINGS.md) for the measurements behind it. Kept
+> here as historical record of the physics research, which still stands.
+
 **Setup:** MacBook Air M1, 8 GB RAM, 8 cores, 4 GB free disk, no fan.
 **Deadline:** basic prototype in 2 days, better prototype in 5 days.
 

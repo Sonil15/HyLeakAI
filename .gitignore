@@ -37,6 +37,9 @@ venv/
 outputs/*
 !outputs/*.json
 !outputs/*.ubj
+# The full site-suitability ranking (129 KB, all 1000 sites) -- the actual
+# deliverable, unlike the raw features/clusters CSVs which stay regenerable.
+!outputs/site_suitability_ranking.csv
 figures/
 *.log
 
