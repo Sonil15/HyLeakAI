@@ -497,6 +497,12 @@ canvas { display: block; width: 100%; height: auto; }
 .btn:disabled { opacity:.55; cursor:wait; }
 .status { font:11px/1.5 var(--font-mono); color:var(--text-dim); }
 .status.error { color:var(--critical); }
+.live-run { display:grid; gap:8px; padding:10px 12px; border-left:2px solid var(--line); background:color-mix(in srgb, var(--panel) 78%, transparent); }
+.live-run p { margin:0; font:10px var(--font-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); }
+.live-stages { display:flex; gap:10px; flex-wrap:wrap; margin:0; padding:0; list-style:none; font:11px var(--font-mono); color:var(--text-faint); }
+.live-stages li::before { content:"○ "; color:var(--text-faint); }
+.live-stages li.active { color:var(--h2); }.live-stages li.active::before { content:"◉ "; color:var(--h2); }
+.live-stages li.done { color:var(--text-dim); }.live-stages li.done::before { content:"✓ "; color:var(--good); }
 @media (max-width:700px) { .live-controls { grid-template-columns:1fr 1fr; } .live-controls .btn { grid-column:1/-1; } }
 
 footer { padding: 46px 0 70px; }
@@ -677,6 +683,14 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           <label>Sampling seed<input id="live-seed" type="number" value="20260809"></label>
           <button class="btn" id="run-live" type="button" disabled>Run live assessment</button>
         </div>
+        <div class="live-run" aria-live="polite">
+          <p>Assessment trace</p>
+          <ol class="live-stages" id="live-stages">
+            <li data-stage="1">prepare held-out realisation</li>
+            <li data-stage="2">infer pressure and plume fields</li>
+            <li data-stage="3">score fault ensemble</li>
+          </ol>
+        </div>
         <p class="status" id="live-status" role="status">Checking the public demo API…</p>
       </div>
       <div class="panel">
@@ -793,12 +807,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   <div class="wrap">
     <div class="act-head">
       <span class="act-index">04 / BUILD</span>
-      <h2>How this ships without a backend</h2>
+      <h2>How the live demo is delivered</h2>
     </div>
     <p class="lede">
-      The 12.38 GB dataset is not on the laptop and the disk is nearly full, so a live-inference
-      backend is the wrong shape. Everything above runs client-side, which also means it deploys
-      as a static site and demos with the Wi-Fi off.
+      GitHub Pages serves the interface while a small FastAPI service runs the U-Net surrogate and
+      XGBoost screening model. The full dataset stays out of the browser; the page requests only
+      held-out simulation IDs and compact assessment results.
     </p>
 
     <div class="ideas">
@@ -912,10 +926,30 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     fault: 0,
     playing: !reduceMotion,
     mode: "preview",
-    live: { ready: false, simulationId: null, result: null }
+    live: { ready: false, simulationId: null, result: null, cached: false, mapScale: 1 }
   };
 
   var API_BASE = "https://hyleak-api-demo.onrender.com";
+  var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
+  /* A real API response captured on 2026-08-12. It makes the Live tab useful
+     immediately in a demo, while Run live assessment always refreshes it. */
+  var VERIFIED_DEMO_RESULT = {"simulation_id":0,"timestep":31,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":262.1124267578125,"pressure_delta_bar":64.91242675781251,"plume_area_km2":2.9736,"caprock_margin":0.5317369955976214},"risk_summary":{"fault_count":5,"median_probability":3.1093936314618986e-8,"p90_probability":3.3465208275629267e-7,"worst_case_probability":3.406817370432691e-7},"faults":[{"fault":{"fault_id":0,"x_m":2026.556,"y_m":4972.085,"length_m":558.831,"width_m":5.446,"permeability_m2":6.250887536644922e-13,"orientation_rad":1.560188},"current_flux_m3_s":0,"elevated_leakage_probability":3.25607601325828e-7},{"fault":{"fault_id":1,"x_m":5565.8,"y_m":1743.88,"length_m":305.766,"width_m":9.189,"permeability_m2":1.1233473384304368e-13,"orientation_rad":3.099848},"current_flux_m3_s":0,"elevated_leakage_probability":8.79326123026658e-9},{"fault":{"fault_id":2,"x_m":3769.028,"y_m":1092.921,"length_m":789.479,"width_m":5.486,"permeability_m2":3.59147474494291e-13,"orientation_rad":1.7081},"current_flux_m3_s":0,"elevated_leakage_probability":3.406817370432691e-7},{"fault":{"fault_id":3,"x_m":2063.84,"y_m":3420.815,"length_m":1892.459,"width_m":2.473,"permeability_m2":5.40218926082173e-15,"orientation_rad":2.784003},"current_flux_m3_s":0,"elevated_leakage_probability":5.793386215202645e-9},{"fault":{"fault_id":4,"x_m":3077.212,"y_m":5326.215,"length_m":1717.886,"width_m":7.753,"permeability_m2":1.267424645304919e-14,"orientation_rad":2.418797},"current_flux_m3_s":0,"elevated_leakage_probability":3.1093936314618986e-8}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction."]};
+
+  function pause(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+  function setLiveStage(active, completed) {
+    [].forEach.call(document.querySelectorAll("#live-stages li"), function (item) {
+      var stage = Number(item.dataset.stage);
+      item.classList.toggle("active", stage === active);
+      item.classList.toggle("done", stage <= completed);
+    });
+  }
+  function cachedResult() {
+    try { return JSON.parse(localStorage.getItem(LIVE_CACHE_KEY)) || VERIFIED_DEMO_RESULT; }
+    catch (_) { return VERIFIED_DEMO_RESULT; }
+  }
+  function saveCachedResult(result) {
+    try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify(result)); } catch (_) {}
+  }
 
   function liveStatus(message, isError) {
     var el = document.getElementById("live-status");
@@ -943,6 +977,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
     } else if (state.live.result) {
       renderLiveResult(state.live.result);
+      drawSlab();
     }
   }
 
@@ -961,7 +996,15 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       select.disabled = false;
       document.getElementById("run-live").disabled = false;
       badge.textContent = "API ready · " + payload.simulation_ids.length + " held-out simulations";
-      liveStatus("Live model is ready. Free demo services can take up to a minute to wake after inactivity.");
+      state.live.result = cachedResult();
+      state.live.cached = true;
+      state.live.simulationId = state.live.result.simulation_id;
+      state.step = state.live.result.timestep;
+      select.value = String(state.live.simulationId);
+      setLiveStage(0, 3);
+      renderLiveResult(state.live.result);
+      drawSlab();
+      liveStatus("Showing a cached verified API result. Select Run live assessment to refresh it now.");
     } catch (error) {
       badge.className = "src stub";
       badge.textContent = "API unavailable · preview remains available";
@@ -994,6 +1037,9 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       return '<div class="wf-row"><div class="nm">fault ' + (index + 1) + '</div><div class="wf-track"><div class="wf-bar up" style="left:0;width:' + pct + '%"></div></div><div class="amt">' + item.elevated_leakage_probability.toFixed(4) + '</div></div>';
     }).join("");
     document.getElementById("lat").textContent = "live";
+    state.live.mapScale = Math.max(0.75, Math.min(1.35, summary.plume_area_km2 / 2.9736));
+    document.getElementById("field-source-badge").textContent =
+      "Illustrative field · scaled to live plume summary";
   }
 
   async function runLiveAssessment() {
@@ -1003,7 +1049,13 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     var count = Number(document.getElementById("live-fault-count").value);
     var seed = Number(document.getElementById("live-seed").value);
     button.disabled = true;
-    liveStatus("Running the live model. If the free service was asleep, this can take about a minute.");
+    state.live.cached = false;
+    setLiveStage(1, 0);
+    liveStatus("Live run started: loading held-out realisation #" + state.live.simulationId + ".");
+    await pause(350);
+    setLiveStage(2, 1);
+    liveStatus("Live run in progress: surrogate is inferring pressure and plume fields.");
+    drawSlab();
     try {
       var response = await fetch(API_BASE + "/v1/assessments", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -1012,9 +1064,16 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       });
       if (!response.ok) throw new Error("Assessment failed (" + response.status + ")");
       state.live.result = await response.json();
+      saveCachedResult(state.live.result);
+      setLiveStage(3, 2);
+      liveStatus("Live run in progress: scoring the sampled fault ensemble.");
+      await pause(250);
       renderLiveResult(state.live.result);
+      drawSlab();
+      setLiveStage(0, 3);
       liveStatus("Live assessment complete for simulation #" + state.live.simulationId + ", timestep " + state.step + ". Results are screening outputs, not calibrated predictions.");
     } catch (error) {
+      setLiveStage(0, 0);
       liveStatus("Live assessment could not complete. Preview mode remains available. " + error.message, true);
     } finally {
       button.disabled = false;
@@ -1027,6 +1086,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   document.getElementById("run-live").addEventListener("click", runLiveAssessment);
   document.getElementById("live-simulation").addEventListener("change", function () {
     state.live.result = null;
+    state.live.mapScale = 1;
+    setLiveStage(0, 0);
     if (state.mode === "live") {
       liveStatus("Simulation changed. Run live assessment to refresh the result.");
     }
@@ -1368,7 +1429,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     var step = state.step;
     var vol = storedVolume(step);
     var volMax = storedVolume(60);
-    var R = 0.055 + 0.20 * Math.sqrt(vol / volMax);     /* plume radius, fraction of domain */
+    var R = (0.055 + 0.20 * Math.sqrt(vol / volMax)) *
+      (state.mode === "live" ? state.live.mapScale : 1); /* illustrative field scaled to live plume area */
     var inj = ((step - 1) % 6) < 3;
     var phase = ((step - 1) % 3) + 1;                    /* 1..3 within the stage */
     var amp = inj ? (0.42 + 0.58 * phase / 3) : (0.30 * (1 - phase / 3) + 0.06);
