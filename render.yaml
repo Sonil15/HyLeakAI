@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: hyleak-api-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-api.txt && python scripts/download_api_artifacts.py
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: HYLEAK_GITHUB_TOKEN
+        sync: false
+      - key: HYLEAK_DATA_DIR
+        value: runtime_artifacts/data
+      - key: HYLEAK_CHECKPOINT
+        value: runtime_artifacts/checkpoints/unet_small_best.pt
+      - key: HYLEAK_OUTPUT_DIR
+        value: runtime_artifacts/outputs
