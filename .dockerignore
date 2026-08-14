@@ -1,0 +1,46 @@
+# Keep the build context small. `fly deploy` uploads this directory to a remote
+# builder, so anything not excluded here is sent over the network on EVERY
+# deploy.
+#
+# The big one: data/states.npy is 5.9 GB. Without this file the build context
+# would be ~6 GB and every deploy would take tens of minutes. The API does not
+# need it — the U-Net predicts the state fields from geology, and only
+# data/constants.npy (125 MB) is required. Model artifacts are fetched inside
+# the image from the GitHub release, not copied from here.
+
+# Training data and checkpoints (fetched at build time instead)
+data/
+checkpoints/
+outputs/
+runtime_artifacts/
+api_artifacts/
+*.npy
+*.mdb
+*.pt
+*.pth
+*.ubj
+
+# Notebooks, papers, docs — not needed at runtime
+notebooks/
+kaggle/
+docs/
+*.ipynb
+*.pdf
+
+# The Streamlit dashboard is a separate local tool, not part of the API image
+app/dashboard.py
+
+# VCS and tooling
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local scratch
+*.log
+figures/
+.DS_Store

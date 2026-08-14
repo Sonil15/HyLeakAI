@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
 from api.service import ArtifactError, InferenceService
@@ -89,3 +91,17 @@ def assessment(request: AssessmentRequest):
         return service.assess(request.simulation_id, request.timestep, faults)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# Serve the frontend from this same app, so one Fly deployment covers both and
+# the browser never makes a cross-origin request.
+#
+# This mount MUST stay at the bottom of the file: mounting at "/" catches every
+# path that has not already been registered, so moving it above the routes
+# would shadow /health and /v1/*.
+#
+# The directory is optional on purpose — running the API alone (tests, a local
+# uvicorn, an image built without app/web/) should not fail here.
+WEB_DIR = Path(__file__).resolve().parent.parent / "app" / "web"
+if WEB_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

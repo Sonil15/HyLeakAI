@@ -929,7 +929,14 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     live: { ready: false, simulationId: null, result: null, cached: false, mapScale: 1 }
   };
 
-  var API_BASE = "https://hyleak-api-demo.onrender.com";
+  /* On Fly the API serves this page, so requests go to the same origin and no
+     CORS is involved. Kept as a fallback so the GitHub Pages copy keeps working
+     against Render during the cutover — deliberately not a hard switch, so both
+     deployments stay live until Fly is verified. Delete the fallback once
+     Pages is retired. */
+  var API_BASE = location.hostname.endsWith("github.io")
+    ? "https://hyleak-api-demo.onrender.com"
+    : "";
   var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
   /* A real API response captured on 2026-08-12. It makes the Live tab useful
      immediately in a demo, while Run live assessment always refreshes it. */
