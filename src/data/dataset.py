@@ -148,12 +148,16 @@ class UHSDataset(Dataset):
         use_distance: bool = True,
         sim_ids: list[int] | None = None,
         n_timesteps: int = C.N_TIMESTEPS,
+        augment: bool = False,
     ):
         self.data_dir = Path(data_dir)
         self.split = split
         self.use_cyclic = use_cyclic
         self.use_distance = use_distance
         self.n_timesteps = n_timesteps
+        # Defaults to False here, unlike the Kaggle trainer: this class also
+        # backs the inference service, which must never see a transformed input.
+        self.augment = augment
 
         self.sim_ids = (
             list(sim_ids) if sim_ids is not None else C.simulation_splits()[split]
@@ -223,10 +227,37 @@ class UHSDataset(Dataset):
 
     def __getitem__(self, i: int):
         sim, t = self.index[i]
-        return (
-            torch.from_numpy(self.build_input(sim, t)),
-            torch.from_numpy(self.build_target(sim, t)),
-        )
+        x = self.build_input(sim, t)
+        y = self.build_target(sim, t)
+        if self.augment:
+            x, y = d4_transform(x, y)
+        return torch.from_numpy(x), torch.from_numpy(y)
+
+
+def d4_transform(x: np.ndarray, y: np.ndarray, op: int | None = None):
+    """Apply one of the 8 dihedral symmetries to input and target together.
+
+    Kept byte-identical in behaviour to kaggle/hileak_core.d4_transform — the
+    two module trees have diverged before, and a checkpoint trained under one
+    augmentation scheme evaluated under another would report a number that
+    means nothing. See that copy for why D4 is physically valid on this
+    dataset; the short version is that the well is exactly central, the
+    distance channel is invariant to machine precision, all four boundaries
+    are outflow, and the measured geology anisotropy is 0.6%.
+
+    torch's RNG, not numpy's: PyTorch reseeds torch per DataLoader worker but
+    not numpy, which would otherwise give every worker the same stream.
+    """
+    if op is None:
+        op = int(torch.randint(0, 8, (1,)).item())
+    k, flip = op % 4, op // 4
+    if k:
+        x = np.rot90(x, k, axes=(1, 2))
+        y = np.rot90(y, k, axes=(1, 2))
+    if flip:
+        x = x[:, :, ::-1]
+        y = y[:, :, ::-1]
+    return np.ascontiguousarray(x), np.ascontiguousarray(y)
 
 
 def make_datasets(
