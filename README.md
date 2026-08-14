@@ -50,7 +50,7 @@ actually exists today and what doesn't:
 |---|---|---|---|
 | 1 | **Geological / subsurface intelligence** — screen candidate sites for storage suitability (caprock stability, fault zones) | 🟡 **Prototype built** | `src/site_suitability.py` ranks all 1,000 realisations by a weighted composite of storage capacity, caprock seal risk, and heterogeneity — see `docs/SITE_SUITABILITY.md`. Clustering was tried first and dropped (weak silhouette, geology features are collinear — a continuum, not discrete site types). **Frontend built** — the Storage Atlas panel in `app/web/index.html` plots all 1,000 sites on real output, with live re-weighting. |
 | 2 | **AI leakage prediction engine** | ✅ **Built, narrower scope** | U-Net surrogate + XGBoost risk model + SHAP, described above. Predicts leakage risk for a hypothesised fault, not the full original list (no explicit "safe injection pressure limit" output yet, though the caprock margin feature it would come from already exists). |
-| 3 | **Digital twin & visualisation dashboard** | 🟡 **Partial** | Two frontends, for two purposes. `app/dashboard.py` (Streamlit) is the local research tool — risk trajectory, fault-ensemble sweep, SHAP attribution — and needs the full 12.38 GB dataset, so it cannot be deployed. `app/web/index.html` is the deployable one: a self-contained page with a 2.5D reservoir slab, spatial fault swarm and cycle-ribbon timeline. Its site atlas runs on real output; **its reservoir and risk panels are labelled mockups** pending the demo-pack export. See `docs/FRONTEND.md`. |
+| 3 | **Digital twin & visualisation dashboard** | 🟡 **Partial** | Two frontends, for two purposes. `app/dashboard.py` (Streamlit) is the local research tool — risk trajectory, fault-ensemble sweep, SHAP attribution — and needs the full 12.38 GB dataset, so it cannot be deployed. `app/web/index.html` is the deployable one: a self-contained page with a 2.5D reservoir slab, spatial fault swarm and cycle-ribbon timeline, plus a **Live model** mode that calls the deployed FastAPI service (`api/`, see `docs/PRODUCT_API_PLAN.md`) for real U-Net + XGBoost risk numbers — the risk panel and its SHAP attribution are genuine in that mode. Preview mode's reservoir and risk panels remain procedural mockups. The visual field render itself is illustrative even in Live mode; only the numbers underneath it are real. See `docs/FRONTEND.md`. |
 | 4 | **Economic & operational optimisation** | ❌ **Not started** | No code. A scoped-down spec (differential ROI, not full project NPV) exists in `Build_Plan.md`'s Economics section and is still a reasonable starting point if this gets built. |
 
 **Path ahead, in order:**
@@ -58,20 +58,26 @@ actually exists today and what doesn't:
 1. ~~**Site-suitability frontend.**~~ **Done** — the Storage Atlas panel in
    `app/web/index.html`, on real output from
    `outputs/site_suitability_ranking.csv`.
-2. **Make the web frontend's reservoir and risk panels real — current
-   priority.** They are procedural stand-ins today, clearly labelled as such
-   on the page. The blocker is a *demo pack*: ~24 held-out simulations
+2. ~~**Wire the web frontend's risk panel to real model output.**~~ **Done** —
+   a FastAPI service (`api/`, deployed at `hyleak-api-demo.onrender.com`)
+   serves live U-Net + XGBoost assessments, and the frontend's **Live model**
+   mode calls it end-to-end. See `docs/PRODUCT_API_PLAN.md` and
+   `test_results/` for the production smoke tests. The reservoir *visual*
+   is still a procedural illustration in both modes — only the demo-pack
+   export (below) would make that real too.
+3. **Demo-pack export for the reservoir visual.** ~24 held-out simulations
    exported from Kaggle as quantised PNG sprite sheets, ≈2 MB per simulation,
-   which removes the 12.38 GB dependency from the deployed site entirely.
-   Full plan, arithmetic and open questions in `docs/FRONTEND.md`.
-3. **Safe injection pressure limit.** Derive an explicit max-safe-pressure
+   so the field render itself (not just the risk numbers) can be real without
+   the 12.38 GB dependency. Full plan, arithmetic and open questions in
+   `docs/FRONTEND.md`.
+4. **Safe injection pressure limit.** Derive an explicit max-safe-pressure
    number from the caprock margin feature that already exists, and surface
    it on the dashboard — closes most of the gap in module 2.
-4. **Economics module.** Port the differential-ROI spec from
+5. **Economics module.** Port the differential-ROI spec from
    `Build_Plan.md` (avoided loss + avoided intervention, minus system cost
    and false-positive cost — deliberately not a full project NPV) into
    working code.
-5. **Dashboard: geology/fault-zone map.** Add a plan-view panel (porosity,
+6. **Dashboard: geology/fault-zone map.** Add a plan-view panel (porosity,
    permeability, fault-activation zones) to close the gap toward an actual
    "digital twin" view, rather than just the risk-trajectory charts it has
    now.

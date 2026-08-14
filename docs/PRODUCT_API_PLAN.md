@@ -27,20 +27,28 @@ The API is deliberately stateless. It must not include the 5.9 GB simulator stat
 
 ## Delivery phases
 
-### Phase 1 — API foundation (this branch)
+### Phase 1 — API foundation ✅ done
 
-- Add FastAPI, CORS, health, and interactive OpenAPI documentation.
-- Add `GET /v1/simulations` for held-out realisations.
-- Add `POST /v1/assessments` for a realisation/timestep plus a supplied fault or seeded ensemble.
-- Return pressure/plume summaries, risk, model metadata, provenance, and limitations.
-- Add a Render blueprint, deployment requirements, and smoke tests.
+Shipped in `api/` (PR #4, merged `9c63772`), deployed to Render at
+`hyleak-api-demo.onrender.com`.
 
-### Phase 2 — connect the Pages UI
+- FastAPI, CORS, `GET /health`.
+- `GET /v1/simulations` for held-out realisations.
+- `POST /v1/assessments` for a realisation/timestep plus a supplied fault or seeded ensemble.
+- Returns pressure/plume summaries, risk, model metadata, provenance, and limitations.
+- Render blueprint (`render.yaml`), deployment requirements (`requirements-api.txt`), smoke tests in `test_results/`.
 
-- Preserve the current page as `Demo / Preview`.
-- Add a `Live assessment` route/view with scenario controls.
-- Call the API, show a cold-start state, and recover gracefully to preview mode when the API is unavailable.
-- Reuse the current atlas/reservoir/fault interaction patterns rather than rebuilding the interface.
+### Phase 2 — connect the Pages UI ✅ done
+
+Shipped in `app/web/index.html` (PR #5 `feat/live-frontend` merged `2874d80`,
+PR #6 `feat/judge-live-demo` merged `9c63772`).
+
+- Current page preserved as `Preview` mode (unchanged, needs no API).
+- Added a `Live model` toggle with scenario controls that calls the deployed API.
+- Shows a cold-start/loading state; falls back to Preview when the API is unavailable.
+- Reuses the existing atlas/reservoir/fault interaction patterns.
+
+Confirmed working end-to-end in production: `test_results/judge-live-production-e2e-2026-08-12.md`, `test_results/production-e2e-smoke-2026-08-12.md`, `test_results/frontend-api-smoke-2026-08-12.md`.
 
 ### Phase 3 — decision workflow
 

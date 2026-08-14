@@ -1100,14 +1100,16 @@ open app/web/index.html
 | Panel | Status | Source |
 |---|---|---|
 | **1. Storage Atlas** | ✅ **Real** | All 1,000 rows of `outputs/site_suitability_ranking.csv`, embedded. Real scores, real ranks. The weight toggle re-scores live with the same formula as `src/site_suitability.py`. |
-| **2. Breathing reservoir** | ⚠️ **Mockup** | Procedural stand-in fields. Correct *qualitative* behaviour, **not model output.** |
-| **3. Risk / attribution** | ⚠️ **Mockup** | Real feature names from `outputs/shap_features.json`, invented magnitudes. Layout only. |
+| **2. Breathing reservoir** | ⚠️ **Mockup, both modes** | Procedural stand-in fields. Correct *qualitative* behaviour, **not model output** — even in Live model mode, this visual is illustrative, scaled to match the live plume summary. |
+| **3. Risk / attribution** | ⚠️ **Mockup in Preview** · ✅ **Real in Live model** | Preview: real feature names from `outputs/shap_features.json`, invented magnitudes, layout only. Live model: calls the deployed FastAPI service (`api/`) and shows genuine U-Net + XGBoost risk score and SHAP attribution — confirmed in `test_results/judge-live-production-e2e-2026-08-12.md`. |
 
-**The page states this on itself, twice** — a per-panel badge and a footer naming exactly
-which data is real. **Do not remove those badges, and do not demo panels 2 and 3 without
-saying "this panel is a mockup" in the same breath.** If a judge spots an undisclosed mock,
-every real number in the deck becomes suspect. If *you* disclose it, the badges become
-evidence of the same discipline the rest of the deck claims.
+**The page states this on itself** — a per-panel badge (the risk badge reads "Preview
+values · illustrative" or "Live API · U-Net surrogate + XGBoost" depending on mode) and a
+footer naming exactly which data is real. **Do not remove those badges, and do not demo
+panel 2 (or panel 3 in Preview mode) without saying "this panel is a mockup" in the same
+breath.** If a judge spots an undisclosed mock, every real number in the deck becomes
+suspect. If *you* disclose it, the badges become evidence of the same discipline the rest
+of the deck claims.
 
 ### The 60-second demo
 
@@ -1249,17 +1251,21 @@ we can't claim the model learned anything about porosity–permeability structur
 Two and a half, and the README has a status table saying exactly which. Module 2 (leakage
 prediction) is built at a narrower scope. Module 1 (geological intelligence) has a working
 prototype with a live frontend. Module 3 (dashboard) is partial — one deployable frontend
-with two of three panels labelled as mockups, one local research tool that can't be
-deployed. Module 4 (economics) is not started; there's a scoped-down spec and no code. We
-think an accurate status table beats four half-claims.
+whose risk panel is real in Live model mode but whose reservoir visual is still a labelled
+mockup, plus one local research tool that can't be deployed. Module 4 (economics) is not
+started; there's a scoped-down spec and no code. We think an accurate status table beats
+four half-claims.
 
 **"Two of your three frontend panels are fake."**
-They're labelled mockups, on the page itself, twice — a badge per panel and a footer naming
-exactly what's real. The Storage Atlas runs on all 1,000 rows of real output. The blocker
-for the other two is a demo pack: ~24 held-out simulations exported as quantised PNG sprite
-sheets, ~2 MB each, which removes the 12.38 GB dependency from the deployed site entirely.
-The arithmetic and the plan are in `docs/FRONTEND.md`. Estimated half a day plus one Kaggle
-run.
+Only in Preview mode, and it's labelled — a badge per panel and a footer naming exactly
+what's real. The Storage Atlas runs on all 1,000 rows of real output in both modes. Switch
+to **Live model** and the risk/attribution panel calls our deployed FastAPI service and
+shows genuine U-Net + XGBoost output — see `docs/PRODUCT_API_PLAN.md` and the production
+smoke tests in `test_results/`. The reservoir visual is still illustrative in both modes;
+making that real too is a demo pack (~24 held-out simulations exported as quantised PNG
+sprite sheets, ~2 MB each, removing the 12.38 GB dependency from the deployed site
+entirely). The arithmetic and the plan are in `docs/FRONTEND.md`. Estimated half a day plus
+one Kaggle run.
 
 **"What's the actual novelty here?"**
 Three things. First, decoupling the fault from the surrogate, so one field prediction serves

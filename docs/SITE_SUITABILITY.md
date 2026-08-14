@@ -46,7 +46,8 @@ atlases use, so it replaced clustering rather than sitting alongside it.
 **Honest limit:** these are 1,000 synthetic realisations of one domain, not
 1,000 real-world locations — this ranks candidate rock properties, not
 places on a map. No leakage-risk information is mixed in (that's a separate
-model, module 2, kept deliberately separate). No frontend yet.
+model, module 2, kept deliberately separate). Frontend: the Storage Atlas
+panel in `app/web/index.html` plots this ranking live — see `docs/FRONTEND.md`.
 
 Code: `src/site_suitability.py` (`python -m src.site_suitability`). Full
 ranking: `outputs/site_suitability_ranking.csv`. Summary: `outputs/site_suitability_summary.json`.
@@ -262,8 +263,9 @@ State these before being asked, same as `docs/FINDINGS.md` §10:
   Keeping them separate is a deliberate architecture choice, not an oversight.
 - **Not validated against any ground-truth suitability label** — none exists,
   same absence of ground truth that motivates the derived leakage labels.
-- **No frontend yet.** This is backend/analysis only; visualisation (a chart,
-  or a dashboard panel) is the next, explicitly deferred step.
+- ~~**No frontend yet.**~~ **Done** — the Storage Atlas panel in
+  `app/web/index.html` visualises this ranking live, with re-weighting in
+  the browser. See `docs/FRONTEND.md`.
 
 ## 6. Files this produced
 

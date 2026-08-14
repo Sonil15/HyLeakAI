@@ -9,9 +9,13 @@ the *shippable* face of the project.
 
 ## Summary
 
-**What this is:** a single self-contained HTML page — no server, no build
-step, no dataset — that presents the pipeline as three panels: a site atlas,
-a reservoir view, and a risk readout.
+**What this is:** a single self-contained HTML page — no build step, no
+bundled dataset — that presents the pipeline as three panels: a site atlas,
+a reservoir view, and a risk readout. It ships with two modes: **Preview**
+(fully static, procedural stand-ins) and **Live model** (calls the deployed
+FastAPI service in `api/` — see `docs/PRODUCT_API_PLAN.md` — for real U-Net +
+XGBoost output). The page itself still needs no server to load; Live mode is
+the part that talks to one.
 
 **Why it exists:** `app/dashboard.py` (Streamlit) cannot be deployed. It
 requires `torch`, `xgboost` and the converted 12.38 GB dataset, and calls
@@ -24,11 +28,13 @@ keep being treated as one.
 | Panel | Status | Source |
 |---|---|---|
 | **1. Storage Atlas** | ✅ **Real** | All 1,000 rows of `outputs/site_suitability_ranking.csv`, embedded. Real scores, real ranks, real criteria. The weight toggle re-scores live using the same formula as `src/site_suitability.py`. |
-| **2. Breathing reservoir** | ⚠️ **Mockup** | Procedural stand-in fields. Correct *qualitative* behaviour (heterogeneous permeability, a plume that grows on injection and retreats on withdrawal, pressure peaking at the end of each injection stage) but **not model output**. |
-| **3. Risk / attribution** | ⚠️ **Mockup** | Real feature names from `outputs/shap_features.json`, invented magnitudes. Layout only. |
+| **2. Breathing reservoir** | ⚠️ **Mockup, both modes** | Procedural stand-in fields. Correct *qualitative* behaviour (heterogeneous permeability, a plume that grows on injection and retreats on withdrawal, pressure peaking at the end of each injection stage) but **not model output**, even in Live mode — the visual field is illustrative and only scaled to match the live plume summary. |
+| **3. Risk / attribution** | ⚠️ **Mockup in Preview** · ✅ **Real in Live model** | Preview: real feature names from `outputs/shap_features.json`, invented magnitudes, layout only. Live model: calls `POST /v1/assessments` on the deployed API (`api/main.py`) and renders the real U-Net + XGBoost risk score and SHAP attribution — confirmed in `test_results/judge-live-production-e2e-2026-08-12.md`. |
 
-The page states this on itself, twice — a per-panel badge in each panel bar,
-and a footer that names exactly which data is real. Do not remove those.
+The page states this on itself — a per-panel badge in each panel bar (the
+risk badge switches between "Preview values · illustrative" and "Live API ·
+U-Net surrogate + XGBoost"), and a footer that names exactly which data is
+real. Do not remove those.
 
 ---
 
