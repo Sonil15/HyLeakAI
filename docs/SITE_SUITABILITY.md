@@ -62,7 +62,10 @@ Kaggle bugs hit along the way, and the reasoning behind each choice.*
 `README.md`'s status table (added this session) maps the shipped pipeline
 against the original 4-module pitch. Module 2 (leakage prediction) and a
 slice of module 3 (dashboard) exist; module 1 (which sites are even worth
-storing hydrogen in) and module 4 (economics) did not. With round-1
+storing hydrogen in) and module 4 (economics) did not. *(Module 4 was
+subsequently built for the finals — and the objection recorded below turned out
+to be the design constraint that shaped it: it avoids $/kg assumptions entirely
+by reporting a dimensionless ratio. See `Economics_and_impact.md`.)* With round-1
 submission same-day, module 1 was chosen as the priority: it's the more
 fundamental gap (you screen sites before you screen leakage risk at one), and
 unlike economics it doesn't need a new set of unverified $/kg assumptions to

@@ -1,0 +1,61 @@
+{
+  "measured": {
+    "timings_s": {
+      "1": [
+        8.297,
+        5.168
+      ],
+      "10": [
+        6.411,
+        6.771
+      ],
+      "25": [
+        5.599,
+        6.368
+      ],
+      "50": [
+        7.101,
+        6.521,
+        6.878
+      ]
+    },
+    "cold_start_s": 63.3,
+    "endpoint": "https://hyleak-api-demo.onrender.com/v1/assessments",
+    "date": "2026-08-14"
+  },
+  "marginal_cost": {
+    "slope_s_per_hypothesis": 0.0032550824702722724,
+    "slope_se": 0.01614172011670848,
+    "slope_ci95": [
+      -0.03492008560574329,
+      0.041430250546287836
+    ],
+    "intercept_s": 6.4879301879555085,
+    "residual_sd_s": 0.9516772699091336,
+    "n_measurements": 9,
+    "slope_distinguishable_from_zero": false
+  },
+  "cost_per_pass": {
+    "median_wall_clock_s": 6.521,
+    "wall_clock_iqr_s": [
+      6.368,
+      6.878
+    ],
+    "instance_vcpu": 0.1,
+    "vcpu_seconds_per_pass": 0.6521,
+    "usd_per_pass_low": 3.622777777777778e-06,
+    "usd_per_pass_high": 9.056944444444445e-06,
+    "hypotheses_per_campaign": 20000,
+    "cold_start_s": 63.3
+  },
+  "pessimistic_campaign": {
+    "marginal_s_per_hypothesis_upper95": 0.041430250546287836,
+    "campaign_wall_clock_s_upper_bound": 835.0845806752104,
+    "note": "The measurement covers 1 to 50 hypotheses, which is the API's own cap. This row extrapolates the TOP of the slope confidence interval to a full 20,000-hypothesis campaign, so it is the cost if the flatness we measured is an artefact of the range. The architectural expectation is far below it."
+  },
+  "not_claimed": [
+    "Any cost or speedup relative to a reservoir simulator. We have never timed tNavigator, so there is no ratio to quote.",
+    "That 20,000 hypotheses were timed. 50 were, and the architecture carries the rest.",
+    "A production cost. This is a 0.1-vCPU free tier with a 63 s cold start, which is a preview, not a deployment."
+  ]
+}

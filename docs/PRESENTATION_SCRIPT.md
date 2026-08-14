@@ -1,5 +1,18 @@
 # Round 1 — 6-Minute Script
 
+> **Historical record — do not deliver this at the finals.** Use
+> [`PRESENTATION_SCRIPT_FINALS.md`](PRESENTATION_SCRIPT_FINALS.md) (4–5 min).
+> Kept unedited because it is the record of what was actually said in round 1.
+>
+> Two things in it are now **out of date**: the line *"the economics module is
+> planned but not built"* (it is built — `src/economics/`), and the guard-rail
+> section's reasoning. The guard-rail's **conclusion still stands** — no ROI, no
+> $/kg, no avoided-cost figure — but the reason changed. It was "we haven't built
+> the module." It is now "we built it, and it deliberately produces no currency
+> figure, because every route to one runs through a leak rate nobody can
+> calibrate." Quote the dimensionless VOI/VOPI ratio instead. See
+> `Economics_and_impact.md`.
+
 **Spoken words: 912** — or **885** without the optional block in slide 8. Counts
 are measured, not estimated.
 

@@ -1,0 +1,167 @@
+{
+  "register": [
+    {
+      "name": "pr_auc_simulator",
+      "status": "MEASURED",
+      "unit": "PR-AUC",
+      "value": 0.9941477096825486,
+      "low": null,
+      "high": null,
+      "span_decades": null,
+      "quotable_as_point": true,
+      "source": "outputs/source_comparison.json \u2014 150 held-out simulations, 15,911 aligned rows, horizon 3 (6 months)",
+      "note": "Screen skill when the fields come from the simulator itself. The ceiling our own surrogate is measured against."
+    },
+    {
+      "name": "pr_auc_surrogate",
+      "status": "MEASURED",
+      "unit": "PR-AUC",
+      "value": 0.984245783563486,
+      "low": null,
+      "high": null,
+      "span_decades": null,
+      "quotable_as_point": true,
+      "source": "outputs/source_comparison.json \u2014 same rows, U-Net fields",
+      "note": "Screen skill in the configuration we would actually deploy. 99.0% retention of the simulator's skill."
+    },
+    {
+      "name": "pr_auc_persistence",
+      "status": "MEASURED",
+      "unit": "PR-AUC",
+      "value": 0.02175050749710928,
+      "low": null,
+      "high": null,
+      "span_decades": null,
+      "quotable_as_point": true,
+      "source": "outputs/xgb_results.json \u2014 horizon 3, persistence baseline",
+      "note": "'Assume next period looks like this one.' The honest floor for a 6-month horizon, which sits at a different phase of the storage cycle. At horizons that are whole cycles this rises above 0.99 and the task stops being forecasting at all."
+    },
+    {
+      "name": "positive_rate",
+      "status": "MEASURED",
+      "unit": "fraction",
+      "value": 0.019357677549123764,
+      "low": null,
+      "high": null,
+      "span_decades": null,
+      "quotable_as_point": true,
+      "source": "outputs/source_comparison.json",
+      "note": "Base rate of elevated-leakage rows under our own T3 label at the 90th-percentile flux threshold. NOT a real-world fault base rate \u2014 it is a property of where we drew the threshold."
+    },
+    {
+      "name": "assessment_latency_s",
+      "status": "MEASURED",
+      "unit": "s per 20 hypotheses",
+      "value": 7.9,
+      "low": null,
+      "high": null,
+      "span_decades": null,
+      "quotable_as_point": true,
+      "source": "Timed against the deployed API, 2026-08-14: POST /v1/assessments, simulation 0, timestep 31, 20 sampled faults, warm instance",
+      "note": "Wall clock including network, on a Render free tier at 0.1 CPU. A pessimistic basis for a unit cost, which is the useful direction."
+    },
+    {
+      "name": "hypotheses_per_field_prediction",
+      "status": "DERIVED",
+      "unit": "count",
+      "value": 20000.0,
+      "low": null,
+      "high": null,
+      "span_decades": null,
+      "quotable_as_point": true,
+      "source": "docs/PRESENTATION_CONTEXT.md \u2014 1,000 realisations x 20 fault draws per realisation",
+      "note": "The coverage the decoupling buys: the fault is not an input to the U-Net, so one field prediction is re-scored against every fault hypothesis without re-running the field."
+    },
+    {
+      "name": "prior_bad_fault",
+      "status": "ASSUMED",
+      "unit": "probability",
+      "value": 0.1,
+      "low": 0.01,
+      "high": 0.4,
+      "span_decades": 1.6020599913279623,
+      "quotable_as_point": true,
+      "source": "No published base rate exists for conductive faults at candidate storage sites. Swept across the full plausible span.",
+      "note": "The prior that a site harbours a fault conductive enough to matter. Swept because the VOI answer genuinely depends on it \u2014 a screen is worth nothing at a site nobody doubted and nothing at a site nobody would approve."
+    },
+    {
+      "name": "hypotheses_simulated_unaided",
+      "status": "ASSUMED",
+      "unit": "count",
+      "value": 2.0,
+      "low": 1.0,
+      "high": 5.0,
+      "span_decades": 0.6989700043360189,
+      "quotable_as_point": true,
+      "source": "Inferred from simulator runtime: a full-physics run is multi-hour, so a screening campaign affords a handful of scenarios.",
+      "note": "The number of fault scenarios an operator can afford to simulate without us. This is the quantity our coverage is compared against, so the comparison is stated as a range, not a strawman of one."
+    },
+    {
+      "name": "mitigation_to_loss_ratio",
+      "status": "UNVERIFIED",
+      "unit": "dimensionless",
+      "value": null,
+      "low": 0.0001,
+      "high": 0.1,
+      "span_decades": 3.0,
+      "quotable_as_point": false,
+      "source": "NO SOURCE OPENED. Would require a workover/appraisal cost and a containment-failure cost, neither of which we have a citation for.",
+      "note": "The only economic parameter the headline result depends on, and it enters as a ratio, so both unknown costs cancel to one unknown number \u2014 which we then sweep over three decades rather than pick."
+    },
+    {
+      "name": "hydrogen_price_usd_per_kg",
+      "status": "UNVERIFIED",
+      "unit": "USD/kg",
+      "value": null,
+      "low": 1.0,
+      "high": 8.0,
+      "span_decades": 0.9030899869919435,
+      "quotable_as_point": false,
+      "source": "NO SOURCE OPENED. Build_Plan.md flags this as needing a real citation and it never got one.",
+      "note": "Not consumed by the headline result. Listed so the register is complete and so the omission is visible rather than quiet."
+    },
+    {
+      "name": "workover_cost_usd",
+      "status": "UNVERIFIED",
+      "unit": "USD",
+      "value": null,
+      "low": 100000.0,
+      "high": 1000000.0,
+      "span_decades": 1.0,
+      "quotable_as_point": false,
+      "source": "NO SOURCE OPENED. Order-of-magnitude folklore in Build_Plan.md.",
+      "note": "Not consumed by the headline result \u2014 it cancels into mitigation_to_loss_ratio."
+    }
+  ],
+  "audit": {
+    "counts": {
+      "DATASET": 0,
+      "MEASURED": 5,
+      "DERIVED": 1,
+      "ASSUMED": 2,
+      "UNVERIFIED": 3
+    },
+    "headline_depends_on": {
+      "measured": [
+        "pr_auc_simulator",
+        "pr_auc_surrogate",
+        "pr_auc_persistence",
+        "positive_rate",
+        "assessment_latency_s",
+        "hypotheses_per_field_prediction"
+      ],
+      "assumed_swept": [
+        "prior_bad_fault",
+        "hypotheses_simulated_unaided"
+      ],
+      "unverified_swept": [
+        "mitigation_to_loss_ratio"
+      ]
+    },
+    "never_point_quoted": [
+      "mitigation_to_loss_ratio",
+      "hydrogen_price_usd_per_kg",
+      "workover_cost_usd"
+    ]
+  }
+}
