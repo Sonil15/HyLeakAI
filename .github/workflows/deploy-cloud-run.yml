@@ -1,0 +1,178 @@
+# Build and deploy the HyLeakAI service (FastAPI + the static frontend it serves)
+# to Google Cloud Run.
+#
+# AUTHENTICATION: Workload Identity Federation, not a service-account JSON key.
+# Nothing below is a secret, which is deliberate — the repo owner is Sonil15 and
+# contributors cannot create repository secrets. GitHub mints a short-lived OIDC
+# token, Google exchanges it for a ~1 hour credential, and the trust policy on
+# the GCP side only accepts tokens whose `repository` claim is exactly
+# Sonil15/HyLeakAI. A fork cannot use these values: its OIDC claim carries the
+# fork's own repository name and the exchange is rejected.
+#
+# MODEL ARTIFACTS: the Dockerfile COPYs ~216 MB of trained weights that are
+# gitignored and therefore absent from a fresh checkout. They live in a GCS
+# bucket and are pulled in below. Retraining means re-uploading them — see
+# docs/DEPLOYMENT.md.
+
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - "src/**"
+      - "app/web/**"
+      - "Dockerfile"
+      - "requirements-api.txt"
+      - ".dockerignore"
+      - ".gcloudignore"
+      - ".github/workflows/deploy-cloud-run.yml"
+  workflow_dispatch:
+
+# One deploy at a time. Cloud Run would serialise them anyway, but two
+# concurrent builds racing to claim the same revision number wastes free-tier
+# build minutes. Not cancel-in-progress: killing a half-finished deploy can
+# leave the service on a revision nobody intended.
+concurrency:
+  group: cloud-run-deploy
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: hileak
+  REGION: asia-south1
+  SERVICE: hyleakai
+  ARTIFACT_BUCKET: gs://hileak-artifacts-152424867743/v1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+      id-token: write # required to mint the OIDC token for WIF
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/152424867743/locations/global/workloadIdentityPools/github/providers/github-provider
+          service_account: github-deployer@hileak.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # The six files api/service.py loads at startup. Without them the image
+      # builds but the container comes up "degraded", so the smoke test below
+      # treats that as a failure rather than a warning.
+      - name: Fetch model artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p data checkpoints outputs
+          while read -r name dest; do
+            gcloud storage cp "$ARTIFACT_BUCKET/$name" "$dest/"
+          done <<'FILES'
+          constants.npy data
+          stats.json data
+          unet_small_best.pt checkpoints
+          xgb_classifier.ubj outputs
+          shap_features.json outputs
+          xgb_results.json outputs
+          FILES
+          ls -l data checkpoints outputs
+
+      # Guards a real regression: an unanchored `data/*` in .gcloudignore also
+      # matched src/data/*, so src/data/ uploaded as an empty directory and the
+      # container died with `ModuleNotFoundError: No module named
+      # src.data.dataset`. Cloud Run reported only "container failed to start
+      # and listen on PORT", which points nowhere near the cause. This check
+      # costs a second and fails with the actual reason.
+      - name: Verify build context
+        run: |
+          set -euo pipefail
+          # Normalise separators and line endings: gcloud emits backslash paths
+          # on Windows, so without this the check passes only on Linux runners
+          # and silently misreports when run locally.
+          gcloud meta list-files-for-upload | tr '\\' '/' | tr -d '\r' > /tmp/context.txt
+          missing=0
+          for f in src/data/dataset.py src/data/__init__.py src/models/unet.py \
+                   src/leakage/features.py src/config.py api/main.py api/service.py \
+                   app/web/index.html data/constants.npy data/stats.json \
+                   checkpoints/unet_small_best.pt outputs/xgb_classifier.ubj \
+                   outputs/shap_features.json outputs/xgb_results.json; do
+            grep -qxF "$f" /tmp/context.txt || { echo "MISSING FROM BUILD CONTEXT: $f"; missing=1; }
+          done
+          # states.npy is 5.9 GB and must never be uploaded.
+          if grep -qxF "data/states.npy" /tmp/context.txt; then
+            echo "data/states.npy is in the build context; it must be excluded"; missing=1
+          fi
+          [ "$missing" -eq 0 ] || exit 1
+          echo "build context OK ($(wc -l < /tmp/context.txt) files)"
+
+      - id: deploy
+        name: Deploy
+        run: |
+          set -euo pipefail
+          gcloud run deploy "$SERVICE" \
+            --source . \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
+            --memory 1Gi \
+            --cpu 1 \
+            --cpu-boost \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --port 8080 \
+            --timeout 300 \
+            --quiet
+          url=$(gcloud run services describe "$SERVICE" --project "$PROJECT_ID" \
+                  --region "$REGION" --format='value(status.url)')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $url"
+
+      # A 200 from / only proves static files are served. These assertions prove
+      # the model actually loaded and inference runs, which is the part that
+      # broke before.
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          URL="${{ steps.deploy.outputs.url }}"
+
+          code=$(curl -sS -o /dev/null -w '%{http_code}' "$URL/")
+          [ "$code" = "200" ] || { echo "GET / returned $code"; exit 1; }
+          echo "GET / -> 200"
+
+          health=$(curl -sS "$URL/health")
+          echo "health: $health"
+          echo "$health" | grep -q '"status":"ready"' || {
+            echo "service is not ready — artifacts likely failed to load"; exit 1; }
+
+          sim=$(curl -sS "$URL/v1/simulations" | python3 -c 'import sys,json; print(json.load(sys.stdin)["simulation_ids"][0])')
+          echo "held-out simulation: $sim"
+
+          curl -sS -X POST "$URL/v1/assessments" \
+            -H 'Content-Type: application/json' \
+            -d "{\"simulation_id\":$sim,\"timestep\":30,\"mode\":\"sampled_ensemble\",\"fault_count\":5,\"seed\":7}" \
+            > /tmp/assess.json
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('/tmp/assess.json'))
+          for key in ('field_summary', 'risk_summary', 'faults', 'forecast_horizon_steps'):
+              assert key in d, f'missing {key} in response: {d}'
+          assert len(d['faults']) == 5, f"expected 5 faults, got {len(d['faults'])}"
+          assert d['field_source'] == 'U-Net surrogate', d['field_source']
+          print('inference OK:', json.dumps(d['risk_summary']))
+          PY
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Cloud Run deploy"
+            echo ""
+            echo "- Service: \`$SERVICE\` in \`$REGION\`"
+            echo "- URL: ${{ steps.deploy.outputs.url }}"
+            echo "- Result: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
