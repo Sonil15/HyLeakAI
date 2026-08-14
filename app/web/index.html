@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HyLeakAI — Frontend Design Direction</title>
-<meta name="description" content="Interactive design direction for the HyLeakAI frontend: a client-side screening instrument for underground hydrogen storage.">
+<title>HyLeakAI — Hydrogen storage screening</title>
+<meta name="description" content="Interactive preview and live model screening for underground hydrogen storage.">
 <meta name="color-scheme" content="light dark">
 <style>html,body{margin:0;padding:0}</style>
 </head>
@@ -488,6 +488,23 @@ canvas { display: block; width: 100%; height: auto; }
 .stack { display: grid; gap: 14px; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
+.live-panel { display:grid; gap:14px; padding:18px; border:1px solid var(--line); background:var(--panel-sunk); }
+.live-panel[hidden] { display:none; }
+.live-controls { display:grid; grid-template-columns:minmax(170px,1fr) minmax(120px,.55fr) minmax(130px,.6fr) auto; gap:10px; align-items:end; }
+.live-controls label { display:grid; gap:4px; font-family:var(--font-mono); font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-faint); }
+.live-controls select, .live-controls input { min-height:34px; border:1px solid var(--line); background:var(--panel); color:var(--text); padding:6px 8px; font:12px var(--font-mono); }
+.btn { min-height:34px; border:1px solid var(--h2); background:var(--h2); color:#fff; padding:6px 12px; font:600 11px var(--font-mono); letter-spacing:.07em; text-transform:uppercase; cursor:pointer; }
+.btn:disabled { opacity:.55; cursor:wait; }
+.status { font:11px/1.5 var(--font-mono); color:var(--text-dim); }
+.status.error { color:var(--critical); }
+.live-run { display:grid; gap:8px; padding:10px 12px; border-left:2px solid var(--line); background:color-mix(in srgb, var(--panel) 78%, transparent); }
+.live-run p { margin:0; font:10px var(--font-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); }
+.live-stages { display:flex; gap:10px; flex-wrap:wrap; margin:0; padding:0; list-style:none; font:11px var(--font-mono); color:var(--text-faint); }
+.live-stages li::before { content:"○ "; color:var(--text-faint); }
+.live-stages li.active { color:var(--h2); }.live-stages li.active::before { content:"◉ "; color:var(--h2); }
+.live-stages li.done { color:var(--text-dim); }.live-stages li.done::before { content:"✓ "; color:var(--good); }
+@media (max-width:700px) { .live-controls { grid-template-columns:1fr 1fr; } .live-controls .btn { grid-column:1/-1; } }
+
 footer { padding: 46px 0 70px; }
 .legend {
   display: flex;
@@ -517,6 +534,13 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 <header class="mast">
   <div class="wrap">
     <div class="mark"><i></i>HYLEAKAI</div>
+    <div class="row">
+      <p class="eyebrow" id="mode-copy">Interactive preview</p>
+      <div class="seg" id="mode-seg" role="group" aria-label="Assessment mode">
+        <button type="button" data-mode="preview" aria-pressed="true">Preview</button>
+        <button type="button" data-mode="live" aria-pressed="false">Live model</button>
+      </div>
+    </div>
     <p class="eyebrow">Frontend design direction &nbsp;·&nbsp; interactive mockup &nbsp;·&nbsp; not the shipped app</p>
   </div>
 </header>
@@ -645,6 +669,30 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     </p>
 
     <div class="act-body">
+      <div class="live-panel" id="live-panel" hidden>
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <p class="eyebrow">Live assessment · deployed U-Net surrogate + XGBoost</p>
+            <p style="font-size:14px;color:var(--text-dim)">Choose a held-out realisation, set the timestep with the cycle ribbon, and score a seeded fault ensemble.</p>
+          </div>
+          <span class="src real" id="live-badge">API check</span>
+        </div>
+        <div class="live-controls">
+          <label>Held-out simulation<select id="live-simulation" disabled><option>Loading…</option></select></label>
+          <label>Fault samples<input id="live-fault-count" type="number" min="1" max="50" value="20"></label>
+          <label>Sampling seed<input id="live-seed" type="number" value="20260809"></label>
+          <button class="btn" id="run-live" type="button" disabled>Run live assessment</button>
+        </div>
+        <div class="live-run" aria-live="polite">
+          <p>Assessment trace</p>
+          <ol class="live-stages" id="live-stages">
+            <li data-stage="1">prepare held-out realisation</li>
+            <li data-stage="2">infer pressure and plume fields</li>
+            <li data-stage="3">score fault ensemble</li>
+          </ol>
+        </div>
+        <p class="status" id="live-status" role="status">Checking the public demo API…</p>
+      </div>
       <div class="panel">
         <div class="panel-bar">
           <p class="eyebrow">Reservoir slab &nbsp;·&nbsp; 7,680 m &times; 7,680 m &times; 100 m &nbsp;·&nbsp; <span id="sim-label">sim —</span></p>
@@ -654,7 +702,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
               <button type="button" data-f="pres" aria-pressed="false">Pressure</button>
               <button type="button" data-f="perm" aria-pressed="false">Permeability</button>
             </div>
-            <span class="src stub">Mockup field · procedural stand-in</span>
+            <span class="src stub" id="field-source-badge">Preview field · procedural illustration</span>
           </div>
         </div>
         <div class="canvas-host">
@@ -725,9 +773,9 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 
     <div class="act-body split">
       <div class="panel">
-        <div class="panel-bar">
-          <p class="eyebrow">Attribution &nbsp;·&nbsp; base rate &rarr; P(elevated leakage in 6 months)</p>
-          <span class="src stub">Mockup values · layout only</span>
+          <div class="panel-bar">
+            <p class="eyebrow">Attribution &nbsp;·&nbsp; base rate &rarr; P(elevated leakage in 6 months)</p>
+          <span class="src stub" id="risk-source-badge">Preview values · illustrative</span>
         </div>
         <div class="wf" id="waterfall"></div>
         <div class="readouts" id="risk-readouts"></div>
@@ -759,12 +807,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   <div class="wrap">
     <div class="act-head">
       <span class="act-index">04 / BUILD</span>
-      <h2>How this ships without a backend</h2>
+      <h2>How the live demo is delivered</h2>
     </div>
     <p class="lede">
-      The 12.38 GB dataset is not on the laptop and the disk is nearly full, so a live-inference
-      backend is the wrong shape. Everything above runs client-side, which also means it deploys
-      as a static site and demos with the Wi-Fi off.
+      GitHub Pages serves the interface while a small FastAPI service runs the U-Net surrogate and
+      XGBoost screening model. The full dataset stays out of the browser; the page requests only
+      held-out simulation IDs and compact assessment results.
     </p>
 
     <div class="ideas">
@@ -876,8 +924,174 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     field: "sat",
     step: 30,            // 1..60
     fault: 0,
-    playing: !reduceMotion
+    playing: !reduceMotion,
+    mode: "preview",
+    live: { ready: false, simulationId: null, result: null, cached: false, mapScale: 1 }
   };
+
+  var API_BASE = "https://hyleak-api-demo.onrender.com";
+  var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
+  /* A real API response captured on 2026-08-12. It makes the Live tab useful
+     immediately in a demo, while Run live assessment always refreshes it. */
+  var VERIFIED_DEMO_RESULT = {"simulation_id":0,"timestep":31,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":262.1124267578125,"pressure_delta_bar":64.91242675781251,"plume_area_km2":2.9736,"caprock_margin":0.5317369955976214},"risk_summary":{"fault_count":5,"median_probability":3.1093936314618986e-8,"p90_probability":3.3465208275629267e-7,"worst_case_probability":3.406817370432691e-7},"faults":[{"fault":{"fault_id":0,"x_m":2026.556,"y_m":4972.085,"length_m":558.831,"width_m":5.446,"permeability_m2":6.250887536644922e-13,"orientation_rad":1.560188},"current_flux_m3_s":0,"elevated_leakage_probability":3.25607601325828e-7},{"fault":{"fault_id":1,"x_m":5565.8,"y_m":1743.88,"length_m":305.766,"width_m":9.189,"permeability_m2":1.1233473384304368e-13,"orientation_rad":3.099848},"current_flux_m3_s":0,"elevated_leakage_probability":8.79326123026658e-9},{"fault":{"fault_id":2,"x_m":3769.028,"y_m":1092.921,"length_m":789.479,"width_m":5.486,"permeability_m2":3.59147474494291e-13,"orientation_rad":1.7081},"current_flux_m3_s":0,"elevated_leakage_probability":3.406817370432691e-7},{"fault":{"fault_id":3,"x_m":2063.84,"y_m":3420.815,"length_m":1892.459,"width_m":2.473,"permeability_m2":5.40218926082173e-15,"orientation_rad":2.784003},"current_flux_m3_s":0,"elevated_leakage_probability":5.793386215202645e-9},{"fault":{"fault_id":4,"x_m":3077.212,"y_m":5326.215,"length_m":1717.886,"width_m":7.753,"permeability_m2":1.267424645304919e-14,"orientation_rad":2.418797},"current_flux_m3_s":0,"elevated_leakage_probability":3.1093936314618986e-8}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction."]};
+
+  function pause(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+  function setLiveStage(active, completed) {
+    [].forEach.call(document.querySelectorAll("#live-stages li"), function (item) {
+      var stage = Number(item.dataset.stage);
+      item.classList.toggle("active", stage === active);
+      item.classList.toggle("done", stage <= completed);
+    });
+  }
+  function cachedResult() {
+    try { return JSON.parse(localStorage.getItem(LIVE_CACHE_KEY)) || VERIFIED_DEMO_RESULT; }
+    catch (_) { return VERIFIED_DEMO_RESULT; }
+  }
+  function saveCachedResult(result) {
+    try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify(result)); } catch (_) {}
+  }
+
+  function liveStatus(message, isError) {
+    var el = document.getElementById("live-status");
+    el.textContent = message;
+    el.classList.toggle("error", !!isError);
+  }
+
+  function setMode(mode) {
+    state.mode = mode;
+    if (mode === "live") {
+      state.playing = false;
+      syncPlay();
+    }
+    document.getElementById("live-panel").hidden = mode !== "live";
+    document.getElementById("mode-copy").textContent = mode === "live" ? "Live model assessment" : "Interactive preview";
+    document.getElementById("field-source-badge").textContent = mode === "live"
+      ? "Illustrative field · live numerical results below" : "Preview field · procedural illustration";
+    document.getElementById("risk-source-badge").className = "src " + (mode === "live" ? "real" : "stub");
+    document.getElementById("risk-source-badge").textContent = mode === "live"
+      ? "Live API · U-Net surrogate + XGBoost" : "Preview values · illustrative";
+    [].forEach.call(document.querySelectorAll("#mode-seg button"), function (button) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    });
+    if (mode === "preview") {
+      renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
+    } else if (state.live.result) {
+      renderLiveResult(state.live.result);
+      drawSlab();
+    }
+  }
+
+  async function initLive() {
+    var badge = document.getElementById("live-badge");
+    try {
+      var health = await fetch(API_BASE + "/health");
+      if (!health.ok) throw new Error("API health check failed (" + health.status + ")");
+      var simsResponse = await fetch(API_BASE + "/v1/simulations");
+      if (!simsResponse.ok) throw new Error("Could not load simulations (" + simsResponse.status + ")");
+      var payload = await simsResponse.json();
+      var select = document.getElementById("live-simulation");
+      select.innerHTML = payload.simulation_ids.map(function (id) { return '<option value="' + id + '">#' + id + '</option>'; }).join("");
+      state.live.simulationId = payload.simulation_ids[0];
+      state.live.ready = true;
+      select.disabled = false;
+      document.getElementById("run-live").disabled = false;
+      badge.textContent = "API ready · " + payload.simulation_ids.length + " held-out simulations";
+      state.live.result = cachedResult();
+      state.live.cached = true;
+      state.live.simulationId = state.live.result.simulation_id;
+      state.step = state.live.result.timestep;
+      select.value = String(state.live.simulationId);
+      setLiveStage(0, 3);
+      renderLiveResult(state.live.result);
+      drawSlab();
+      liveStatus("Showing a cached verified API result. Select Run live assessment to refresh it now.");
+    } catch (error) {
+      badge.className = "src stub";
+      badge.textContent = "API unavailable · preview remains available";
+      liveStatus("Could not reach the live model. Use Preview mode or try again shortly.", true);
+    }
+  }
+
+  function renderLiveResult(result) {
+    var summary = result.field_summary, risk = result.risk_summary;
+    var worst = result.faults.reduce(function (a, b) {
+      return a.elevated_leakage_probability > b.elevated_leakage_probability ? a : b;
+    });
+    document.getElementById("slab-readouts").innerHTML =
+      ro("Peak pressure", C_DERIVED, summary.peak_pressure_bar.toFixed(1) + " bar", "+" + summary.pressure_delta_bar.toFixed(1) + " vs initial", "hot") +
+      ro("Plume area", C_DERIVED, summary.plume_area_km2.toFixed(2) + " km²", "surrogate-derived field") +
+      ro("Caprock margin", C_ASSUMED, summary.caprock_margin.toFixed(3), "> 1 would mean exceedance", summary.caprock_margin > 0.85 ? "hot" : "") +
+      ro("Fault ensemble", C_ASSUMED, risk.fault_count + " samples", "seeded hypothesis sweep") +
+      ro("Model call", null, "live", "U-Net surrogate + XGBoost", "good");
+    document.getElementById("fault-readouts").innerHTML =
+      ro("Worst P(elevated leak)", C_ASSUMED, worst.elevated_leakage_probability.toFixed(4), result.forecast_horizon_months + "-month horizon", worst.elevated_leakage_probability > 0.5 ? "hot" : "good") +
+      ro("Current fault flux", C_DERIVED, worst.current_flux_m3_s.toExponential(2) + " m³/s", "derived from surrogate fields") +
+      ro("Fault length", C_ASSUMED, Math.round(worst.fault.length_m).toLocaleString() + " m", "sampled, not measured") +
+      ro("Fault permeability", C_ASSUMED, worst.fault.permeability_m2.toExponential(2) + " m²", "sampled, not measured");
+    document.getElementById("risk-readouts").innerHTML =
+      ro("Worst-case probability", C_ASSUMED, risk.worst_case_probability.toFixed(4), result.forecast_horizon_months + " months ahead", risk.worst_case_probability > 0.5 ? "hot" : "good") +
+      ro("P90 probability", C_ASSUMED, risk.p90_probability.toFixed(4), "across sampled faults") +
+      ro("Median probability", C_ASSUMED, risk.median_probability.toFixed(4), "across sampled faults");
+    document.getElementById("waterfall").innerHTML = result.faults.map(function (item, index) {
+      var pct = Math.max(1, item.elevated_leakage_probability * 100);
+      return '<div class="wf-row"><div class="nm">fault ' + (index + 1) + '</div><div class="wf-track"><div class="wf-bar up" style="left:0;width:' + pct + '%"></div></div><div class="amt">' + item.elevated_leakage_probability.toFixed(4) + '</div></div>';
+    }).join("");
+    document.getElementById("lat").textContent = "live";
+    state.live.mapScale = Math.max(0.75, Math.min(1.35, summary.plume_area_km2 / 2.9736));
+    document.getElementById("field-source-badge").textContent =
+      "Illustrative field · scaled to live plume summary";
+  }
+
+  async function runLiveAssessment() {
+    if (!state.live.ready) return;
+    var button = document.getElementById("run-live");
+    state.live.simulationId = Number(document.getElementById("live-simulation").value);
+    var count = Number(document.getElementById("live-fault-count").value);
+    var seed = Number(document.getElementById("live-seed").value);
+    button.disabled = true;
+    state.live.cached = false;
+    setLiveStage(1, 0);
+    liveStatus("Live run started: loading held-out realisation #" + state.live.simulationId + ".");
+    await pause(350);
+    setLiveStage(2, 1);
+    liveStatus("Live run in progress: surrogate is inferring pressure and plume fields.");
+    drawSlab();
+    try {
+      var response = await fetch(API_BASE + "/v1/assessments", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ simulation_id: state.live.simulationId, timestep: state.step,
+          mode: "sampled_ensemble", fault_count: count, seed: seed })
+      });
+      if (!response.ok) throw new Error("Assessment failed (" + response.status + ")");
+      state.live.result = await response.json();
+      saveCachedResult(state.live.result);
+      setLiveStage(3, 2);
+      liveStatus("Live run in progress: scoring the sampled fault ensemble.");
+      await pause(250);
+      renderLiveResult(state.live.result);
+      drawSlab();
+      setLiveStage(0, 3);
+      liveStatus("Live assessment complete for simulation #" + state.live.simulationId + ", timestep " + state.step + ". Results are screening outputs, not calibrated predictions.");
+    } catch (error) {
+      setLiveStage(0, 0);
+      liveStatus("Live assessment could not complete. Preview mode remains available. " + error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  document.getElementById("mode-seg").addEventListener("click", function (event) {
+    var button = event.target.closest("button"); if (button) setMode(button.dataset.mode);
+  });
+  document.getElementById("run-live").addEventListener("click", runLiveAssessment);
+  document.getElementById("live-simulation").addEventListener("change", function () {
+    state.live.result = null;
+    state.live.mapScale = 1;
+    setLiveStage(0, 0);
+    if (state.mode === "live") {
+      liveStatus("Simulation changed. Run live assessment to refresh the result.");
+    }
+  });
 
   var WEIGHTS = {
     "default": { capacity: 0.5, seal: 0.3, het: 0.2, label: "0.5 / 0.3 / 0.2" },
@@ -1215,7 +1429,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     var step = state.step;
     var vol = storedVolume(step);
     var volMax = storedVolume(60);
-    var R = 0.055 + 0.20 * Math.sqrt(vol / volMax);     /* plume radius, fraction of domain */
+    var R = (0.055 + 0.20 * Math.sqrt(vol / volMax)) *
+      (state.mode === "live" ? state.live.mapScale : 1); /* illustrative field scaled to live plume area */
     var inj = ((step - 1) % 6) < 3;
     var phase = ((step - 1) % 3) + 1;                    /* 1..3 within the stage */
     var amp = inj ? (0.42 + 0.58 * phase / 3) : (0.30 * (1 - phase / 3) + 0.06);
@@ -1547,6 +1762,11 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   function setStep(t) {
     state.step = t;
     paintRibbon(); drawSlab(); renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
+    if (state.mode === "live") {
+      state.live.result = null;
+      document.getElementById("risk-source-badge").textContent = "Live result pending · run assessment";
+      liveStatus("Timestep changed to " + t + ". Run live assessment to refresh the result.");
+    }
   }
 
   var playBtn = document.getElementById("play");
@@ -1619,6 +1839,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
    * boot
    * ================================================================ */
   function boot() {
+    document.querySelector(".mast .eyebrow:not(#mode-copy)").textContent =
+      "Hydrogen storage screening · explore the preview or run the deployed demo model";
     reorder();
     state.site = order[0];
     buildFields();
@@ -1628,6 +1850,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     state.fault = faults.reduce(function (p, c, n) { return c.risk > faults[p].risk ? n : p; }, 0);
     renderFaultReadouts(); renderWaterfall();
     syncPlay();
+    initLive();
   }
 
   var acc = 0, last = 0;
