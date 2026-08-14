@@ -1,0 +1,61 @@
+# Controls what `gcloud run deploy --source .` uploads to Cloud Build.
+#
+# THIS FILE IS LOAD-BEARING. If it is absent, gcloud falls back to .gitignore
+# semantics, which exclude data/ and checkpoints/ — the build would then fail at
+# the COPY step with "file not found", because the model artifacts never got
+# uploaded.
+#
+# Note the `dir/*` form rather than `dir/`: gitignore syntax cannot re-include a
+# file whose parent directory is itself excluded, so excluding the CONTENTS and
+# then negating the few files we want is the only pattern that works.
+#
+# EVERY artifact pattern below is anchored with a leading slash. This is not
+# cosmetic: an unanchored `data/*` also matches `src/data/*`, which silently
+# uploaded src/data/ as an EMPTY DIRECTORY and made the container die at startup
+# with `ModuleNotFoundError: No module named 'src.data.dataset'`. gcloud's
+# matcher does not anchor `dir/*` to the root the way git does.
+#
+# Verify any change here with:
+#   gcloud meta list-files-for-upload | grep src/data
+
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Training data: keep only the two files the API needs.
+# data/states.npy is 5.9 GB and is deliberately NOT uploaded — the U-Net
+# predicts the state fields from geology, so only constants.npy is required.
+/data/*
+!/data/constants.npy
+!/data/stats.json
+
+# Checkpoints: only the best U-Net, not the archival snapshots.
+/checkpoints/*
+!/checkpoints/unet_small_best.pt
+
+# Outputs: only what the inference service loads.
+/outputs/*
+!/outputs/xgb_classifier.ubj
+!/outputs/shap_features.json
+!/outputs/xgb_results.json
+
+# Not needed at runtime.
+/notebooks/
+/kaggle/
+/docs/
+/runtime_artifacts/
+/api_artifacts/
+/figures/
+*.ipynb
+*.pdf
+*.mdb
+*.log
+.DS_Store
+
+# The Streamlit dashboard is a separate local tool, not part of the API image.
+/app/dashboard.py
