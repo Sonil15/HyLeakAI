@@ -169,39 +169,6 @@ PR-AUC 0.9941 → 0.9842, measured on 150 held-out simulations. That is the numb
 an operator actually wants when they ask whether the AI is good enough to decide
 on.
 
-### Where we are worth less than nothing
-
-Below a mitigation-to-loss ratio of **6.2e-5**, VOI turns **negative**.
-
-The mechanism is worth understanding: when mitigation is that cheap, the correct
-move is to mitigate almost regardless. A screen can then only *talk you out of
-it* — and since our estimate is bias-corrected using imperfectly known error
-rates, sometimes it wrongly does.
-
-**That boundary sits below the plausible range** of the cost ratio (1e-4 to
-1e-1), so across every ratio we consider credible the screen never destroys
-value. We report the boundary anyway: knowing where a tool fails is worth more
-than claiming it does not.
-
-> **Report the sign, not the ratio, in this corner.** Where VOI goes negative,
-> VOPI is also collapsing towards zero, so the *ratio* VOI/VOPI becomes wild —
-> a loss of 2e-10 against a VOPI of 3e-12 prints as "−80×", which wildly
-> overstates a rounding-scale effect. The code flags those points with
-> `efficiency_meaningful: false` and detects the boundary from the **sign of
-> VOI**. This bit us once already: see §12.
-
-Note the asymmetry, which is real mathematics rather than a quirk:
-
-- The **unaided** arm is an unbiased Bayesian update, so Jensen's inequality
-  guarantees its VOI ≥ 0. More data cannot hurt someone who updates correctly.
-- **Our** arm is bias-corrected, so it carries no such guarantee.
-
-We report this because it is true, because it is a property of bias-corrected
-screening in general rather than of our implementation, and because it defines
-the operating envelope a customer needs before buying. `voi.py --self-test`
-**asserts the regime still exists**, so it cannot quietly disappear in a later
-refactor.
-
 ---
 
 ## 6. The cost side, which we own completely
@@ -276,6 +243,50 @@ the National Green Hydrogen Mission targets 5 MMT/yr by 2030, and roughly
 **8,000 t/yr** was commissioned as of February 2026. Being the team that names
 that gap — and shows a costed path to the market that already exists — is a
 credibility position, not a weakness.
+
+### Market size, side by side
+
+The three markets are not comparable in scale today, and we say so rather than
+picking whichever number flatters us:
+
+| Market | Where it stands | Why it's (or isn't) near-term for us |
+|---|---|---|
+| Hydrogen storage | ~8,000 t/yr commissioned vs. a 5 MMT/yr 2030 target — early and small | The market we were built and validated for; not yet the market that pays |
+| Natural gas storage | Active buildout now, depleted fields as stated preferred reservoir | Same physics, same reservoir class, buyer already in the consortium (GAIL/ONGC/Petronet) |
+| CO₂ storage (CCUS) | On the order of ₹20,000 crore of committed Indian budget — the largest of the three by far | Physics doesn't transfer (see buoyancy table); walking past the biggest number on purpose is the credibility test |
+
+### Sequencing plan
+
+1. **Now — hydrogen.** Ship and validate against the market the tool was
+   purpose-built for, small as it is today.
+2. **Next — natural gas.** One retraining run, same method, active buyer —
+   the fastest real path to a paying pilot (see "what transfers," above).
+3. **Not yet — CO₂.** Largest budget, wrong physics for the current model.
+   Revisit only after either (a) the cyclic-index architecture assumption is
+   redesigned for monotonic injection, or (b) we can fit directly against real
+   CO₂ leakage data instead of relying on H₂-trained transfer.
+
+### What closing the CO₂ gap actually requires
+
+Unlike CH₄, this is not a retrain-with-new-weights problem. Four things have
+to happen, in roughly this order:
+
+1. **Redesign the cyclic-index channel.** The architecture encodes cyclic
+   inject/withdraw duty. CO₂ injection is monotonic — that input channel is
+   meaningless as-is and needs replacing, not retraining around.
+2. **Re-derive, not recalibrate, the buoyancy term.** CO₂'s driving force
+   against brine is ~5× weaker than H₂'s (0.21× vs. 0.88× for CH₄). CH₄
+   transfers via one config constant; CO₂ sits in a different physical
+   regime and needs the leakage physics re-derived for it.
+3. **Retrain and independently validate**, not just retrain. A CO₂-weighted
+   copy of the same architecture can't be trusted on the strength of "it
+   trained without error" — it needs a held-out check that it captures CO₂'s
+   different failure mode, the same discipline `--self-test` already applies
+   elsewhere in this module.
+4. **Ground it in real CO₂ leakage data or a validated CO₂ simulator.** We
+   lean on "close enough to H₂" for CH₄; that argument doesn't exist for
+   CO₂, so the retrained model needs an independent source of truth to check
+   against before it can be trusted.
 
 ---
 

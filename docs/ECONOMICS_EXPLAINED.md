@@ -84,18 +84,42 @@ decision is worth in rupees.
 
 ---
 
-## 6. When our tool could actually hurt (and why that's fine)
+## 6. The other side of the ledger: what it costs to miss a leak
 
-There's a mathematically real corner case: if fixing a potential leak is
-extremely cheap compared to the cost of a failure, the safest move is basically
-"always mitigate, don't even bother checking." In that narrow situation, our
-tool could talk someone out of mitigating when they shouldn't be talked out of
-it — making things slightly worse.
+What happens if there's no tool at all, and a real leak simply goes unfound?
 
-We calculated exactly where that boundary is, and it sits **way below** any
-realistic cost scenario we'd actually see in practice. We report it anyway,
-because knowing your tool's limits is more trustworthy than pretending it has
-none.
+We still won't invent a dollar figure for this — see [Section 2](#2-why-we-didnt-just-calculate-roi--saved)
+for why. But the VOI math already contains this scenario, because "cost ratio"
+in our sweep is exactly *mitigation cost ÷ failure cost*. The **worst case for
+missing a leak** is where that ratio is smallest: mitigation is cheap, but
+failure is enormously expensive relative to it. That's not a hypothetical for
+hydrogen storage — it's the realistic shape of the risk. Catching a bad fault
+early might mean re-cementing a well or lowering injection pressure. Missing
+one can mean an uncontrolled subsurface release, a well integrity failure, an
+ignition risk given hydrogen's wide flammability range, site abandonment,
+environmental remediation, and the regulatory and reputational fallout of a
+storage-safety incident — costs that are categorically larger than the fix
+would have been.
+
+At the cheap-mitigation / expensive-failure end of our swept range
+(cost ratio **0.0001**, from `outputs/voi_results.json`):
+
+- An **unaided operator** (2 simulations) captures essentially **0%** of the
+  value perfect information would give them (efficiency ≈ 2.5 × 10⁻¹⁴) — with
+  only two guesses, they are statistically no better than not looking at all.
+  In this regime, that near-zero efficiency **is** the cost of not finding the
+  leak: whatever the failure ends up costing, an unaided operator's process
+  gives them almost no chance of catching it in time to matter.
+- **Our tool** (20,000 screened hypotheses) still recovers about **21.5%** of
+  that value even in this hardest corner — worse than our headline 99.74%
+  (which is measured at a more moderate cost ratio), but nowhere near zero.
+
+The gap between those two numbers *is* the case for the product: it's largest
+exactly when the downside of missing a leak is largest. As the cost ratio
+moves toward more moderate territory, the unaided operator's efficiency stays
+pinned near zero throughout the whole sweep, while ours climbs past 99% — so
+the more expensive a missed leak is relative to fixing it, the more that gap
+matters.
 
 ---
 
@@ -119,24 +143,89 @@ better, not worse, as we check more possibilities.
 ## 8. Which markets we're going after (and which we're not)
 
 We picked our target fluids using real physics simulations (CoolProp), not
-guesses:
+guesses. The test was: does an H₂-trained model transfer to this fluid, or
+would it be quietly wrong?
 
-| Fluid | How similar to hydrogen | Can we use our model? |
+| Fluid | Viscosity vs H₂ | Density vs H₂ | Buoyancy vs brine (vs H₂) | Can we use our model? |
+|---|---|---|---|---|
+| Natural gas (CH₄) | 1.93× | 10.4× | **0.88×** — close | **Yes** |
+| CO₂ | 8.29× | 61.2× | **0.21×** — ~5× weaker | **No, not yet** |
+
+Caprock leakage is a buoyancy-driven process, so that last column is the one
+that decides transferability, not the market size. CH₄ sits close enough to
+H₂'s buoyancy behavior to interpolate. CO₂ doesn't — its driving force against
+brine is roughly five times weaker, so a model trained on hydrogen would
+mis-rank CO₂ risk systematically (always in the same direction), not
+randomly. CO₂ is also injected in one continuous push rather than the
+cyclic inject/withdraw pattern our model is built around, and our network
+architecture literally has a cyclic-index input channel that would be
+meaningless for it.
+
+### Why this matters: the two markets are very different sizes today
+
+- **Hydrogen storage (our current market)** is small and early. India's
+  National Green Hydrogen Mission targets 5 MMT/year by 2030; as of February
+  2026, roughly **8,000 t/yr** has actually been commissioned. That gap
+  between target and reality is real, and we say so — it's the market we
+  were built for, not the market that pays the bills yet.
+- **Natural gas storage (our next market)** is happening now, not in 2030.
+  India has begun building its first strategic natural gas storage, and
+  **depleted gas fields are the stated preferred option** — the same
+  reservoir class, with the same cyclic inject/withdraw duty cycle as
+  hydrogen storage. This is the market where our physics already applies
+  and the buyers already exist.
+- **CO₂ storage / CCUS (deliberately not our market, yet)** is the biggest
+  funded opportunity in India right now — on the order of **₹20,000 crore**
+  of committed CCUS budget. We are naming that we are walking past it. Our
+  physics doesn't transfer cleanly, and claiming it does just to chase the
+  bigger number would be dishonest — and it's exactly the kind of claim a
+  technical judge would test first.
+
+### Our near-term plan
+
+1. **Now — hydrogen storage.** Small market today, but the one our tool was
+   built and validated for.
+2. **Next — natural gas storage.** Same reservoir class as hydrogen, active
+   government buildout, and the fastest path to a paying pilot. This is
+   where we're pointed.
+3. **Not yet — CO₂ storage.** Bigger budget, wrong physics for our current
+   model. We say "not yet," not "no" — see the technical steps below.
+
+### The technical work to actually adapt the product
+
+Moving to a new fluid isn't a rewrite. Most of the product is fluid-agnostic
+by design, and only a narrow piece needs redoing per fluid:
+
+| What has to happen | For CH₄ (natural gas) | For CO₂ |
 |---|---|---|
-| Natural gas (CH₄) | Very similar behavior underground | **Yes** |
-| CO₂ | Behaves quite differently (weaker buoyancy, injected differently) | **No, not yet** |
+| Fault-decoupling method | Transfers fully — it's a method, not a fitted model | Transfers fully |
+| Core leakage physics | Transfers fully — swap one config constant (the fluid's viscosity) | Transfers fully |
+| Network architecture & training recipe | Reused as-is (~4.2 hours to retrain on a free-tier GPU) | Would need the cyclic-index assumption redesigned first |
+| Features, scoring, explainability, provenance tooling, API | Form transfers unchanged; only the fitted weights differ | Same, but only after the physics question above is resolved |
+| Trained model weights | **New training run required** — one retrain per fluid, using real or simulated CH₄ leak scenarios | Not attempted until we can show buoyancy-driven leakage transfers, or get real CO₂ field data to fit against directly |
 
-We're deliberately **not** claiming we can do CO₂ storage risk assessment, even
-though CO₂ storage (CCUS) is a bigger funded market in India right now. Our
-physics doesn't transfer cleanly to CO₂, and claiming it does would be
-dishonest. We'd rather say "not yet" than oversell.
+In short: the CH₄ expansion is one retraining run away, not a new product.
+The CO₂ expansion would require either new physics work to justify the
+transfer, or real observed CO₂ leakage data to train against directly —
+which is a materially bigger lift, and why we're not promising it on a
+near-term roadmap.
 
-**Our near-term plan:**
-1. **Now:** hydrogen storage (small market today, but where our tool was built for).
-2. **Next:** natural gas storage — India is actively building strategic gas
-   storage in old depleted gas fields, which is the exact same kind of
-   underground reservoir our tool understands. Big near-term opportunity.
-3. **Not yet:** CO₂ storage — physics doesn't transfer, so we don't claim it.
+**What "eventually" would actually take, for CO₂ specifically:**
+
+1. **Rebuild the injection-cycle assumption.** Our model assumes cyclic
+   inject/withdraw. CO₂ is injected continuously, one direction only — the
+   network's cyclic-index input channel would need to be redesigned, not
+   just retrained.
+2. **Re-derive the buoyancy physics**, not just recalibrate it. CO₂'s driving
+   force against brine is ~5× weaker than H₂'s — this isn't a config-constant
+   swap like CH₄, it's a genuinely different physical regime.
+3. **Retrain from scratch, and validate it separately.** Because the physics
+   differs, we couldn't trust a CO₂-trained copy of the same architecture
+   without checking it actually captures CO₂'s different failure mode.
+4. **Get real CO₂ leakage data to check against.** We can't lean on
+   "close enough to H₂" the way we do for CH₄, so we'd need real observed
+   data or a validated CO₂-specific simulator to confirm the retrained model
+   is right, not just self-consistent.
 
 ---
 

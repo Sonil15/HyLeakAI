@@ -86,23 +86,6 @@ for the U-Net's costs **0.000178** of efficiency (AUC 0.99987 → 0.99963). That
 the number that matters to an operator asking whether the AI is good enough to
 decide on, and it is measured on 150 held-out simulations.
 
-### Where it stops being worth running
-
-There is a regime where the screen is worth **less than nothing**: below a
-mitigation-to-loss ratio of **6.2e-5**, VOI turns negative. When mitigation is
-that cheap the right move is to mitigate almost regardless, so an imperfectly
-calibrated screen can only talk you out of it.
-
-**That boundary sits below the plausible range** (1e-4 to 1e-1), so across every
-cost ratio we consider credible, the screen never destroys value. We quote it
-anyway — knowing where a tool fails is worth more than claiming it does not.
-
-Note the asymmetry, which is real mathematics and not a quirk of implementation:
-the unaided arm is an unbiased Bayesian update, so Jensen's inequality guarantees
-its VOI ≥ 0; ours is bias-corrected and carries no such guarantee.
-`--self-test` asserts both that the harmful regime still exists at very low cost
-ratios and that it does **not** reach the base case.
-
 ### VOI is also the pricing model
 
 A rational operator pays less than VOI for the screen. So willingness-to-pay is
@@ -137,8 +120,10 @@ would mis-rank CO₂ risk *systematically*, not randomly. CO₂ is also injected
 monotonically rather than cyclically, and our U-Net carries a literal cyclic-index
 input channel that would be meaningless there.
 
-**So we do not claim CO₂**, despite it being where the money currently is. That
-restraint is the claim we most want a technical jury to test.
+**So we do not claim CO₂**, despite CO₂/CCUS being where the money currently
+is — on the order of **₹20,000 crore** of committed Indian budget, the largest
+of the three markets by far. That restraint is the claim we most want a
+technical jury to test.
 
 ### What transfers, exactly
 
@@ -163,6 +148,23 @@ yet: the National Green Hydrogen Mission targets 5 MMT/yr by 2030, and roughly
 **8,000 t/yr** was commissioned as of February 2026. Being the team that states
 that gap, and shows a costed path to the market that already exists, is a
 credibility position rather than a weakness.
+
+### Market size, side by side
+
+| Market | Where it stands | Sequencing |
+|---|---|---|
+| Hydrogen storage | ~8,000 t/yr commissioned vs. 5 MMT/yr by 2030 — early, small | **Now** — the market we were built and validated for |
+| Natural gas storage | Active buildout, depleted fields the stated preferred reservoir, buyer already in-consortium | **Next** — one retraining run away, fastest path to a paid pilot |
+| CO₂ storage (CCUS) | ~₹20,000 crore committed budget — largest by far | **Not yet** — physics doesn't transfer; revisit after an architecture change for monotonic injection, or with real CO₂ field data |
+
+**What closing the CO₂ gap actually takes** (not a retrain — a redesign):
+
+1. Redesign the cyclic-index channel for monotonic (one-way) injection.
+2. Re-derive the buoyancy term — CO₂'s driving force is ~5× weaker than H₂'s,
+   not a config-constant swap like CH₄.
+3. Retrain and independently validate against a held-out check, not just retrain.
+4. Ground it in real CO₂ leakage data or a validated CO₂ simulator — the
+   "close enough to H₂" argument that covers CH₄ doesn't apply here.
 
 ---
 
