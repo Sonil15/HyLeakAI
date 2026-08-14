@@ -69,6 +69,43 @@ class InferenceService:
             out = self.model(x).cpu().numpy()[0]
         return self.normalizer.pressure_inverse(out[0]).astype(np.float32), np.clip(out[1], 0, 1).astype(np.float32)
 
+    def field_layers(self, simulation_id: int, timestep: int, layers: tuple[str, ...]) -> dict:
+        """Return browser-ready grids with units and fixed provenance metadata.
+
+        These values are model/data output, unlike the former procedural web
+        illustration.  JSON is intentionally used for this first 128x128
+        implementation: it keeps the contract inspectable while Cloud Run is
+        being proven.  Tile/PNG delivery can replace it later without changing
+        the semantic layer names or metadata.
+        """
+        pressure, saturation = self.predict_fields(simulation_id, timestep)
+        constants = self.dataset.constants
+        available = {
+            "pressure": (pressure, "bar", "U-Net surrogate", [float(pressure.min()), float(pressure.max())]),
+            "saturation": (saturation, "fraction", "U-Net surrogate", [0.0, 1.0]),
+            "porosity": (np.asarray(constants[simulation_id, C.CONST_POROSITY], np.float32), "fraction", "dataset constant", None),
+            "permeability": (np.asarray(constants[simulation_id, C.CONST_PERMEABILITY], np.float32), "mD", "dataset constant", None),
+        }
+        result = {}
+        for name in layers:
+            values, units, source, value_range = available[name]
+            result[name] = {
+                "values": values.tolist(),
+                "units": units,
+                "source": source,
+                "range": value_range or [float(values.min()), float(values.max())],
+            }
+        return {
+            "simulation_id": simulation_id,
+            "timestep": timestep,
+            "grid": {"width": C.GRID, "height": C.GRID, "extent_m": [0.0, C.DOMAIN_M, 0.0, C.DOMAIN_M]},
+            "layers": result,
+            "limitations": [
+                "Pressure and saturation are U-Net surrogate predictions, not simulator truth fields.",
+                "Porosity and permeability are synthetic geological-realisation inputs, not site measurements.",
+            ],
+        }
+
     def assess(self, simulation_id: int, timestep: int, faults: list[Fault]) -> dict:
         pressure, saturation = self.predict_fields(simulation_id, timestep)
         constants = self.dataset.constants

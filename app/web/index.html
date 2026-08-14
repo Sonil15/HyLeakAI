@@ -926,16 +926,13 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     fault: 0,
     playing: !reduceMotion,
     mode: "preview",
-    live: { ready: false, simulationId: null, result: null, cached: false, mapScale: 1 }
+    live: { ready: false, simulationId: null, result: null, fields: null, cached: false, mapScale: 1 }
   };
 
-  /* On Fly the API serves this page, so requests go to the same origin and no
-     CORS is involved. Kept as a fallback so the GitHub Pages copy keeps working
-     against Render during the cutover — deliberately not a hard switch, so both
-     deployments stay live until Fly is verified. Delete the fallback once
-     Pages is retired. */
+  /* Cloud Run serves this page directly. GitHub Pages keeps using the same
+     Cloud Run API during the transition, rather than the retired Render demo. */
   var API_BASE = location.hostname.endsWith("github.io")
-    ? "https://hyleak-api-demo.onrender.com"
+    ? "https://hyleakai-152424867743.asia-south1.run.app"
     : "";
   var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
   /* A real API response captured on 2026-08-12. It makes the Live tab useful
@@ -956,6 +953,14 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   }
   function saveCachedResult(result) {
     try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify(result)); } catch (_) {}
+  }
+
+  async function loadLiveFields(simulationId, timestep) {
+    var response = await fetch(API_BASE + "/v1/fields/" + simulationId +
+      "?timestep=" + timestep + "&layers=pressure,saturation,permeability");
+    if (!response.ok) throw new Error("Field request failed (" + response.status + ")");
+    state.live.fields = await response.json();
+    drawSlab();
   }
 
   function liveStatus(message, isError) {
@@ -1012,6 +1017,9 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       renderLiveResult(state.live.result);
       drawSlab();
       liveStatus("Showing a cached verified API result. Select Run live assessment to refresh it now.");
+      loadLiveFields(state.live.simulationId, state.step).catch(function () {
+        liveStatus("Live results are ready; field grids will load when the Cloud Run revision is updated.");
+      });
     } catch (error) {
       badge.className = "src stub";
       badge.textContent = "API unavailable · preview remains available";
@@ -1062,8 +1070,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     await pause(350);
     setLiveStage(2, 1);
     liveStatus("Live run in progress: surrogate is inferring pressure and plume fields.");
-    drawSlab();
     try {
+      await loadLiveFields(state.live.simulationId, state.step);
       var response = await fetch(API_BASE + "/v1/assessments", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ simulation_id: state.live.simulationId, timestep: state.step,
@@ -1093,6 +1101,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   document.getElementById("run-live").addEventListener("click", runLiveAssessment);
   document.getElementById("live-simulation").addEventListener("change", function () {
     state.live.result = null;
+    state.live.fields = null;
     state.live.mapScale = 1;
     setLiveStage(0, 0);
     if (state.mode === "live") {
@@ -1492,8 +1501,43 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   var slab = document.getElementById("slab");
   var slabTip = document.getElementById("slab-tip");
 
+  function drawLiveField(g) {
+    var ctx = g.ctx, W = g.w, H = g.h;
+    var layerName = state.field === "sat" ? "saturation" : state.field === "pres" ? "pressure" : "permeability";
+    var layer = state.live.fields && state.live.fields.layers[layerName];
+    if (!layer) return false;
+    var grid = state.live.fields.grid, rows = layer.values, height = grid.height, width = grid.width;
+    var offscreen = document.createElement("canvas");
+    offscreen.width = width; offscreen.height = height;
+    var image = offscreen.getContext("2d").createImageData(width, height);
+    var lo = layer.range[0], hi = layer.range[1], stops = layerName === "saturation" ? VIRIDIS : layerName === "pressure" ? INFERNO : CIVIDIS;
+    if (layerName === "permeability") { lo = Math.log10(Math.max(lo, 1e-12)); hi = Math.log10(Math.max(hi, 1e-12)); }
+    var span = (hi - lo) || 1;
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        var value = rows[y][x];
+        if (layerName === "permeability") value = Math.log10(Math.max(value, 1e-12));
+        var color = ramp(stops, (value - lo) / span), index = (y * width + x) * 4;
+        image.data[index] = color[0]; image.data[index + 1] = color[1]; image.data[index + 2] = color[2]; image.data[index + 3] = 255;
+      }
+    }
+    offscreen.getContext("2d").putImageData(image, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    var pad = 46, size = Math.min(W - pad * 2, H - 70), left = (W - size) / 2, top = 30;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(offscreen, left, top, size, size);
+    ctx.strokeStyle = css("--line"); ctx.strokeRect(left, top, size, size);
+    ctx.fillStyle = css("--text-dim"); ctx.font = "11px " + css("--font-mono");
+    ctx.fillText("0 km", left, top + size + 20); ctx.fillText("7.68 km", left + size - 44, top + size + 20);
+    ctx.fillText("LIVE " + layerName.toUpperCase() + " · " + layer.source, left, top - 10);
+    var label = layerName === "permeability" ? "log10 " + layer.units : layer.units;
+    ctx.fillText(lo.toFixed(2) + "–" + hi.toFixed(2) + " " + label, left, top + size + 40);
+    return true;
+  }
+
   function drawSlab() {
     var g = fit(slab), ctx = g.ctx, W = g.w, H = g.h;
+    if (state.mode === "live" && drawLiveField(g)) return;
     updateFields();
 
     PROJ.sx = Math.min(W * 0.40, 330);
