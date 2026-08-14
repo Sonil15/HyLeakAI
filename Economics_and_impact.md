@@ -150,7 +150,7 @@ the swept range.
 | Arm | Hypotheses | VOI / VOPI |
 |---|---|---|
 | Unaided (exact simulator) | 2 | **0.00** |
-| **HyLeakAI screen** | **20,000** | **0.9975** |
+| **HyLeakAI screen** | **20,000** | **0.9974** |
 | Perfect information | — | 1.00 |
 
 **Efficiency is dimensionless** — it is a share of the available decision value,
@@ -164,20 +164,31 @@ scarce, not accuracy. That single row is the clearest statement of what the
 product is for.
 
 **The speedup is nearly free in decision terms.** Swapping the simulator's fields
-for the U-Net's costs **0.000145** of efficiency — AUC 0.99987 → 0.99963,
+for the U-Net's costs **0.000178** of efficiency — AUC 0.99987 → 0.99963,
 PR-AUC 0.9941 → 0.9842, measured on 150 held-out simulations. That is the number
 an operator actually wants when they ask whether the AI is good enough to decide
 on.
 
 ### Where we are worth less than nothing
 
-Below a mitigation-to-loss ratio of **1e-4**, screening efficiency is
-**−0.135**. Negative.
+Below a mitigation-to-loss ratio of **6.2e-5**, VOI turns **negative**.
 
 The mechanism is worth understanding: when mitigation is that cheap, the correct
 move is to mitigate almost regardless. A screen can then only *talk you out of
 it* — and since our estimate is bias-corrected using imperfectly known error
 rates, sometimes it wrongly does.
+
+**That boundary sits below the plausible range** of the cost ratio (1e-4 to
+1e-1), so across every ratio we consider credible the screen never destroys
+value. We report the boundary anyway: knowing where a tool fails is worth more
+than claiming it does not.
+
+> **Report the sign, not the ratio, in this corner.** Where VOI goes negative,
+> VOPI is also collapsing towards zero, so the *ratio* VOI/VOPI becomes wild —
+> a loss of 2e-10 against a VOPI of 3e-12 prints as "−80×", which wildly
+> overstates a rounding-scale effect. The code flags those points with
+> `efficiency_meaningful: false` and detects the boundary from the **sign of
+> VOI**. This bit us once already: see §12.
 
 Note the asymmetry, which is real mathematics rather than a quirk:
 
@@ -305,7 +316,7 @@ Both are cheap to grant, and only MC²+ can grant them.
   price is our own compute.
 - **No speedup or cost ratio against tNavigator** — we never timed it.
 - **No CO₂ / CCUS capability.** The buoyancy table is why.
-- **Efficiency 0.9975 does not mean the label is right.** It means we capture
+- **Efficiency 0.9974 does not mean the label is right.** It means we capture
   that share of the *available decision value*. The label remains ours,
   semi-analytical and uncalibrated — which is exactly what the ask is for.
 - **Sensitivity/specificity come from a binormal ROC** fitted to the measured
@@ -355,7 +366,7 @@ the register so the omission is visible rather than quiet.
 
 | Claim | File |
 |---|---|
-| Efficiency 0.9975 vs 0.00, the negative regime, all sweeps | `outputs/voi_results.json` |
+| Efficiency 0.9974 vs 0.00, the harmful boundary, all sweeps | `outputs/voi_results.json` |
 | Fluid properties, transfer table, calibration check | `outputs/fluid_properties.json` |
 | Unit cost, marginal-cost regression, timings | `outputs/unit_cost.json` |
 | Every input with its provenance tag | `outputs/assumption_register.json` |
@@ -375,3 +386,52 @@ the register so the omission is visible rather than quiet.
 > must never present it as such. Our novelty is the **fault-hypothesis layer**,
 > which sits on top of *any* surrogate — including someone else's. That is also
 > why it survives every fluid swap.
+
+---
+
+## 12. Two mistakes we made building this, and what they cost
+
+Recorded in the same spirit as `docs/FINDINGS.md`: if a judge asks how we know
+the numbers are right, "we found our own bugs and wrote them down" is a better
+answer than "they looked plausible."
+
+### Mistake 1 — the flattering framing
+
+The first model treated a dangerous site as containing ~387 dangerous fault
+hypotheses (the pooled positive rate × 20,000). Detection was then trivial and
+efficiency saturated at **1.0000 screened vs 0.0000 unaided** — a stark-looking
+result that was really an artefact of the setup.
+
+The fix came from our own pitch language: *twenty thousand guesses about **one**
+crack*. There is one fault, nobody observes it, and both parties are estimating
+the same probability. That reframing produced the bias–variance comparison in §4,
+which is both harder to attack and more interesting.
+
+**Lesson:** a number that makes you look perfect is a bug report.
+
+### Mistake 2 — a sign error in the Rogan-Gladen inversion
+
+`screened_threshold()` solves for the true θ at which the screen's estimate
+crosses the decision line. The calibration-error term had **its sign inverted**.
+
+It was nearly invisible, for a bad reason: the two terms cancel exactly whenever
+the true and estimated specificities agree — which is almost always, since
+specificity is measured on 15,603 negative rows. So the bug only bit in the one
+place the module exists to model: **calibration error**.
+
+It was caught during PR review, by checking the function against an *independent*
+restatement of the estimator rather than against the same algebra. What it had
+been corrupting was precisely the harmful-regime result: it reported the screen
+as value-destroying at a cost ratio of 1e-4 (efficiency −0.135). With the sign
+corrected, that boundary moves to **6.2e-5 — below the plausible range** — and
+the base-case efficiency shifts 0.9975 → 0.9974.
+
+So the corrected story is *better* for us, which is exactly why it needed
+checking rather than accepting.
+
+`--self-test` now verifies the threshold round-trips through an independently
+written form of the estimator, at four calibration configurations plus the
+perfectly-calibrated case where θ\* must equal the cost ratio exactly.
+
+**Lesson:** assert against an independent restatement, not against a rearrangement
+of the same expression.

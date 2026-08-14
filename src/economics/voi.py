@@ -190,8 +190,10 @@ def screened_threshold(cost_ratio: float, se_true: float, sp_true: float,
     slope = se_true - (1.0 - sp_true)
     if slope <= 1e-12:
         return 1.0  # a test with no discrimination never triggers mitigation
+    # estimate(theta) = (theta*slope + (1 - sp_true) - (1 - sp_hat)) / denom_hat
+    # Setting that equal to the cost ratio and solving for theta:
     denom_hat = se_hat - (1.0 - sp_hat)
-    return float((cost_ratio * denom_hat - (1.0 - sp_hat) + (1.0 - sp_true)) / slope)
+    return float((cost_ratio * denom_hat - (1.0 - sp_true) + (1.0 - sp_hat)) / slope)
 
 
 def expected_cost_screened(a: float, b: float, cost_ratio: float,
@@ -251,13 +253,22 @@ def compare(prior_mean: float, cost_ratio: float, auc: float, k: int,
     def eff(v: float) -> float:
         return float(v / vopi) if vopi > 1e-12 else 0.0
 
+    # When VOPI collapses towards zero there is almost no decision value on the
+    # table, and the ratio VOI/VOPI stops being informative — a loss of 2e-10
+    # against a VOPI of 3e-12 reports as "-80x", which overstates a rounding-scale
+    # effect enormously. Flag those points rather than quoting the ratio: the
+    # honest statement there is the SIGN of VOI, not its size relative to nothing.
+    meaningful = bool(vopi > 1e-9)
+
     return {
         "vopi": float(vopi),
+        "efficiency_meaningful": meaningful,
         "unaided": {"k": k, "voi": float(voi_unaided), "efficiency": eff(voi_unaided)},
         "screened": {
             "n_hypotheses": int(A.get("hypotheses_per_field_prediction").value),
             "voi": float(voi_screened),
             "efficiency": eff(voi_screened),
+            "harmful": bool(voi_screened < 0),
             "operating_point": {"sensitivity": best["sensitivity"],
                                 "specificity": best["specificity"]},
         },
@@ -311,16 +322,43 @@ def self_test() -> None:
     assert all(b >= a - 1e-3 for a, b in zip(effs, effs[1:])), (
         f"screened efficiency fell as AUC rose: {effs}")
 
+    # screened_threshold must actually invert the Rogan-Gladen estimate. This is
+    # checked against an independent restatement of the estimator rather than
+    # against the same algebra: a sign error here is invisible whenever the true
+    # and estimated specificities agree, which is most of the time, and it
+    # corrupts exactly the calibration-error term the module exists to model.
+    for se_t, sp_t, se_h, sp_h, r in (
+        (1.00, 0.98, 1.00, 0.99, 0.05),
+        (0.95, 0.999, 0.97, 0.995, 0.02),
+        (0.90, 0.90, 0.90, 0.90, 0.10),   # perfectly calibrated -> theta* == r
+        (0.99, 0.995, 0.95, 0.999, 0.001),
+    ):
+        t_star = screened_threshold(r, se_t, sp_t, se_h, sp_h)
+        observed = t_star * se_t + (1.0 - t_star) * (1.0 - sp_t)
+        recovered = (observed - (1.0 - sp_h)) / (se_h - (1.0 - sp_h))
+        assert abs(recovered - r) < 1e-9, (
+            f"screened_threshold does not invert the estimator: at theta*={t_star:.6f} "
+            f"the analyst would estimate {recovered:.6f}, not the cost ratio {r}")
+    assert abs(screened_threshold(0.07, 0.9, 0.9, 0.9, 0.9) - 0.07) < 1e-12, (
+        "with perfect calibration the decision threshold must be the cost ratio itself")
+
     # The negative regime must actually exist and must be where theory says: at a
     # mitigation cost so low that the right move is to mitigate almost always, so
     # a miscalibrated screen can only talk you out of it. If this stops failing,
     # the calibration error has been dropped from the model by accident.
-    harmful = compare(0.10, 1e-4, 0.999628776017932, 2)["screened"]["efficiency"]
+    # Asserted on the SIGN OF VOI, not on efficiency: where this regime lives,
+    # VOPI is near zero and the ratio is numerically wild, so the ratio is the
+    # wrong quantity to test.
+    harmful = compare(0.10, 1e-5, 0.999628776017932, 2)["screened"]["voi"]
     assert harmful < 0, (
         "the screen no longer shows a value-destroying regime at a very low "
         "mitigation/loss ratio. That regime is real — it is what miscalibration "
         f"does — so its disappearance means Se/Sp uncertainty stopped being "
-        f"propagated. Got efficiency {harmful:+.4f}.")
+        f"propagated. Got VOI {harmful:+.3e}.")
+    # ...and it must NOT appear at the base case, or the screen is not sellable.
+    base = compare(0.10, float(np.sqrt(1e-4 * 1e-1)), 0.999628776017932, 2)
+    assert base["screened"]["voi"] > 0 and base["screened"]["efficiency"] > 0.9, (
+        f"the screen lost its value at the base case: {base['screened']}")
 
     # The binormal inversion must round-trip.
     from scipy.stats import norm
@@ -370,8 +408,19 @@ def build_report() -> dict:
     # ratio the right action is to mitigate almost regardless, and a screen with
     # imperfect calibration can only talk you out of it. Locate that boundary and
     # report it — it is the honest operating limit of the product.
-    harmful = [row for row in sweep_ratio if row["screened_efficiency"] < 0]
-    harmful_below = max(r["cost_ratio"] for r in harmful) if harmful else None
+    # Detected on the sign of VOI, not on the efficiency ratio: in this corner
+    # VOPI is near zero, so the ratio is numerically wild and would misreport a
+    # rounding-scale loss as a catastrophic one.
+    #
+    # The probe deliberately runs BELOW the register's plausible range, because
+    # the finding that matters is whether the harmful regime falls inside it or
+    # outside it. Reporting "not found" from a sweep that never looked would be
+    # the wrong kind of silence.
+    probe = np.logspace(-6, np.log10(ratio.high), 40)
+    harmful_probe = [(float(r), compare(prior.value, float(r), auc_sur, k)["screened"]["voi"])
+                     for r in probe]
+    harmful_below = max((r for r, v in harmful_probe if v < 0), default=None)
+    inside_plausible_range = bool(harmful_below is not None and harmful_below >= ratio.low)
 
     return {
         "framing": (
@@ -401,6 +450,7 @@ def build_report() -> dict:
             with_sim["screened"]["efficiency"] - headline["screened"]["efficiency"]),
         "simulator_runs_to_match_screen": breakeven,
         "value_destroying_below_cost_ratio": harmful_below,
+        "value_destroying_inside_plausible_range": inside_plausible_range,
         "sweep_cost_ratio": sweep_ratio,
         "sweep_prior": sweep_prior,
         "sweep_k_simulated": sweep_k,
@@ -434,6 +484,9 @@ def _row(c: dict) -> dict:
         "unaided_efficiency": c["unaided"]["efficiency"],
         "efficiency_gain": c["efficiency_gain"],
         "k_simulated": c["unaided"]["k"],
+        "screened_voi": c["screened"]["voi"],
+        "vopi": c["vopi"],
+        "efficiency_meaningful": c["efficiency_meaningful"],
     }
 
 
@@ -475,12 +528,24 @@ def main() -> int:
 
     harmful_below = report["value_destroying_below_cost_ratio"]
     if harmful_below:
+        inside = report["value_destroying_inside_plausible_range"]
+        lo, hi = report["inputs"]["cost_ratio_swept"]
         print(f"\nWHERE IT STOPS BEING WORTH RUNNING")
-        print(f"  Below a mitigation/loss ratio of {harmful_below:.1e}, screening "
-              f"is worth LESS than nothing:")
-        print(f"  mitigation is then cheap enough that the right move is to "
-              f"mitigate almost regardless,")
-        print(f"  and an imperfectly calibrated screen can only talk you out of it.")
+        print(f"  Below a mitigation/loss ratio of {harmful_below:.1e}, VOI turns "
+              f"NEGATIVE: mitigation is")
+        print(f"  then cheap enough that the right move is to mitigate almost "
+              f"regardless, and an")
+        print(f"  imperfectly calibrated screen can only talk you out of it.")
+        if inside:
+            print(f"  *** That boundary is INSIDE the plausible range "
+                  f"({lo:.0e}-{hi:.0e}). Report it. ***")
+        else:
+            print(f"  It sits BELOW the plausible range ({lo:.0e}-{hi:.0e}), so "
+                  f"across every cost ratio")
+            print(f"  we consider credible, the screen never destroys value. "
+                  f"Quote the boundary anyway —")
+            print(f"  knowing where a tool fails is worth more than claiming it "
+                  f"does not.")
 
     print("\nSWEEP over mitigation/loss ratio")
     print(f"{'ratio':>10} {'screened':>10} {'unaided':>10} {'gain':>8}")

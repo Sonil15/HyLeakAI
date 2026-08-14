@@ -844,7 +844,7 @@ is what you want from an interpretability check.
 4. **Any $/kg, $/workover, or ROI figure.** The economics module now exists
    (`src/economics/`) and this restriction is unchanged — the module deliberately produces
    no currency figure, because every route to one runs through a leak rate nobody can
-   calibrate. Quote the **dimensionless** efficiency ratio (VOI/VOPI = 0.9975 screened,
+   calibrate. Quote the **dimensionless** efficiency ratio (VOI/VOPI = 0.9974 screened,
    0.00 unaided), and the one money figure we own end to end: our own compute, 0.652
    vCPU-seconds per screening pass. The $/kg and workover-cost entries are still marked
    UNVERIFIED in `src/economics/assumptions.py`, which **refuses to give them a point
@@ -1262,7 +1262,7 @@ whose risk panel is real in Live model mode but whose reservoir visual is still 
 mockup, plus one local research tool that can't be deployed. Module 4 (economics) is built
 for the finals, but not as Document 9 asked: it returns no ROI, because an ROI needs a leak
 rate and no ground truth for one exists anywhere. It computes Value of Information instead —
-20,000 screened fault hypotheses capture 0.9975 of the available decision value, two exact
+20,000 screened fault hypotheses capture 0.9974 of the available decision value, two exact
 simulator runs capture 0.00. We think an accurate status table beats four half-claims.
 
 **"Two of your three frontend panels are fake."**

@@ -74,7 +74,7 @@ invented price at all.
 | Arm | Hypotheses | VOI / VOPI |
 |---|---|---|
 | Unaided (exact simulator) | 2 | **0.00** |
-| HyLeakAI screen | 20,000 | **0.998** |
+| HyLeakAI screen | 20,000 | **0.9974** |
 | Perfect information | — | 1.00 |
 
 Raising the simulator budget to 20 exact runs still yields **0.00** — because at
@@ -82,21 +82,26 @@ the base cost ratio, two or twenty samples never move the decision across the
 threshold. Coverage, not accuracy, is what is scarce.
 
 **The speedup is nearly free in decision terms.** Swapping the simulator's fields
-for the U-Net's costs **0.00015** of efficiency (AUC 0.99987 → 0.99963). That is
+for the U-Net's costs **0.000178** of efficiency (AUC 0.99987 → 0.99963). That is
 the number that matters to an operator asking whether the AI is good enough to
 decide on, and it is measured on 150 held-out simulations.
 
 ### Where it stops being worth running
 
-Below a mitigation-to-loss ratio of **1e-4**, screening is worth **less than
-nothing** — efficiency −0.135. When mitigation is that cheap the right move is to
-mitigate almost regardless, and an imperfectly calibrated screen can only talk
-you out of it.
+There is a regime where the screen is worth **less than nothing**: below a
+mitigation-to-loss ratio of **6.2e-5**, VOI turns negative. When mitigation is
+that cheap the right move is to mitigate almost regardless, so an imperfectly
+calibrated screen can only talk you out of it.
 
-We report this because it is true, it is a property of bias-corrected screening
-rather than of our implementation, and it defines the operating envelope a
-customer needs to know before buying. `--self-test` asserts the regime still
-exists, so it cannot quietly vanish from a future refactor.
+**That boundary sits below the plausible range** (1e-4 to 1e-1), so across every
+cost ratio we consider credible, the screen never destroys value. We quote it
+anyway — knowing where a tool fails is worth more than claiming it does not.
+
+Note the asymmetry, which is real mathematics and not a quirk of implementation:
+the unaided arm is an unbiased Bayesian update, so Jensen's inequality guarantees
+its VOI ≥ 0; ours is bias-corrected and carries no such guarantee.
+`--self-test` asserts both that the harmful regime still exists at very low cost
+ratios and that it does **not** reach the base case.
 
 ### VOI is also the pricing model
 
@@ -193,7 +198,7 @@ additions:
 - The screen's ceiling is set by how well Se/Sp are known, and sensitivity rests
   on ~308 positive held-out rows. **More hypotheses cannot raise that ceiling** —
   only a better-characterised classifier can.
-- Efficiency of 0.998 says how much of the *available decision value* the screen
+- Efficiency of 0.9974 says how much of the *available decision value* the screen
   captures. It does **not** say the underlying T3 label is correct. That label is
   ours, semi-analytical, and uncalibrated — see the ask.
 

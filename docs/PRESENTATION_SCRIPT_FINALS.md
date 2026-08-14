@@ -1,16 +1,16 @@
 # MC²+ Grand Finale — 4–5 Minute Script
 
-**Spoken words: 777** (counted, not estimated — recount with the snippet at the
+**Spoken words: 788** (counted, not estimated — recount with the snippet at the
 bottom after any edit). Plus ~20 s of clicking in the demo:
 
 | Delivery pace | Total |
 |---|---|
-| 150 wpm — deliberate | 5:30 |
-| **160 wpm — normal** | **5:11** |
-| 170 wpm — brisk | 4:54 |
+| 150 wpm — deliberate | 5:35 |
+| **160 wpm — normal** | **5:15** |
+| 170 wpm — brisk | 4:58 |
 
 **If your slot is hard-capped at 5:00, take cuts 1 and 2 from the cut list at the
-bottom (−78 words) and you land at 4:42 at 160 wpm.** Do not plan to speak at 170
+bottom (−78 words) and you land at 4:46 at 160 wpm.** Do not plan to speak at 170
 to make the time — nerves make people faster and less clear, and the economics
 block is the one that must land.
 
@@ -126,7 +126,7 @@ it means.
 
 ---
 
-## 3:33–4:43 — SLIDE · The economics  *(186 words)*
+## 3:33–4:44 — SLIDE · The economics  *(197 words)*
 
 **This is the block that did not exist last round. Do not rush it.**
 
@@ -147,16 +147,16 @@ it means.
 > approximate ones.
 >
 > Two exact samples capture **zero** percent of the available decision value.
-> Twenty thousand approximate ones capture **ninety-nine point eight**. It's a
+> Twenty thousand approximate ones capture **ninety-nine point seven**. It's a
 > ratio — no currency in it, because there's nothing honest to put there yet.
 >
-> We also found where we're worth **less than nothing**: when mitigation is cheap
-> enough you'd do it anyway. That's in the output, and a test fails if it
-> disappears.
+> We also found where we'd be worth **less than nothing** — when mitigation is so
+> cheap you'd do it anyway. It sits outside the range we think is credible, and we
+> report it anyway. A test fails if it ever disappears.
 
 ---
 
-## 4:43–5:11 — SLIDE · Where this goes, and the ask  *(78 words)*
+## 4:44–5:15 — SLIDE · Where this goes, and the ask  *(78 words)*
 
 > Next market is natural gas storage. Same depleted fields, same
 > inject-and-withdraw cycle. We computed the fluid properties rather than
@@ -173,7 +173,7 @@ it means.
 
 # If a judge pushes
 
-**"Ninety-nine point eight percent sounds too good."**
+**"Ninety-nine point seven percent sounds too good."**
 > It's a ratio against perfect information, not an accuracy. And it's high
 > because coverage is what's scarce, not accuracy — twenty exact simulator runs
 > still score zero on the same scale. The screen's own ceiling is set by how well
@@ -241,7 +241,7 @@ Lift *"And here's what surprises people... straight through the seal."* Keep
 *"So a fault isn't a hole in your seal. It's a chimney through it."* — the image
 lands without the geology lecture behind it.
 
-> Cuts 1 + 2 = **−78 words → 699 → 4:42 at 160 wpm.** This is the recommended
+> Cuts 1 + 2 = **−78 words → 710 → 4:46 at 160 wpm.** This is the recommended
 > pair for a hard 5:00 cap.
 
 **Cut 3 — slide 1's second half (−22 words).**
