@@ -51,7 +51,7 @@ actually exists today and what doesn't:
 | 1 | **Geological / subsurface intelligence** — screen candidate sites for storage suitability (caprock stability, fault zones) | 🟡 **Prototype built** | `src/site_suitability.py` ranks all 1,000 realisations by a weighted composite of storage capacity, caprock seal risk, and heterogeneity — see `docs/SITE_SUITABILITY.md`. Clustering was tried first and dropped (weak silhouette, geology features are collinear — a continuum, not discrete site types). **Frontend built** — the Storage Atlas panel in `app/web/index.html` plots all 1,000 sites on real output, with live re-weighting. |
 | 2 | **AI leakage prediction engine** | ✅ **Built, narrower scope** | U-Net surrogate + XGBoost risk model + SHAP, described above. Predicts leakage risk for a hypothesised fault, not the full original list (no explicit "safe injection pressure limit" output yet, though the caprock margin feature it would come from already exists). |
 | 3 | **Digital twin & visualisation dashboard** | 🟡 **Partial** | Two frontends, for two purposes. `app/dashboard.py` (Streamlit) is the local research tool — risk trajectory, fault-ensemble sweep, SHAP attribution — and needs the full 12.38 GB dataset, so it cannot be deployed. `app/web/index.html` is the deployable one: a self-contained page with a 2.5D reservoir slab, spatial fault swarm and cycle-ribbon timeline, plus a **Live model** mode that calls the deployed FastAPI service (`api/`, see `docs/PRODUCT_API_PLAN.md`) for real U-Net + XGBoost risk numbers — the risk panel and its SHAP attribution are genuine in that mode. Preview mode's reservoir and risk panels remain procedural mockups. The visual field render itself is illustrative even in Live mode; only the numbers underneath it are real. See `docs/FRONTEND.md`. |
-| 4 | **Economic & operational optimisation** | ❌ **Not started** | No code. A scoped-down spec (differential ROI, not full project NPV) exists in `Build_Plan.md`'s Economics section and is still a reasonable starting point if this gets built. |
+| 4 | **Economic & operational optimisation** | ✅ **Built, reframed** | `src/economics/` — and it deliberately reports **no ROI**. An ROI needs a leak rate, and no leakage ground truth exists anywhere in the world (that absence is the project's premise), so pricing our own uncalibrated label would be a guess wearing a currency symbol. Instead `voi.py` computes **Value of Information** — what the screen is worth in *decisions changed* — whose headline output is dimensionless. Result: 20,000 screened fault hypotheses capture **0.9974** of the available decision value; **two exact simulator runs capture 0.00**, and so do twenty. Coverage is what is scarce, not accuracy. Also reports the regime where the screen would be worth **less than nothing** (below a mitigation/loss ratio of 6.2e-5) — which sits *below* the plausible range, so across every credible ratio it never destroys value. Supporting modules: `fluids.py` (CoolProp evidence for the CH₄-next / not-CO₂ claim), `assumptions.py` (provenance register that refuses to give an UNVERIFIED quantity a point value), `unit_cost.py` (0.652 vCPU-seconds per pass, marginal cost per hypothesis indistinguishable from zero). Full explanation in `Economics_and_impact.md`; slide-ready version in `docs/COMMERCIAL.md`. Supersedes the differential-ROI spec in `Build_Plan.md`. |
 
 **Path ahead, in order:**
 
@@ -73,10 +73,11 @@ actually exists today and what doesn't:
 4. **Safe injection pressure limit.** Derive an explicit max-safe-pressure
    number from the caprock margin feature that already exists, and surface
    it on the dashboard — closes most of the gap in module 2.
-5. **Economics module.** Port the differential-ROI spec from
-   `Build_Plan.md` (avoided loss + avoided intervention, minus system cost
-   and false-positive cost — deliberately not a full project NPV) into
-   working code.
+5. ~~**Economics module.**~~ **Done, and deliberately not as specced.**
+   `src/economics/` — the differential-ROI spec in `Build_Plan.md` was
+   dropped because every route to a currency figure runs through a leak rate
+   nobody can calibrate. `voi.py` computes **Value of Information** instead,
+   whose headline output is dimensionless. See `Economics_and_impact.md`.
 6. **Dashboard: geology/fault-zone map.** Add a plan-view panel (porosity,
    permeability, fault-activation zones) to close the gap toward an actual
    "digital twin" view, rather than just the risk-trajectory charts it has

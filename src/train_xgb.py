@@ -172,6 +172,12 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=C.SPLIT_SEED)
     ap.add_argument("--shap-samples", type=int, default=5000)
     ap.add_argument("--no-shap", action="store_true")
+    ap.add_argument("--dump-predictions", action="store_true",
+                    help="write held-out scores and labels for the reported horizon to "
+                         "xgb_test_predictions.npz. Needed by src.economics.voi, which "
+                         "requires an ROC — the summary metrics in xgb_results.json fix "
+                         "AUC and PR-AUC but not the sensitivity/specificity pair at any "
+                         "particular operating point.")
     ap.add_argument("--horizons", type=int, nargs="+", default=None,
                     help="horizons to sweep (default: all present in the table)")
     ap.add_argument("--report-horizon", type=int, default=None,
@@ -251,7 +257,7 @@ def main() -> int:
         }
         sweep_rows.append((h, months, cm["pr_auc"], cmp_["pr_auc"], d_pr,
                            rm["r2"], rmp["r2"], d_r2))
-        trained[h] = (clf, reg, X, masks)
+        trained[h] = (clf, reg, X, masks, y_cls)
 
     # -- the summary that actually answers the question --
     print("\n" + "=" * 74)
@@ -283,7 +289,7 @@ def main() -> int:
 
     if report_h is None:
         report_h = best[0]
-    clf, reg, X, masks = trained[report_h]
+    clf, reg, X, masks, y_cls = trained[report_h]
     print(f"\nSaving the horizon-{report_h} model "
           f"({report_h * C.MONTHS_PER_STEP} months) — "
           f"{'largest gain over persistence' if report_h == best[0] else 'requested'}.")
@@ -311,6 +317,31 @@ def main() -> int:
         np.save(args.out_dir / "shap_values_test.npy", values)
         np.save(args.out_dir / "shap_rows_test.npy", idx)
         (args.out_dir / "shap_features.json").write_text(json.dumps(feats, indent=2))
+
+    if args.dump_predictions:
+        # `sim_id` travels with the scores because a screening decision is taken
+        # per SITE, not per row: a site carries ~20 fault hypotheses x 60
+        # timesteps, and pooling them as if they were independent trials would
+        # overstate how much the screen actually resolves.
+        test_rows = table[masks["test"]]
+        scores = clf.predict_proba(X["test"])[:, 1]
+        y_true = y_cls["test"]
+        assert scores.shape == y_true.shape == (test_rows.shape[0],), (
+            f"prediction dump misaligned: scores {scores.shape}, "
+            f"labels {y_true.shape}, rows {test_rows.shape[0]}")
+        np.savez_compressed(
+            args.out_dir / "xgb_test_predictions.npz",
+            y_true=y_true.astype(np.int8),
+            y_score=scores.astype(np.float32),
+            sim_id=test_rows[:, columns.index("sim_id")].astype(np.int16),
+            timestep=test_rows[:, columns.index("timestep")].astype(np.int16),
+            horizon=np.int16(report_h),
+            leak_threshold_m3_s=np.float64(
+                meta["leak_thresholds_m3_s"][str(report_h)]),
+        )
+        print(f"Dumped {y_true.size:,} held-out predictions "
+              f"({int(y_true.sum()):,} positive, {y_true.mean():.4%}) "
+              f"to {args.out_dir / 'xgb_test_predictions.npz'}")
 
     clf.save_model(args.out_dir / "xgb_classifier.ubj")
     reg.save_model(args.out_dir / "xgb_regressor.ubj")

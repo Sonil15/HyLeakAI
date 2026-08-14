@@ -329,10 +329,12 @@ makes a technical panel trust everything else you said. It also pre-empts the qu
 Roughly **half** of the gas in a porous storage site is **cushion gas**: permanently
 immobilised inventory whose only job is to hold reservoir pressure high enough that the
 working gas can be produced at rate. For hydrogen at ~$5/kg this is the single largest
-capital item in a porous store, and it is why our (unbuilt) economics module deliberately
-computes a **differential** — the incremental value of adding HyLeakAI to a site that
-already exists — so that cushion gas, drilling, and facilities all *cancel*
-(`Build_Plan.md` §Economics). Scale anchor from that doc, to be verified before quoting:
+capital item in a porous store, and it is why the economics module never prices the store
+itself. The built module (`src/economics/voi.py`) goes further than the differential that
+was originally specced: it reports a **dimensionless** ratio, so cushion gas, drilling and
+facilities do not merely *cancel* — they never enter at all. The superseded differential
+spec is in `Build_Plan.md` §Economics. Scale anchor from that doc, still unverified and
+not to be quoted as a point value:
 **~10,000 t working gas at ~$5/kg ≈ $50M inventory, so 1% annual loss ≈ $500k/yr.**
 
 ### 3.9 Cyclic operation — why the time axis is the interesting one
@@ -839,9 +841,14 @@ is what you want from an interpretability check.
    289.9 bar over a **100-simulation sample**. The full-1,000 value in
    `outputs/site_suitability_features.csv` is **0.792**. Quote **293.8 bar → margin 0.79**,
    or quote the 100-sim pair together. Don't mix them.
-4. **Any $/kg, $/workover, or ROI figure.** The economics module does not exist. Everything
-   in `Build_Plan.md` §Economics is a *spec* with an assumption register that marks most
-   inputs UNVERIFIED. Present it as designed-and-scoped, never as computed.
+4. **Any $/kg, $/workover, or ROI figure.** The economics module now exists
+   (`src/economics/`) and this restriction is unchanged — the module deliberately produces
+   no currency figure, because every route to one runs through a leak rate nobody can
+   calibrate. Quote the **dimensionless** efficiency ratio (VOI/VOPI = 0.9974 screened,
+   0.00 unaided), and the one money figure we own end to end: our own compute, 0.652
+   vCPU-seconds per screening pass. The $/kg and workover-cost entries are still marked
+   UNVERIFIED in `src/economics/assumptions.py`, which **refuses to give them a point
+   value** — the register raises on import if you try. See `Economics_and_impact.md`.
 5. **Working-gas tonnage.** Derivable from `hpv_total_m3` × H₂ density, but reservoir
    temperature is never stated in the paper, so the density is an assumption. If you want a
    tonnage on stage, derive it live from stated assumptions or leave it out.
@@ -1252,9 +1259,11 @@ Two and a half, and the README has a status table saying exactly which. Module 2
 prediction) is built at a narrower scope. Module 1 (geological intelligence) has a working
 prototype with a live frontend. Module 3 (dashboard) is partial — one deployable frontend
 whose risk panel is real in Live model mode but whose reservoir visual is still a labelled
-mockup, plus one local research tool that can't be deployed. Module 4 (economics) is not
-started; there's a scoped-down spec and no code. We think an accurate status table beats
-four half-claims.
+mockup, plus one local research tool that can't be deployed. Module 4 (economics) is built
+for the finals, but not as Document 9 asked: it returns no ROI, because an ROI needs a leak
+rate and no ground truth for one exists anywhere. It computes Value of Information instead —
+20,000 screened fault hypotheses capture 0.9974 of the available decision value, two exact
+simulator runs capture 0.00. We think an accurate status table beats four half-claims.
 
 **"Two of your three frontend panels are fake."**
 Only in Preview mode, and it's labelled — a badge per panel and a footer naming exactly
@@ -1376,7 +1385,22 @@ the deck is wrong.
   fault, on real simulated flow fields.
 - ❌ "Site #468 is the best site" — report tiers or percentile rank; the top-10 shifts 2–5
   seats under re-weighting.
-- ❌ Any ROI, $/kg, or avoided-cost number — the economics module does not exist.
+- ❌ Any ROI, $/kg, or avoided-cost number. **Module 4 now exists** (`src/economics/`)
+  but this claim does not change, because the module deliberately does not produce
+  one — no leak-rate ground truth exists to price. Quote the **dimensionless**
+  efficiency ratio (VOI/VOPI) instead, and the only real money figure we own: our
+  own compute cost, 0.652 vCPU-seconds per screening pass. See
+  `Economics_and_impact.md`.
+- ❌ Any capability for CO₂ / CCUS. At reservoir conditions CO₂ is 61× denser than
+  H₂ with a 5× weaker buoyancy contrast against brine, and it is injected
+  monotonically rather than cyclically — an H₂-trained model would mis-rank its
+  risk systematically. Natural gas storage (CH₄, 1.93× viscosity, 0.88× buoyancy)
+  is the defensible next market. Computed in `src/economics/fluids.py`.
+- ❌ "AI surrogate for storage" as our novelty. Stanford's CCSNet published one for
+  CO₂ in 2021. Our novelty is the **fault-hypothesis layer**, which sits on top of
+  any surrogate.
+- ❌ That we timed 20,000 hypotheses. We timed 50 — the API's own cap — and the
+  architecture carries the rest.
 - ❌ "Traditional monitoring catches it at day 40, we catch it at day 5" — this exact
   comparison is called out in `Build_Plan.md` as an invented number. Real sites run downhole
   gauges, DTS/DAS, integrity logging and soil-gas sampling.

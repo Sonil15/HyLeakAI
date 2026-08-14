@@ -1,0 +1,100 @@
+{
+  "calibration": {
+    "temperature_k": 313.15,
+    "config_h2_viscosity_pa_s": 9.5e-06,
+    "coolprop_h2_viscosity_pa_s": 9.5163662467605e-06,
+    "tolerance": 0.01,
+    "note": "LeakageConfig's [ASSUMED] H2 viscosity corresponds to hydrogen at the dataset pressure and ~40 C. The source paper states no reservoir temperature, so this is back-solved from our own constant rather than assumed a second time."
+  },
+  "primary": {
+    "temperature_k": 313.15,
+    "temperature_c": 40.0,
+    "pressure_bar": 197.2,
+    "fluids": {
+      "H2": {
+        "fluid": "H2",
+        "temperature_k": 313.15,
+        "pressure_pa": 19720000.0,
+        "viscosity_pa_s": 9.5163662467605e-06,
+        "density_kg_m3": 13.672626917826591,
+        "buoyancy_contrast_kg_m3": 1036.3273730821734,
+        "viscosity_ratio_to_h2": 1.0,
+        "density_ratio_to_h2": 1.0,
+        "buoyancy_ratio_to_h2": 1.0
+      },
+      "CH4": {
+        "fluid": "CH4",
+        "temperature_k": 313.15,
+        "pressure_pa": 19720000.0,
+        "viscosity_pa_s": 1.8335050332773956e-05,
+        "density_kg_m3": 141.72645599610635,
+        "buoyancy_contrast_kg_m3": 908.2735440038937,
+        "viscosity_ratio_to_h2": 1.9266860750567953,
+        "density_ratio_to_h2": 10.365707837118054,
+        "buoyancy_ratio_to_h2": 0.8764349640814457
+      },
+      "CO2": {
+        "fluid": "CO2",
+        "temperature_k": 313.15,
+        "pressure_pa": 19720000.0,
+        "viscosity_pa_s": 7.885212940972387e-05,
+        "density_kg_m3": 837.1687332487023,
+        "buoyancy_contrast_kg_m3": 212.83126675129768,
+        "viscosity_ratio_to_h2": 8.285949422823675,
+        "density_ratio_to_h2": 61.22954559355293,
+        "buoyancy_ratio_to_h2": 0.20537068910793083
+      }
+    }
+  },
+  "sensitivity_depth_implied": {
+    "temperature_k": 349.0,
+    "temperature_c": 75.85000000000002,
+    "pressure_bar": 197.2,
+    "fluids": {
+      "H2": {
+        "fluid": "H2",
+        "temperature_k": 349.0,
+        "pressure_pa": 19720000.0,
+        "viscosity_pa_s": 1.0171305684394042e-05,
+        "density_kg_m3": 12.37790430975658,
+        "buoyancy_contrast_kg_m3": 1037.6220956902434,
+        "viscosity_ratio_to_h2": 1.0,
+        "density_ratio_to_h2": 1.0,
+        "buoyancy_ratio_to_h2": 1.0
+      },
+      "CH4": {
+        "fluid": "CH4",
+        "temperature_k": 349.0,
+        "pressure_pa": 19720000.0,
+        "viscosity_pa_s": 1.7874381260405254e-05,
+        "density_kg_m3": 118.36143888767316,
+        "buoyancy_contrast_kg_m3": 931.6385611123269,
+        "viscosity_ratio_to_h2": 1.7573339957553469,
+        "density_ratio_to_h2": 9.56231652189924,
+        "buoyancy_ratio_to_h2": 0.897859215779889
+      },
+      "CO2": {
+        "fluid": "CO2",
+        "temperature_k": 349.0,
+        "pressure_pa": 19720000.0,
+        "viscosity_pa_s": 4.7663133400004226e-05,
+        "density_kg_m3": 614.2226520832293,
+        "buoyancy_contrast_kg_m3": 435.77734791677074,
+        "viscosity_ratio_to_h2": 4.68603883109465,
+        "density_ratio_to_h2": 49.62250771312582,
+        "buoyancy_ratio_to_h2": 0.4199769354630834
+      }
+    }
+  },
+  "label_viscosity_sensitivity": {
+    "calibrated_t_k": 313.15,
+    "depth_implied_t_k": 349.0,
+    "viscosity_calibrated_pa_s": 9.5163662467605e-06,
+    "viscosity_depth_implied_pa_s": 1.0171305684394042e-05,
+    "viscosity_increase": 0.06882242871395272,
+    "t3_flux_change": -0.06439089119486618,
+    "fault_permeability_decades_swept": 3.0,
+    "note": "The T3 label scales exactly as 1/mu, so the unresolved reservoir temperature moves every flux by this fraction uniformly. It shifts the labels together rather than reordering them, and it is small against the three decades of fault permeability the screen sweeps."
+  },
+  "brine_density_kg_m3": 1050.0
+}

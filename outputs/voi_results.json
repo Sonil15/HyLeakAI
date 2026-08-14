@@ -1,0 +1,409 @@
+{
+  "framing": "Value of coverage, not value of accuracy. A site has one unknown fault; nobody observes it. The unaided operator estimates its risk from k exact simulator runs, we estimate it from 20,000 screened hypotheses whose error is set by our own calibration. Efficiency is VOI / VOPI and is dimensionless.",
+  "inputs": {
+    "prior_bad_fault": 0.1,
+    "prior_swept": [
+      0.01,
+      0.4
+    ],
+    "prior_concentration": 4.0,
+    "cost_ratio_geometric_mid": 0.0031622776601683794,
+    "cost_ratio_swept": [
+      0.0001,
+      0.1
+    ],
+    "k_hypotheses_simulated": 2,
+    "k_swept": [
+      1.0,
+      5.0
+    ],
+    "n_hypotheses_screened": 20000,
+    "auc_surrogate": 0.999628776017932,
+    "auc_simulator": 0.9998657850513263,
+    "test_rows_behind_sensitivity": 308,
+    "test_rows_behind_specificity": 15603
+  },
+  "headline": {
+    "vopi": 0.0004103743285099929,
+    "unaided": {
+      "k": 2,
+      "voi": 2.6020852139652106e-18,
+      "efficiency": 6.340760211324594e-15
+    },
+    "screened": {
+      "n_hypotheses": 20000,
+      "voi": 0.00040936697894535185,
+      "efficiency": 0.9975452909827509,
+      "operating_point": {
+        "sensitivity": 0.9535682216558679,
+        "specificity": 0.999
+      }
+    },
+    "efficiency_gain": 0.9975452909827446
+  },
+  "with_simulator_fields": {
+    "vopi": 0.0004103743285099929,
+    "unaided": {
+      "k": 2,
+      "voi": 2.6020852139652106e-18,
+      "efficiency": 6.340760211324594e-15
+    },
+    "screened": {
+      "n_hypotheses": 20000,
+      "voi": 0.0004094266308195655,
+      "efficiency": 0.9976906506460373,
+      "operating_point": {
+        "sensitivity": 0.980451603007736,
+        "specificity": 0.999
+      }
+    },
+    "efficiency_gain": 0.997690650646031
+  },
+  "surrogate_efficiency_penalty": 0.00014535966328643735,
+  "simulator_runs_to_match_screen": null,
+  "value_destroying_below_cost_ratio": 0.0001,
+  "sweep_cost_ratio": [
+    {
+      "cost_ratio": 0.0001,
+      "screened_efficiency": -0.13549073579843776,
+      "unaided_efficiency": 2.491238233983696e-14,
+      "efficiency_gain": -0.13549073579846269,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0001412537544622754,
+      "screened_efficiency": 0.2542904255154315,
+      "unaided_efficiency": 2.5601875050638313e-14,
+      "efficiency_gain": 0.2542904255154059,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.00019952623149688788,
+      "screened_efficiency": 0.5198779767366097,
+      "unaided_efficiency": 1.8943664163155506e-14,
+      "efficiency_gain": 0.5198779767365908,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0002818382931264455,
+      "screened_efficiency": 0.7094861418464311,
+      "unaided_efficiency": 1.5574647005097587e-14,
+      "efficiency_gain": 0.7094861418464156,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.00039810717055349735,
+      "screened_efficiency": 0.8454049705880444,
+      "unaided_efficiency": 1.4405599974657423e-14,
+      "efficiency_gain": 0.84540497058803,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0005623413251903491,
+      "screened_efficiency": 0.926484811728805,
+      "unaided_efficiency": 1.1844070723371707e-14,
+      "efficiency_gain": 0.9264848117287932,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0007943282347242813,
+      "screened_efficiency": 0.9639733106374985,
+      "unaided_efficiency": 1.2781525552707644e-14,
+      "efficiency_gain": 0.9639733106374857,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.001122018454301963,
+      "screened_efficiency": 0.9817197743540075,
+      "unaided_efficiency": 1.1260205296924547e-14,
+      "efficiency_gain": 0.9817197743539963,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.001584893192461114,
+      "screened_efficiency": 0.9906650774941816,
+      "unaided_efficiency": 8.333254365444475e-15,
+      "efficiency_gain": 0.9906650774941733,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0022387211385683377,
+      "screened_efficiency": 0.9952216327034836,
+      "unaided_efficiency": 8.5661639395387e-15,
+      "efficiency_gain": 0.9952216327034751,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0031622776601683794,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": 6.340760211324594e-15,
+      "efficiency_gain": 0.9975452909827446,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0044668359215096305,
+      "screened_efficiency": 0.9987284024410976,
+      "unaided_efficiency": 6.519816581543545e-15,
+      "efficiency_gain": 0.9987284024410911,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.00630957344480193,
+      "screened_efficiency": 0.9993295908086466,
+      "unaided_efficiency": 4.0232938010774476e-15,
+      "efficiency_gain": 0.9993295908086426,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.008912509381337459,
+      "screened_efficiency": 0.9996346596671783,
+      "unaided_efficiency": 3.97366035912393e-15,
+      "efficiency_gain": 0.9996346596671744,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.012589254117941675,
+      "screened_efficiency": 0.9997894773731337,
+      "unaided_efficiency": 3.0675454849160513e-15,
+      "efficiency_gain": 0.9997894773731306,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.01778279410038923,
+      "screened_efficiency": 0.9998682790077627,
+      "unaided_efficiency": 3.033088002198626e-15,
+      "efficiency_gain": 0.9998682790077597,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.025118864315095794,
+      "screened_efficiency": 0.9999087659869389,
+      "unaided_efficiency": 3.2831967048856365e-15,
+      "efficiency_gain": 0.9999087659869356,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.03548133892335753,
+      "screened_efficiency": 0.999930082553386,
+      "unaided_efficiency": 2.32394285434851e-15,
+      "efficiency_gain": 0.9999300825533837,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0501187233627272,
+      "screened_efficiency": 0.9999419869175317,
+      "unaided_efficiency": 2.1629382177812273e-15,
+      "efficiency_gain": 0.9999419869175296,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.0707945784384138,
+      "screened_efficiency": 0.9999593457232393,
+      "unaided_efficiency": 0.11045858827264804,
+      "efficiency_gain": 0.8895007574505913,
+      "k_simulated": 2
+    },
+    {
+      "cost_ratio": 0.1,
+      "screened_efficiency": 0.9999710388311804,
+      "unaided_efficiency": 0.5568431956797227,
+      "efficiency_gain": 0.4431278431514577,
+      "k_simulated": 2
+    }
+  ],
+  "sweep_prior": [
+    {
+      "prior": 0.01,
+      "screened_efficiency": 0.9998221666586785,
+      "unaided_efficiency": -8.357273676523131e-16,
+      "efficiency_gain": 0.9998221666586794,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.0295,
+      "screened_efficiency": 0.9994329889899825,
+      "unaided_efficiency": 1.4811793811829262e-15,
+      "efficiency_gain": 0.999432988989981,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.049,
+      "screened_efficiency": 0.9989870032687701,
+      "unaided_efficiency": -2.1994535458116973e-15,
+      "efficiency_gain": 0.9989870032687723,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.06849999999999999,
+      "screened_efficiency": 0.9984832957111107,
+      "unaided_efficiency": 1.0944513834479239e-15,
+      "efficiency_gain": 0.9984832957111096,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.088,
+      "screened_efficiency": 0.9979209309094795,
+      "unaided_efficiency": 4.10574519069565e-15,
+      "efficiency_gain": 0.9979209309094754,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.1075,
+      "screened_efficiency": 0.997298950729341,
+      "unaided_efficiency": -6.192451424684213e-15,
+      "efficiency_gain": 0.9972989507293473,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.127,
+      "screened_efficiency": 0.9966163733209858,
+      "unaided_efficiency": 1.8773538900062877e-15,
+      "efficiency_gain": 0.996616373320984,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.14650000000000002,
+      "screened_efficiency": 0.9958721922202081,
+      "unaided_efficiency": 0.0,
+      "efficiency_gain": 0.9958721922202081,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.166,
+      "screened_efficiency": 0.9950653755174577,
+      "unaided_efficiency": -2.1891095591815206e-14,
+      "efficiency_gain": 0.9950653755174795,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.1855,
+      "screened_efficiency": 0.994194865079776,
+      "unaided_efficiency": -6.735258181784846e-15,
+      "efficiency_gain": 0.9941948650797827,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.20500000000000002,
+      "screened_efficiency": 0.9932595758128797,
+      "unaided_efficiency": 1.0411453835864226e-14,
+      "efficiency_gain": 0.9932595758128693,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.2245,
+      "screened_efficiency": 0.9922583949539674,
+      "unaided_efficiency": -4.851543040643432e-14,
+      "efficiency_gain": 0.9922583949540159,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.244,
+      "screened_efficiency": 0.9911901813868886,
+      "unaided_efficiency": 2.5240016798820112e-14,
+      "efficiency_gain": 0.9911901813868634,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.2635,
+      "screened_efficiency": 0.990053764974385,
+      "unaided_efficiency": 7.91647455003601e-14,
+      "efficiency_gain": 0.9900537649743059,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.28300000000000003,
+      "screened_efficiency": 0.9888479459010018,
+      "unaided_efficiency": 0.0,
+      "efficiency_gain": 0.9888479459010018,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.3025,
+      "screened_efficiency": 0.9875714940228961,
+      "unaided_efficiency": -9.875938197990934e-14,
+      "efficiency_gain": 0.9875714940229949,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.322,
+      "screened_efficiency": 0.9862231482235521,
+      "unaided_efficiency": 1.5712908274851854e-13,
+      "efficiency_gain": 0.986223148223395,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.3415,
+      "screened_efficiency": 0.9848016157665822,
+      "unaided_efficiency": -7.536419843909221e-13,
+      "efficiency_gain": 0.9848016157673358,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.361,
+      "screened_efficiency": 0.983305571652239,
+      "unaided_efficiency": 8.072108720135877e-13,
+      "efficiency_gain": 0.9833055716514317,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.3805,
+      "screened_efficiency": 0.981733657963191,
+      "unaided_efficiency": 1.3033085755155278e-12,
+      "efficiency_gain": 0.9817336579618877,
+      "k_simulated": 2
+    },
+    {
+      "prior": 0.4,
+      "screened_efficiency": 0.9800844832153852,
+      "unaided_efficiency": -1.0574266213677267e-12,
+      "efficiency_gain": 0.9800844832164426,
+      "k_simulated": 2
+    }
+  ],
+  "sweep_k_simulated": [
+    {
+      "k_simulated": 1,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": 6.340760211324594e-15,
+      "efficiency_gain": 0.9975452909827446
+    },
+    {
+      "k_simulated": 2,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": 6.340760211324594e-15,
+      "efficiency_gain": 0.9975452909827446
+    },
+    {
+      "k_simulated": 3,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": 5.283966842770495e-15,
+      "efficiency_gain": 0.9975452909827456
+    },
+    {
+      "k_simulated": 5,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": 6.340760211324594e-15,
+      "efficiency_gain": 0.9975452909827446
+    },
+    {
+      "k_simulated": 10,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": 1.1624727054095089e-14,
+      "efficiency_gain": 0.9975452909827393
+    },
+    {
+      "k_simulated": 20,
+      "screened_efficiency": 0.9975452909827509,
+      "unaided_efficiency": -3.276059442517707e-14,
+      "efficiency_gain": 0.9975452909827837
+    }
+  ],
+  "caveats": [
+    "Efficiency says how much of the available decision value the screen captures. It does not say the underlying T3 label is correct \u2014 that label is ours, semi-analytical, and uncalibrated against any real leakage measurement, because none exists.",
+    "Sensitivity and specificity come from a binormal ROC fitted to the measured AUC; held-out scores were never dumped. Run src.train_xgb --dump-predictions for the empirical ROC.",
+    "The screen's ceiling is set by how well Se and Sp are known, and sensitivity rests on only ~308 positive held-out rows. More fault hypotheses do not raise that ceiling.",
+    "Mitigation is modelled as removing the loss entirely. Partial mitigation lowers both arms.",
+    "The prior over site risk is deliberately diffuse (Beta concentration 4); we are claiming ignorance, not calibration.",
+    "There is a regime where the screen is worth LESS than nothing: when mitigation is cheap enough that the right move is to mitigate almost regardless, an imperfectly calibrated screen can only talk an operator out of it. See value_destroying_below_cost_ratio. This is a property of bias-corrected screening, not of this implementation."
+  ]
+}
