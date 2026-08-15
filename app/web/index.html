@@ -965,7 +965,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
             <li data-stage="3">score fault ensemble</li>
           </ol>
         </div>
-        <p class="status" id="live-status" role="status">Checking the public demo API…</p>
+        <p class="status" id="live-status" role="status">Connecting to the model service…</p>
       </div>
       <div class="panel">
         <div class="panel-bar">
@@ -976,7 +976,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
               <button type="button" data-f="pres" aria-pressed="false">Pressure</button>
               <button type="button" data-f="perm" aria-pressed="false">Permeability</button>
             </div>
-            <span class="src stub" id="field-source-badge">Preview field · procedural illustration</span>
+            <span class="src stub" id="field-source-badge">Illustrative field</span>
           </div>
         </div>
         <div class="canvas-host">
@@ -1049,7 +1049,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       <div class="panel">
           <div class="panel-bar">
             <p class="eyebrow">Attribution &nbsp;·&nbsp; base rate &rarr; P(elevated leakage in 6 months)</p>
-          <span class="src stub" id="risk-source-badge">Preview values · illustrative</span>
+          <span class="src stub" id="risk-source-badge">Illustrative values</span>
         </div>
         <div class="wf" id="waterfall"></div>
         <div class="readouts" id="risk-readouts"></div>
@@ -1081,7 +1081,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   <div class="wrap">
     <div class="act-head">
       <span class="act-index">04 / BUILD</span>
-      <h2>How the live demo is delivered</h2>
+      <h2>How the service is delivered</h2>
     </div>
     <p class="lede">
       One container on Google Cloud Run: a FastAPI service runs the U-Net surrogate and the XGBoost
@@ -1096,7 +1096,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       <div class="idea">
         <span class="n">01</span>
         <div>
-          <h3>Ship a demo pack, not a dataset</h3>
+          <h3>Ship a field pack, not a dataset</h3>
           <p>Export ~24 test-set simulations from the Kaggle kernel, where the data already lives , 
           as quantised uint8 sprite sheets of pressure and saturation. 24 sims &times; 60 steps &times; 128&sup2;
           &times; 2 fields is trivially small once PNG-compressed, and that is the entire field
@@ -1110,7 +1110,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           <p>Dump the booster to JSON and walk the trees in ~150 lines of TypeScript. Then the
           fault Monte-Carlo is interactive: drag a fault, re-sample the ensemble, watch probabilities
           move at frame rate. That interaction is impossible against a Python round-trip and it is
-          the single strongest demo moment available.</p>
+          the single strongest moment available.</p>
         </div>
       </div>
       <div class="idea">
@@ -1127,7 +1127,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
         <div>
           <h3>Keep the U-Net optional</h3>
           <p>The surrogate is the one piece that genuinely wants a GPU. Precompute its predictions
-          into the same demo pack and expose the simulator-vs-surrogate toggle the Streamlit app
+          into the same field pack and expose the simulator-vs-surrogate toggle the Streamlit app
           already has, the 99.0% PR-AUC retention is a result worth showing, not hiding.</p>
         </div>
       </div>
@@ -1271,10 +1271,10 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     }
     document.getElementById("live-panel").hidden = mode !== "live";
     document.getElementById("field-source-badge").textContent = mode === "live"
-      ? "Illustrative field · live numerical results below" : "Preview field · procedural illustration";
+      ? "Illustrative field · live numerical results below" : "Illustrative field";
     document.getElementById("risk-source-badge").className = "src " + (mode === "live" ? "real" : "stub");
     document.getElementById("risk-source-badge").textContent = mode === "live"
-      ? "Live API · U-Net surrogate + XGBoost" : "Preview values · illustrative";
+      ? "Live API · U-Net surrogate + XGBoost" : "Illustrative values";
     if (mode === "preview") {
       renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
     } else if (state.live.result) {
