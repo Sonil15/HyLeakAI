@@ -50,9 +50,13 @@ DEFAULT_OUT_DIR = REPO_ROOT / "outputs"
 
 @dataclass(frozen=True)
 class SuitabilityWeights:
-    capacity: float = 0.5   # [ASSUMED] storage capacity / injectivity, from poro_mean
-    seal: float = 0.3       # [ASSUMED] penalty for caprock_margin_peak (higher = worse)
-    heterogeneity: float = 0.2  # [ASSUMED] penalty for poro_std (higher = worse)
+    # AHP-derived (src/ahp_weights.py): principal eigenvector of the pairwise
+    # comparison matrix, consistency ratio 0.0079 against the 0.10 threshold.
+    # Previously 0.5 / 0.3 / 0.2 chosen by hand; the derived values are close,
+    # so this changes provenance rather than the answer.
+    capacity: float = 0.5396      # storage capacity / injectivity, from poro_mean
+    seal: float = 0.2970          # penalty for caprock_margin_peak (higher = worse)
+    heterogeneity: float = 0.1634  # penalty for poro_std (higher = worse)
 
     def __post_init__(self) -> None:
         total = self.capacity + self.seal + self.heterogeneity

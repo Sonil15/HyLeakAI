@@ -241,16 +241,53 @@ Pressure fell steeply to 0.186 by epoch 76, then oscillated between 0.19 and
 0.22 for the remaining 44 epochs. Neither learning-rate halving (epochs 50 and
 100) broke through. So a longer run will not help; the limiter is elsewhere.
 
-### Ranked suspects
+### The gap is generalisation, not capacity
 
-1. **The shared two-head trunk — our own deviation.** The paper trains a
-   *separate* model per state variable. We emit both from one two-channel head
-   to halve training cost. The targets conflict: pressure is smooth, global and
-   sign-flipping between stages; saturation is local with a sharp front. A
-   shared trunk must compromise. Untested; this is the experiment to run.
-2. **Batch 48 vs the paper's 128.** Noisier gradients, and the "halve every 50
-   epochs" schedule was tuned at 128.
-3. **Mixed precision.** The paper reports consistent precision throughout.
+The final epoch reads **train pressure 0.070 / val 0.193** (2.7x) and **train
+saturation 0.037 / val 0.133** (3.6x). The model fits training data *better than
+the paper's test error*. Capacity is therefore not the limiter, and the shared
+trunk is not starving either head — this is overfitting to the 700 training
+realisations.
+
+An earlier version of this section ranked the shared two-head trunk as the
+leading suspect. That was inferred from the validation curve alone and is
+contradicted by the train error above; it is corrected here.
+
+### Ranked suspects, revised
+
+1. **No data augmentation.** There was none. The dataset admits the full
+   dihedral group D4 (4 rotations x 2 reflections), and all four preconditions
+   were measured rather than assumed:
+   - well at the exact grid centre (2x2 block at 63:65 of 128), so it maps to
+     itself under all 8 operations;
+   - distance-to-well channel D4-invariant to machine precision (max
+     |rot90(d) - d| = 0.000e+00); time and cyclic channels are uniform fields;
+   - geology isotropic — row-vs-column autocorrelation of porosity and log k
+     differs by at most **0.006** across lags 1-32 over 200 simulations, so a
+     rotated realisation is still in-distribution rather than an invention;
+   - flow rotation-equivariant within measurement error — rotational deviation
+     of the ensemble-mean state field sits *at* the finite-ensemble noise floor
+     (pressure 0.0699 vs 0.0708; saturation 0.0316 vs 0.0461).
+
+   Had permeability been generated with a directional variogram, augmenting
+   would have manufactured geology that never occurs and made things worse.
+   It was not. Effective training set 42,000 -> 336,000 samples at ~zero cost
+   per epoch.
+2. **Weight decay 10x too low on pressure.** The paper's Appendix A1 specifies
+   **1e-4 for pressure** and 1e-5 for saturation. Run 1 used 1e-5 for both, so
+   the worse head was the under-regularised one on a model that is
+   demonstrably overfitting.
+3. **The shared two-head trunk.** Demoted from #1, but still worth testing —
+   for a mechanical reason rather than the "conflicting targets" story: one
+   optimiser over a shared trunk applies **one** weight decay to the same
+   weights, so a two-head model cannot express the paper's own per-variable
+   hyperparameters at all. Splitting is what makes #2 possible.
+4. **Batch 48 vs the paper's 128.** Noisier gradients, and the "halve every 50
+   epochs" schedule was tuned at 128. Note this cuts both ways: with a model
+   that is overfitting, a larger batch means fewer updates and less gradient
+   noise, which can make generalisation *worse*. Held fixed at 48 in the
+   augmentation run so that augmentation is the only variable.
+5. **Mixed precision.** The paper reports consistent precision throughout.
 
 ## 9. Surrogate error barely affects risk *screening*, but does degrade *magnitude*
 

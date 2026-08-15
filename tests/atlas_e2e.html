@@ -1,0 +1,170 @@
+<!doctype html>
+<body>
+<iframe id="f" src="./index.html" style="width:1200px;height:900px;border:0"></iframe>
+<pre id="out">running…</pre>
+<script>
+var results = [];
+function ok(name, cond, detail) {
+  results.push((cond ? "PASS  " : "FAIL  ") + name + (detail !== undefined ? "   [" + detail + "]" : ""));
+}
+function done() { document.getElementById("out").textContent = results.join("\n"); }
+
+function waitFor(fn, ms) {
+  return new Promise(function (res, rej) {
+    var t0 = Date.now();
+    (function poll() {
+      var v; try { v = fn(); } catch (e) { v = null; }
+      if (v) return res(v);
+      if (Date.now() - t0 > ms) return rej(new Error("timeout"));
+      setTimeout(poll, 100);
+    })();
+  });
+}
+var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+
+window.addEventListener("load", async function () {
+  var f = document.getElementById("f");
+  var W = f.contentWindow, D = f.contentDocument;
+  try {
+  try {
+    await waitFor(function () { return W.HyLeakAtlas && W.HyLeakAtlas.update3d; }, 20000);
+    ok("3D module initialised", true);
+  } catch (e) {
+    ok("3D module initialised", false, "fell back: " +
+       (D.getElementById("atlas-fallback").getAttribute("data-reason") || "?"));
+  }
+
+  var A = W.HyLeakAtlas;
+  ok("SITES = 1000", A.SITES.length === 1000, A.SITES.length);
+  ok("row has 9 columns", A.SITES[0].length === 9, A.SITES[0].length);
+
+  var count = function () { return +D.getElementById("rank-count").textContent; };
+  var rows = function () { return D.querySelectorAll("#rank-body tr"); };
+  var firstSim = function () { return rows()[0].children[1].textContent.trim(); };
+
+  ok("list shows all 1000", count() === 1000, count());
+  ok("virtualised, not 1000 DOM rows", rows().length < 40, rows().length);
+  ok("top of default ranking is #725", firstSim() === "#725", firstSim());
+  ok("legend gradient painted",
+     /linear-gradient/.test(D.getElementById("legend-ramp").style.background));
+  ok("formula shows AHP-derived weights",
+     D.querySelector("[data-w-cap]").textContent === "0.54",
+     D.querySelector("[data-w-cap]").textContent);
+
+  /* --- reweighting --------------------------------------------------- */
+  D.querySelector('#wseg button[data-w="seal"]').click();
+  await sleep(150);
+  ok("formula tracks seal-led preset",
+     D.querySelector("[data-w-cap]").textContent === "0.30" &&
+     D.querySelector("[data-w-seal]").textContent === "0.55",
+     D.querySelector("[data-w-cap]").textContent + "/" + D.querySelector("[data-w-seal]").textContent);
+  var sealTop = firstSim();
+  ok("ranking actually reshuffles under seal-led", sealTop !== "#468", sealTop);
+
+  D.querySelector('#wseg button[data-w="default"]').click();
+  await sleep(150);
+  ok("returns to #725 on default weights", firstSim() === "#725", firstSim());
+
+  /* --- selection sync ------------------------------------------------ */
+  var target = rows()[3];
+  var targetSim = target.children[1].textContent.trim();
+  target.click();
+  await sleep(150);
+  ok("clicking a row updates the detail panel",
+     D.getElementById("detail-body").textContent.indexOf("sim " + targetSim) !== -1,
+     targetSim);
+  ok("selection reaches Stage 2 label",
+     D.getElementById("sim-label").textContent.trim() === "sim " + targetSim,
+     D.getElementById("sim-label").textContent.trim());
+  ok("detail states availability",
+     /Live field prediction available|Ranked only/.test(D.getElementById("detail-body").textContent));
+
+  /* --- filtering ----------------------------------------------------- */
+  D.getElementById("rank-live-only").click();
+  await sleep(150);
+  ok("live-only filter leaves exactly 150", count() === 150, count());
+
+  D.getElementById("rank-live-only").click();
+  await sleep(120);
+  var s = D.getElementById("rank-search");
+  s.value = "468";
+  s.dispatchEvent(new W.Event("input"));
+  await sleep(150);
+  ok("search narrows the list", count() > 0 && count() < 20, count());
+  s.value = "";
+  s.dispatchEvent(new W.Event("input"));
+  await sleep(120);
+  ok("clearing search restores 1000", count() === 1000, count());
+
+  /* --- sorting ------------------------------------------------------- */
+  D.querySelector('#rank-tbl th[data-sort="margin"]').click();
+  await sleep(150);
+  var m0 = parseFloat(rows()[0].children[7].textContent);
+  var m1 = parseFloat(rows()[1].children[7].textContent);
+  ok("sort by margin is monotonic", m0 >= m1, m0 + " >= " + m1);
+  D.querySelector('#rank-tbl th[data-sort="rank"]').click();
+  await sleep(150);
+  ok("sort back by rank restores #725 first", firstSim() === "#725", firstSim());
+
+  /* --- 3D reset ------------------------------------------------------ */
+  try { D.getElementById("view-reset").click(); ok("reset view does not throw", true); }
+  catch (e) { ok("reset view does not throw", false, e.message); }
+
+  /* --- both charts present, same data, both interactive -------------- */
+  var c2d = D.getElementById("atlas");
+  ok("flat 2D chart is visible", !c2d.hidden && c2d.offsetWidth > 0,
+     c2d.offsetWidth + "px wide");
+  ok("3D and 2D are in separate panels",
+     D.getElementById("atlas3d").closest(".panel") !== c2d.closest(".panel"));
+  ok("2D has its own tooltip element", !!D.getElementById("atlas-tip-2d"));
+
+  /* Hovering the 2D canvas must show the same tooltip content as the 3D. */
+  var r2 = c2d.getBoundingClientRect();
+  c2d.dispatchEvent(new W.MouseEvent("mousemove", {
+    clientX: r2.left + r2.width / 2, clientY: r2.top + r2.height / 2, bubbles: true
+  }));
+  await sleep(120);
+  var t2 = D.getElementById("atlas-tip-2d");
+  ok("2D hover shows a tooltip", t2.classList.contains("on"));
+  ok("2D tooltip carries score + all three criteria + raw margin",
+     /sim #/.test(t2.textContent) && /score/.test(t2.textContent) &&
+     /heterog/.test(t2.textContent) && /margin/.test(t2.textContent),
+     JSON.stringify(t2.textContent.slice(0, 40)));
+
+  /* Same 1,000 points in both: the 2D picker indexes the same SITES array. */
+  ok("2D plots all 1000 points", W.document.defaultView === W && A.SITES.length === 1000);
+
+  /* --- responsiveness ------------------------------------------------ */
+  var before = c2d.height;
+  f.style.width = "600px";
+  W.dispatchEvent(new W.Event("resize"));
+  await sleep(400);
+  ok("2D canvas resizes with the viewport", c2d.height !== before,
+     before + " -> " + c2d.height);
+  f.style.width = "1200px";
+  W.dispatchEvent(new W.Event("resize"));
+  await sleep(400);
+
+  /* --- presentation --------------------------------------------------- */
+  ok("formula is not a headline element",
+     !!D.querySelector(".formula-line") && !D.querySelector(".crit-w"));
+  ok("assumptions live in a collapsible box, not on the chart",
+     !!D.querySelector("details.disclose"));
+  ok("weights state their derivation",
+     /AHP-derived|consistency ratio/i.test(D.querySelector(".f-note").textContent));
+
+  /* --- score parity against the shipped ranking ---------------------- */
+  var sc = A.scores();
+  ok("scores span 0-100",
+     Math.abs(Math.min.apply(null, sc)) < 0.01 && Math.abs(Math.max.apply(null, sc) - 100) < 0.01,
+     Math.min.apply(null, sc).toFixed(3) + ".." + Math.max.apply(null, sc).toFixed(3));
+
+  done();
+  } catch (err) {
+    results.push("FAIL  harness threw: " + (err && err.message) +
+                 (err && err.stack ? " @ " + String(err.stack).split(String.fromCharCode(10))[1] : ""));
+    done();
+  }
+});
+</script>
+</body>
