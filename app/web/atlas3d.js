@@ -205,9 +205,30 @@ function init() {
     return sp;
   }
 
-  addLabel("capacity →", 0, -S - 0.24, S + 0.06, false);
-  addLabel("seal risk →", -S - 0.30, 0, S, false);
-  addLabel("heterogeneity →", S + 0.10, -S - 0.24, 0, false);
+  /* Real 3D arrows, not "→" inside the label text.
+   *
+   * Labels are sprites, and a sprite always faces the camera. So a typed arrow
+   * points screen-right no matter which way the axis actually runs: orbit
+   * 180 degrees and every arrow still says "right", now pointing at the low end
+   * of the axis. It silently lies about direction, which is the one thing the
+   * arrows exist to convey. ArrowHelper is scene geometry, so it rotates with
+   * the data and stays truthful from every angle. */
+  const AX = [
+    { dir: new THREE.Vector3(1, 0, 0), color: 0x10836a },  // capacity, right is better
+    { dir: new THREE.Vector3(0, 1, 0), color: 0xc4471b },  // seal risk, up is worse
+    { dir: new THREE.Vector3(0, 0, 1), color: 0xa5720a }   // heterogeneity, back is worse
+  ];
+  const origin = new THREE.Vector3(-S, -S, -S);
+  AX.forEach(function (a) {
+    const arrow = new THREE.ArrowHelper(a.dir, origin, 2 * S + 0.22, a.color, 0.20, 0.11);
+    arrow.line.material.transparent = true;
+    arrow.line.material.opacity = 0.75;
+    scene.add(arrow);
+  });
+
+  addLabel("capacity", 0, -S - 0.26, S + 0.06, false);
+  addLabel("seal risk", -S - 0.34, 0, S, false);
+  addLabel("heterogeneity", S + 0.12, -S - 0.26, 0, false);
   // The raw caprock-margin range (0.43-0.79) used to be drawn at the ends of
   // the seal axis. Two bare decimals floating next to an axis read as a pair
   // of unexplained numbers rather than as a range, so the range now lives in
