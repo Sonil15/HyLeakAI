@@ -212,6 +212,23 @@ def fields(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@app.get("/v1/field-series/{simulation_id}")
+def field_series(simulation_id: int):
+    """All 60 timesteps of one simulation, quantised, for the 10-year animation.
+
+    Separate from /v1/fields because the cost profile is different: this runs 60
+    forward passes in one batch (about 17 s on one vCPU) and returns roughly
+    2 MB of base64 uint8, where /v1/fields is a single fast timestep as plain
+    JSON numbers. Fetching 60 individual timesteps instead would multiply the
+    per-request overhead for no benefit.
+    """
+    require_ready()
+    try:
+        return service.field_series(simulation_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/v1/assessments")
 def assessment(request: AssessmentRequest):
     require_ready()
