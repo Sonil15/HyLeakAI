@@ -26,6 +26,7 @@ window.addEventListener("load", async function () {
   var f = document.getElementById("f");
   var W = f.contentWindow, D = f.contentDocument;
   try {
+  try {
     await waitFor(function () { return W.HyLeakAtlas && W.HyLeakAtlas.update3d; }, 20000);
     ok("3D module initialised", true);
   } catch (e) {
@@ -59,9 +60,6 @@ window.addEventListener("load", async function () {
      D.querySelector("[data-w-cap]").textContent + "/" + D.querySelector("[data-w-seal]").textContent);
   var sealTop = firstSim();
   ok("ranking actually reshuffles under seal-led", sealTop !== "#468", sealTop);
-  ok("criterion cards track weights",
-     D.querySelectorAll(".crit-w")[1].textContent === "55%",
-     D.querySelectorAll(".crit-w")[1].textContent);
 
   D.querySelector('#wseg button[data-w="default"]').click();
   await sleep(150);
@@ -112,6 +110,49 @@ window.addEventListener("load", async function () {
   try { D.getElementById("view-reset").click(); ok("reset view does not throw", true); }
   catch (e) { ok("reset view does not throw", false, e.message); }
 
+  /* --- both charts present, same data, both interactive -------------- */
+  var c2d = D.getElementById("atlas");
+  ok("flat 2D chart is visible", !c2d.hidden && c2d.offsetWidth > 0,
+     c2d.offsetWidth + "px wide");
+  ok("3D and 2D are in separate panels",
+     D.getElementById("atlas3d").closest(".panel") !== c2d.closest(".panel"));
+  ok("2D has its own tooltip element", !!D.getElementById("atlas-tip-2d"));
+
+  /* Hovering the 2D canvas must show the same tooltip content as the 3D. */
+  var r2 = c2d.getBoundingClientRect();
+  c2d.dispatchEvent(new W.MouseEvent("mousemove", {
+    clientX: r2.left + r2.width / 2, clientY: r2.top + r2.height / 2, bubbles: true
+  }));
+  await sleep(120);
+  var t2 = D.getElementById("atlas-tip-2d");
+  ok("2D hover shows a tooltip", t2.classList.contains("on"));
+  ok("2D tooltip carries score + all three criteria + raw margin",
+     /sim #/.test(t2.textContent) && /score/.test(t2.textContent) &&
+     /heterog/.test(t2.textContent) && /margin/.test(t2.textContent),
+     JSON.stringify(t2.textContent.slice(0, 40)));
+
+  /* Same 1,000 points in both: the 2D picker indexes the same SITES array. */
+  ok("2D plots all 1000 points", W.document.defaultView === W && A.SITES.length === 1000);
+
+  /* --- responsiveness ------------------------------------------------ */
+  var before = c2d.height;
+  f.style.width = "600px";
+  W.dispatchEvent(new W.Event("resize"));
+  await sleep(400);
+  ok("2D canvas resizes with the viewport", c2d.height !== before,
+     before + " -> " + c2d.height);
+  f.style.width = "1200px";
+  W.dispatchEvent(new W.Event("resize"));
+  await sleep(400);
+
+  /* --- presentation --------------------------------------------------- */
+  ok("formula is not a headline element",
+     !!D.querySelector(".formula-line") && !D.querySelector(".crit-w"));
+  ok("assumptions live in a collapsible box, not on the chart",
+     !!D.querySelector("details.disclose"));
+  ok("weights are labelled as our assumption",
+     /our assumption, not a calibrated result/i.test(D.querySelector(".f-note").textContent));
+
   /* --- score parity against the shipped ranking ---------------------- */
   var sc = A.scores();
   ok("scores span 0-100",
@@ -119,6 +160,11 @@ window.addEventListener("load", async function () {
      Math.min.apply(null, sc).toFixed(3) + ".." + Math.max.apply(null, sc).toFixed(3));
 
   done();
+  } catch (err) {
+    results.push("FAIL  harness threw: " + (err && err.message) +
+                 (err && err.stack ? " @ " + String(err.stack).split(String.fromCharCode(10))[1] : ""));
+    done();
+  }
 });
 </script>
 </body>

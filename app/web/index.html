@@ -379,6 +379,10 @@ p { margin: 0; max-width: 66ch; }
 
 .canvas-host { position: relative; line-height: 0; }
 canvas { display: block; width: 100%; height: auto; }
+/* `canvas { display: block }` above outranks the UA stylesheet's
+   [hidden] { display: none }, so the hidden attribute silently does
+   nothing on a canvas without this. */
+canvas[hidden] { display: none; }
 
 .tip {
   position: absolute;
@@ -538,30 +542,17 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 .explain-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .explain-head h3 { margin: 0; }
 
-.formula {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
-  margin: 12px 0 8px; padding: 12px 14px;
-  background: var(--panel-sunk); border: 1px solid var(--line-soft);
-  font-family: var(--font-mono); font-size: 13px;
+/* Deliberately understated. The weights are an assumption we cannot yet
+   defend, so the formula is stated plainly rather than set as a headline. */
+.formula-line {
+  margin: 10px 0 6px; padding: 8px 11px;
+  background: var(--panel-sunk); border-left: 2px solid var(--line);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);
 }
-.f-term { white-space: nowrap; }
-.f-cap  { color: var(--h2); }
-.f-seal { color: var(--press); }
-.f-het  { color: var(--caution); }
-.f-w { font-weight: 700; font-variant-numeric: tabular-nums; }
-.f-op { color: var(--text-faint); }
-.f-eq { color: var(--text-dim); margin-left: auto; white-space: nowrap; }
-.f-eq strong { color: var(--text); }
+.formula-line span { color: var(--text); font-variant-numeric: tabular-nums; }
 .f-note { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-dim); }
-
-.crit-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 4px; }
-.crit { padding: 10px 12px; background: var(--panel-sunk); border-top: 3px solid var(--line); }
-.crit-cap  { border-top-color: var(--h2); }
-.crit-seal { border-top-color: var(--press); }
-.crit-het  { border-top-color: var(--caution); }
-.crit-w { margin: 0; font-family: var(--font-mono); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.crit-name { margin: 2px 0 3px; font-size: 13px; font-weight: 600; }
-.crit-src { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--text-faint); }
+.f-note strong { color: var(--text); font-weight: 600; }
+.mono-inline { font-family: var(--font-mono); font-size: 11.5px; color: var(--text); }
 
 .disclose { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
 .disclose summary { cursor: pointer; font-size: 12.5px; color: var(--text-dim); }
@@ -666,10 +657,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 .d-avail.no { border-left: 3px solid var(--text-faint); }
 
 @media (max-width: 860px) {
-  .crit-cards { grid-template-columns: 1fr; }
+  /* The legend overlays the chart on wide screens; on a phone it would cover
+     a third of it, so it drops below instead. */
   .legend-box { position: static; width: auto; margin: 10px 14px 0; }
   #atlas3d { height: 330px; }
-  .axis-hint { margin-left: 0; }
+  .axis-hint { margin-left: 0; width: 100%; }
+  .axis-key { gap: 3px 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -754,8 +747,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       <!-- ---------- Scoring explainer: visible before any interaction ---------- -->
       <div class="panel panel-pad" id="score-explainer">
         <p class="synth-banner">
-          1,000 <strong>synthetic geological realisations</strong> — not map locations,
-          not drilling recommendations. Point position carries criterion values, not geography.
+          1,000 <strong>synthetic geological realisations</strong> — not map locations and not
+          drilling recommendations. A point's position encodes criterion values, not geography.
         </p>
 
         <div class="explain-head">
@@ -763,75 +756,43 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           <span class="src real">Real output · site_suitability_ranking.csv</span>
         </div>
 
-        <div class="formula" id="formula" aria-live="polite">
-          <span class="f-term f-cap">
-            <span class="f-w" data-w-cap>0.50</span> &times; capacity
-          </span>
-          <span class="f-op">&minus;</span>
-          <span class="f-term f-seal">
-            <span class="f-w" data-w-seal>0.30</span> &times; seal risk
-          </span>
-          <span class="f-op">&minus;</span>
-          <span class="f-term f-het">
-            <span class="f-w" data-w-het>0.20</span> &times; heterogeneity
-          </span>
-          <span class="f-eq">&rarr; min&ndash;max &rarr; <strong>score 0&ndash;100</strong></span>
-        </div>
+        <p class="formula-line" aria-live="polite">
+          score = <span data-w-cap>0.50</span>&thinsp;·&thinsp;capacity
+          &minus; <span data-w-seal>0.30</span>&thinsp;·&thinsp;seal risk
+          &minus; <span data-w-het>0.20</span>&thinsp;·&thinsp;heterogeneity,
+          rescaled to 0&ndash;100
+        </p>
         <p class="f-note">
-          Every criterion is min&ndash;max normalised across the 1,000 realisations first, so the
+          Each criterion is min&ndash;max normalised across the 1,000 realisations first, so the
           weights compare like with like. Capacity is a benefit; seal risk and heterogeneity are
-          penalties, which is why they are subtracted.
+          penalties, so they subtract.
+          <strong>The three weights are our assumption, not a calibrated result</strong> — use the
+          presets above the chart to see how much the ranking depends on them.
         </p>
 
-        <div class="crit-cards">
-          <div class="crit crit-cap">
-            <p class="crit-w">50%</p>
-            <p class="crit-name">Capacity</p>
-            <p class="crit-src">mean porosity · higher is better</p>
-          </div>
-          <div class="crit crit-seal">
-            <p class="crit-w">30%</p>
-            <p class="crit-name">Seal risk</p>
-            <p class="crit-src">peak caprock pressure margin · higher is worse</p>
-          </div>
-          <div class="crit crit-het">
-            <p class="crit-w">20%</p>
-            <p class="crit-name">Heterogeneity</p>
-            <p class="crit-src">porosity standard deviation · higher is worse</p>
-          </div>
-        </div>
-
         <details class="disclose">
-          <summary>What “seal risk” actually measures, and what we assumed</summary>
+          <summary>Assumptions behind these numbers</summary>
           <div class="disclose-body">
-            <p class="mono-eq">caprock pressure margin = (P<sub>max</sub> &minus; P<sub>initial</sub>) / (P<sub>fracture</sub> &minus; P<sub>initial</sub>)</p>
             <ul>
-              <li><strong>0</strong> — peak pressure never rose above initial reservoir pressure.</li>
-              <li><strong>1.0</strong> — the assumed fracture pressure was reached. Above 1.0 is an exceedance.</li>
               <li>
-                <span class="chip assumed">ASSUMED</span>
-                P<sub>fracture</sub> comes from an assumed reservoir depth and fracture gradient set in
-                the project configuration. These are held fixed here: making them adjustable would turn
-                the score into a scenario tool and invite “which setting is correct?”, which this project
-                cannot answer.
+                <strong>Weights (50 / 30 / 20).</strong> Chosen by us. The three criteria follow the
+                standard capacity / containment / reservoir-quality split used in storage screening,
+                but the specific numbers are not derived from expert elicitation or any fitting
+                procedure, and there is no ground-truth suitability label to fit against.
+              </li>
+              <li>
+                <strong>Seal risk</strong> is the peak caprock pressure margin,
+                <span class="mono-inline">(P<sub>max</sub> &minus; P<sub>init</sub>) / (P<sub>frac</sub> &minus; P<sub>init</sub>)</span>.
+                P<sub>frac</sub> uses an assumed reservoir depth and fracture gradient, held fixed.
+                Margin&nbsp;1.0 would mean the assumed fracture pressure was reached; across these
+                1,000 realisations the peak margin only ranges 0.43&ndash;0.79, so none approach it.
+                1.0 is not an approval threshold and does not replace a site-specific geomechanical study.
+              </li>
+              <li>
+                <strong>Mean log-permeability is excluded</strong> on purpose: its correlation with
+                mean porosity here is 0.9995, so a fourth term would double-count one signal.
               </li>
             </ul>
-            <p class="disclose-measured">
-              <strong>Measured across all 1,000:</strong> peak margin runs 0.431 to 0.792 (median 0.645).
-              <strong>No realisation exceeds 1.0.</strong> The seal axis is therefore scaled to the observed
-              range rather than to 1.0 — drawing to 1.0 would compress every real difference into the
-              lower half of the axis and imply a screening against a limit nothing approaches.
-            </p>
-            <p class="disclose-warn">
-              This is a standard <em>type</em> of pressure-screening criterion. <strong>1.0 is not a
-              universal industry approval threshold</strong> and is no substitute for a site-specific
-              geomechanical fracture-pressure study.
-            </p>
-            <p class="disclose-warn">
-              Mean log-permeability is deliberately <em>not</em> a fourth term: its correlation with mean
-              porosity across this dataset is 0.9995, so including it would double-count one geological
-              signal under two names.
-            </p>
           </div>
         </details>
       </div>
@@ -851,12 +812,10 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
         </div>
         <div class="canvas-host atlas3d-host">
           <div id="atlas3d" role="img" tabindex="0"
-               aria-label="Rotatable 3D point cloud of 1000 geological realisations. Horizontal axis capacity, vertical axis seal risk, depth axis heterogeneity, colour by suitability score. Use the ranking list below for a screen-reader accessible equivalent."></div>
-          <canvas id="atlas" data-h="440" hidden aria-label="2D fallback scatter of 1000 geological realisations, capacity against seal risk, coloured by suitability score"></canvas>
+               aria-label="Rotatable 3D point cloud of 1000 geological realisations. Horizontal axis capacity, vertical axis seal risk, depth axis heterogeneity, colour by suitability score. The ranking list below is the screen-reader accessible equivalent."></div>
           <div class="tip" id="atlas-tip"></div>
           <div class="fallback-note" id="atlas-fallback" hidden>
-            WebGL unavailable — showing the 2D capacity &times; seal-risk view. Heterogeneity remains in
-            the tooltip and the ranking list.
+            WebGL unavailable — use the flat view below, which carries the same 1,000 points.
           </div>
 
           <div class="legend-box" id="atlas-legend">
@@ -878,6 +837,24 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           <span class="axis-hint">drag to orbit · scroll to zoom · click to select</span>
         </p>
         <div class="readouts" id="atlas-readouts"></div>
+      </div>
+
+      <!-- ---------- Flat view: the same 1,000 points, two axes ---------- -->
+      <div class="panel">
+        <div class="panel-bar">
+          <p class="eyebrow">Flat view &nbsp;·&nbsp; capacity &times; seal risk</p>
+          <span class="eyebrow">same 1,000 points · heterogeneity in the tooltip</span>
+        </div>
+        <div class="canvas-host">
+          <canvas id="atlas" data-h="380"
+                  aria-label="2D scatter of the same 1000 geological realisations, capacity against seal risk, coloured by suitability score."></canvas>
+          <div class="tip" id="atlas-tip-2d"></div>
+        </div>
+        <p class="axis-key">
+          <span><b>X</b> capacity — right is better</span>
+          <span><b>Y</b> seal risk — up is worse</span>
+          <span class="axis-hint">contours are iso-score lines under the active weighting</span>
+        </p>
       </div>
 
       <div class="split">
@@ -1481,6 +1458,10 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   var atlasPts = [];   /* {x,y,i} in logical px */
 
   function drawAtlas() {
+    /* Height tracks width so the flat view keeps a sane aspect on narrow
+       screens. fit() reads data-h, so this has to be set before it runs. */
+    var cw = atlas.clientWidth || 900;
+    atlas.dataset.h = Math.round(Math.max(240, Math.min(380, cw * 0.5)));
     var g = fit(atlas), ctx = g.ctx, W = g.w, H = g.h;
     var pad = { l: 62, r: 26, t: 22, b: 46 };
     var pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
@@ -1618,36 +1599,46 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   }
 
   var host3d = document.getElementById("atlas3d");
-  function placeTip(clientX, clientY) {
-    var box = atlasTip.offsetParent || host3d.parentNode;
+  var tip2d = document.getElementById("atlas-tip-2d");
+
+  /* Each chart owns its tooltip element, because .tip is positioned against
+     its own .canvas-host. One shared element would be placed relative to
+     whichever host it happened to live in. */
+  function placeTipIn(el, clientX, clientY) {
+    var box = el.parentNode;
     var r = box.getBoundingClientRect();
     var x = clientX - r.left, y = clientY - r.top;
-    atlasTip.style.left = Math.max(4, Math.min(x + 14, box.clientWidth - 168)) + "px";
-    atlasTip.style.top = Math.max(4, Math.min(y + 12, box.clientHeight - 150)) + "px";
+    el.style.left = Math.max(4, Math.min(x + 14, box.clientWidth - 168)) + "px";
+    el.style.top = Math.max(4, Math.min(y + 12, box.clientHeight - 150)) + "px";
   }
-  function showTip(i, clientX, clientY) {
-    atlasTip.textContent = tipText(i);
-    placeTip(clientX, clientY);
-    atlasTip.classList.add("on");
+  function showTipIn(el, i, clientX, clientY) {
+    el.textContent = tipText(i);
+    placeTipIn(el, clientX, clientY);
+    el.classList.add("on");
   }
+  /* The 3D module calls these three through the bridge. */
+  function placeTip(clientX, clientY) { placeTipIn(atlasTip, clientX, clientY); }
+  function showTip(i, clientX, clientY) { showTipIn(atlasTip, i, clientX, clientY); }
   function hideTip() { atlasTip.classList.remove("on"); }
 
-  /* --- 2D fallback interactions (only bound when 3D is unavailable) -- */
+  /* The flat view is a companion chart, not only a fallback, so its hover and
+     selection are always bound — same tooltip content as the 3D view. */
   function bind2D() {
     atlas.addEventListener("mousemove", function (e) {
       var r = atlas.getBoundingClientRect();
       var p = nearestPt(e.clientX - r.left, e.clientY - r.top);
-      if (!p) { hideTip(); highlightRow(-1); return; }
-      showTip(p.i, e.clientX, e.clientY);
+      if (!p) { tip2d.classList.remove("on"); highlightRow(-1); return; }
+      showTipIn(tip2d, p.i, e.clientX, e.clientY);
       highlightRow(p.i);
     });
-    atlas.addEventListener("mouseleave", function () { hideTip(); highlightRow(-1); });
+    atlas.addEventListener("mouseleave", function () { tip2d.classList.remove("on"); highlightRow(-1); });
     atlas.addEventListener("click", function (e) {
       var r = atlas.getBoundingClientRect();
       var p = nearestPt(e.clientX - r.left, e.clientY - r.top);
       if (p) selectSite(p.i);
     });
   }
+  bind2D();
 
   /* ================================================================ *
    * Bridge to atlas3d.js. Defined before the module runs: classic
@@ -1668,20 +1659,20 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     highlightRow: function (i) { highlightRow(i); },
     ready3d: function () {
       use3D = true;
-      atlas.hidden = true;
+      /* Restore the host in case a slow download tripped the backstop timer
+         before the module finished; otherwise the 3D view stays display:none
+         forever despite having initialised fine. */
+      host3d.style.display = "";
       document.getElementById("atlas-fallback").hidden = true;
     },
     fallbackTo2D: function (reason) {
       use3D = false;
       host3d.style.display = "none";
-      atlas.hidden = false;
       var note = document.getElementById("atlas-fallback");
       note.hidden = false;
       /* Surfaced in the DOM, not only the console, so an automated check can
          report *why* the 3D view is missing rather than just that it is. */
       if (reason) note.setAttribute("data-reason", reason);
-      bind2D();
-      drawAtlas();
       if (reason && window.console) console.info("atlas 2D fallback:", reason);
     }
   };
@@ -1711,8 +1702,10 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   }, 10000);
 
   function redrawAtlas() {
-    if (use3D) { if (window.HyLeakAtlas.update3d) window.HyLeakAtlas.update3d(); }
-    else drawAtlas();
+    if (use3D && window.HyLeakAtlas.update3d) window.HyLeakAtlas.update3d();
+    /* Always redraw the flat view. It is a companion chart now, so skipping it
+       when 3D is active left it stale and un-resized. */
+    drawAtlas();
   }
 
   /* The legend gradient is built from the same VIRIDIS stops the points are
@@ -1747,9 +1740,6 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     document.querySelector("[data-w-cap]").textContent = w.capacity.toFixed(2);
     document.querySelector("[data-w-seal]").textContent = w.seal.toFixed(2);
     document.querySelector("[data-w-het]").textContent = w.het.toFixed(2);
-    document.querySelectorAll(".crit-w")[0].textContent = Math.round(w.capacity * 100) + "%";
-    document.querySelectorAll(".crit-w")[1].textContent = Math.round(w.seal * 100) + "%";
-    document.querySelectorAll(".crit-w")[2].textContent = Math.round(w.het * 100) + "%";
     document.getElementById("detail-weighting").textContent = w.label;
   }
 

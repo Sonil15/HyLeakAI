@@ -205,16 +205,14 @@ function init() {
     return sp;
   }
 
-  const marginLo = bridge.marginRange[0].toFixed(2);
-  const marginHi = bridge.marginRange[1].toFixed(2);
-
   addLabel("capacity →", 0, -S - 0.24, S + 0.06, false);
   addLabel("seal risk →", -S - 0.30, 0, S, false);
   addLabel("heterogeneity →", S + 0.10, -S - 0.24, 0, false);
-  // Raw margin at the axis ends keeps the physical meaning attached to the
-  // normalised position.
-  addLabel(marginLo, -S - 0.26, -S, S, true);
-  addLabel(marginHi, -S - 0.26, S, S, true);
+  // The raw caprock-margin range (0.43-0.79) used to be drawn at the ends of
+  // the seal axis. Two bare decimals floating next to an axis read as a pair
+  // of unexplained numbers rather than as a range, so the range now lives in
+  // the assumptions panel where it can be stated in words. The tooltip still
+  // gives each point its own raw margin.
 
   /* ---------------------------------------------------------------- *
    * Picking
