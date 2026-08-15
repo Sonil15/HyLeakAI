@@ -39,3 +39,8 @@ def test_site_screen_uses_user_scalars_without_model_artifacts():
     payload = response.json()
     assert payload["results"]["capacity_mt_co2"] == 9.36
     assert payload["results"]["planned_mass_mt_co2"] == 20
+
+
+def test_assessment_contract_declares_traceability_fields():
+    schema = app.openapi()["paths"]["/v1/assessments"]["post"]
+    assert schema["summary"] == "Assessment"
