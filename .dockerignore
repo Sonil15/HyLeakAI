@@ -34,6 +34,7 @@ __pycache__/
 !/outputs/xgb_classifier.ubj
 !/outputs/shap_features.json
 !/outputs/xgb_results.json
+!/outputs/site_suitability_ranking.csv
 
 # Not needed at runtime.
 /notebooks/

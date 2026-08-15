@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import os
+import csv
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +32,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="HyLeakAI API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="HyLeakAI API", version="0.2.0", lifespan=lifespan)
 allowed_origins = os.getenv("HYLEAK_ALLOWED_ORIGINS", "https://sonil15.github.io").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -63,6 +66,68 @@ class AssessmentRequest(BaseModel):
         return self
 
 
+class SiteScreenRequest(BaseModel):
+    """Transparent volumetric screen; deliberately separate from the surrogate."""
+
+    area_km2: float = Field(default=25, gt=0, le=10_000)
+    reservoir_thickness_m: float = Field(default=80, gt=0, le=2_000)
+    porosity_fraction: float = Field(default=0.18, gt=0.01, le=0.5)
+    storage_efficiency_fraction: float = Field(default=0.04, gt=0.001, le=0.2)
+    co2_density_kg_m3: float = Field(default=650, gt=100, le=1_200)
+    depth_m: float = Field(default=1_800, gt=0, le=10_000)
+    brine_density_kg_m3: float = Field(default=1_050, gt=800, le=1_300)
+    allowable_overpressure_bar: float = Field(default=50, gt=0, le=500)
+    injection_rate_mtpa: float = Field(default=1.0, gt=0, le=100)
+    injection_years: float = Field(default=20, gt=0, le=100)
+    caprock_thickness_m: float = Field(default=120, gt=0, le=2_000)
+
+
+@app.post("/v1/site-screen")
+def site_screen(request: SiteScreenRequest):
+    """Return reproducible first-pass capacity and pressure quantities.
+
+    This uses only the supplied scalars.  It is a volumetric feasibility
+    calculation, not a substitute for compositional flow simulation, geomechanics,
+    site-specific capillary pressure or a permit-ready capacity estimate.
+    """
+    area_m2 = request.area_km2 * 1_000_000
+    bulk_volume_m3 = area_m2 * request.reservoir_thickness_m
+    pore_volume_m3 = bulk_volume_m3 * request.porosity_fraction
+    effective_pore_volume_m3 = pore_volume_m3 * request.storage_efficiency_fraction
+    capacity_mt = effective_pore_volume_m3 * request.co2_density_kg_m3 / 1_000_000_000
+    planned_mass_mt = request.injection_rate_mtpa * request.injection_years
+    hydrostatic_pressure_bar = request.brine_density_kg_m3 * 9.80665 * request.depth_m / 100_000
+    utilization = planned_mass_mt / capacity_mt if capacity_mt else float("inf")
+    flags = []
+    if utilization > 1:
+        flags.append("Planned injected mass exceeds this first-pass effective capacity.")
+    if request.depth_m < 800:
+        flags.append("Depth is below a commonly used initial screen for dense-phase CO2; confirm pressure-temperature conditions.")
+    if request.caprock_thickness_m < 30:
+        flags.append("Thin caprock input: assess seal continuity, entry pressure and geomechanical integrity.")
+    if not flags:
+        flags.append("No scalar-screen flag triggered; validate with site data, dynamic simulation and geomechanics.")
+    return {
+        "screen_type": "volumetric first-pass only",
+        "inputs_used": request.model_dump(),
+        "results": {
+            "bulk_volume_m3": bulk_volume_m3,
+            "pore_volume_m3": pore_volume_m3,
+            "effective_pore_volume_m3": effective_pore_volume_m3,
+            "capacity_mt_co2": capacity_mt,
+            "planned_mass_mt_co2": planned_mass_mt,
+            "capacity_utilization_fraction": utilization,
+            "hydrostatic_pressure_bar": hydrostatic_pressure_bar,
+            "pressure_ceiling_bar": hydrostatic_pressure_bar + request.allowable_overpressure_bar,
+        },
+        "flags": flags,
+        "limitations": [
+            "No relative permeability, salinity, temperature, structural closure, residual trapping or pressure dissipation is modelled.",
+            "Do not use this output for permitting, reserves, injection design or a storage resource estimate.",
+        ],
+    }
+
+
 def require_ready() -> None:
     if not service.ready:
         raise HTTPException(status_code=503, detail="Inference artifacts are not loaded; frontend preview mode remains available.")
@@ -71,6 +136,18 @@ def require_ready() -> None:
 @app.get("/health")
 def health():
     return {"status": "ready" if service.ready else "degraded", "service": "HyLeakAI API", "mode": "surrogate screening"}
+
+
+@app.get("/v1/public-config")
+def public_config():
+    """Browser-safe configuration only.
+
+    The Maps JavaScript key is intentionally a browser key and must be
+    protected by HTTP-referrer and API restrictions in Google Cloud.  It is
+    never stored in source control or returned when the service is unconfigured.
+    """
+    key = os.getenv("GOOGLE_MAPS_BROWSER_API_KEY", "")
+    return {"google_maps_browser_api_key": key, "maps_enabled": bool(key)}
 
 
 @app.get("/v1/simulations")
@@ -92,6 +169,27 @@ def metadata():
             "Physics-guided screening only; not a calibrated leak-rate prediction.",
             "Fault and caprock properties are hypotheses, not measured site data.",
         ],
+    }
+
+
+@app.get("/v1/suitability")
+def suitability():
+    """Portfolio ranking for the 1,000 synthetic geological realizations.
+
+    It is intentionally not a geographic recommendation service.  Only the
+    held-out subset is eligible for the deployed surrogate field explorer.
+    """
+    require_ready()
+    ranking_path = service.output_dir / "site_suitability_ranking.csv"
+    if not ranking_path.exists():
+        raise HTTPException(status_code=503, detail="Suitability ranking artifact is not loaded.")
+    with ranking_path.open(newline="") as handle:
+        points = [{key: float(value) if key != "sim_id" and key != "rank" else int(value)
+                   for key, value in row.items()} for row in csv.DictReader(handle)]
+    return {
+        "points": points,
+        "live_simulation_ids": service.test_ids,
+        "provenance": "Synthetic geological-realisation portfolio; not geographic locations.",
     }
 
 
@@ -123,7 +221,11 @@ def assessment(request: AssessmentRequest):
             if request.mode == "custom_faults"
             else service.sampled_faults(request.fault_count, request.seed)
         )
-        return service.assess(request.simulation_id, request.timestep, faults)
+        result = service.assess(request.simulation_id, request.timestep, faults)
+        result["request_id"] = str(uuid4())
+        result["created_at"] = datetime.now(timezone.utc).isoformat()
+        result["scenario_input"] = request.model_dump(mode="json")
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

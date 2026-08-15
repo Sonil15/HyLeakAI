@@ -1,9 +1,16 @@
 # HyLeakAI — Build Plan & Compute Analysis
 
 > **Superseded.** This plans the custom Volve-based VE/IMPES simulator and
-> its hackathon schedule, including the Economics module spec below. None of
-> the simulator, dashboard-as-planned, or economics module were built as
-> described — the project pivoted to Mao et al.'s published UHS dataset
+> its hackathon schedule, including the Economics module spec below. Neither
+> the simulator nor the dashboard-as-planned was built, and **the economics
+> module was built for the finals but not as specced below** — the
+> differential-ROI design was dropped because every route to a currency figure
+> runs through a leak rate nobody can calibrate. `src/economics/voi.py`
+> computes Value of Information instead, whose headline output is
+> dimensionless; see [`Economics_and_impact.md`](Economics_and_impact.md). The
+> assumption register in §Economics below **did** survive, and is now enforced
+> in code by `src/economics/assumptions.py`. The project pivoted to Mao et
+> al.'s published UHS dataset
 > (Zenodo 14029514) with a U-Net surrogate + XGBoost risk model. See
 > [`README.md`](README.md) for what actually shipped, what's still missing
 > against the original 4-module scope in `Document 9.pdf`, and the current

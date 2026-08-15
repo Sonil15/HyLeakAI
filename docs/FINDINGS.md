@@ -1,12 +1,11 @@
-# Findings
+# Experimental findings and dataset audit
 
-A running record of what we measured, including the things that did not work.
-Anything reported from this project should be consistent with this file.
+This document records measured model performance, dataset audits, and negative experimental results. All claims across the project align with these findings.
 
-Source: Mao, S., Carbonero, A., & Mehana, M. (2025). *Deep learning for
-subsurface flow: A comparative study of U-Net, Fourier neural operators, and
-transformers in underground hydrogen storage.* JGR: Machine Learning and
-Computation, 2, e2024JH000401. Dataset: Zenodo record 14029514 (CC-BY-4.0/MIT).
+Source: Mao, S., Carbonero, A., & Mehana, M. (2025). *Deep learning for subsurface flow: A comparative study of U-Net, Fourier neural operators, and transformers in underground hydrogen storage.* JGR: Machine Learning and Computation, 2, e2024JH000401. Dataset: Zenodo record 14029514 (CC-BY-4.0/MIT).
+
+Companion documentation: [SITE_SUITABILITY.md](file:///Users/sonil/Desktop/HyLeakAI/docs/SITE_SUITABILITY.md) and [FRONTEND.md](file:///Users/sonil/Desktop/HyLeakAI/docs/FRONTEND.md).
+
 
 ---
 

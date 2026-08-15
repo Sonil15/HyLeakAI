@@ -5,10 +5,15 @@
 # workflow will fail at the deploy step with a "Pages is not enabled" error.
 name: Deploy frontend to Pages
 
+# RETIRED. The push trigger is deliberately removed: this workflow published a
+# SECOND copy of the frontend to GitHub Pages from main, while Cloud Run served
+# a different build. Two live sites drifted apart, and the Pages copy called a
+# Cloud Run API that no longer matched it.
+#
+# There is now one deployment: Cloud Run, via deploy-cloud-run.yml. This file is
+# kept, manual-only, so the Pages path can be restored deliberately rather than
+# firing again by accident on the next push to main.
 on:
-  push:
-    branches: [main]
-    paths: ["app/web/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
