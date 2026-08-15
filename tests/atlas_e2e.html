@@ -44,11 +44,11 @@ window.addEventListener("load", async function () {
 
   ok("list shows all 1000", count() === 1000, count());
   ok("virtualised, not 1000 DOM rows", rows().length < 40, rows().length);
-  ok("top of default ranking is #468", firstSim() === "#468", firstSim());
+  ok("top of default ranking is #725", firstSim() === "#725", firstSim());
   ok("legend gradient painted",
      /linear-gradient/.test(D.getElementById("legend-ramp").style.background));
-  ok("formula shows default weights",
-     D.querySelector("[data-w-cap]").textContent === "0.50",
+  ok("formula shows AHP-derived weights",
+     D.querySelector("[data-w-cap]").textContent === "0.54",
      D.querySelector("[data-w-cap]").textContent);
 
   /* --- reweighting --------------------------------------------------- */
@@ -63,7 +63,7 @@ window.addEventListener("load", async function () {
 
   D.querySelector('#wseg button[data-w="default"]').click();
   await sleep(150);
-  ok("returns to #468 on default weights", firstSim() === "#468", firstSim());
+  ok("returns to #725 on default weights", firstSim() === "#725", firstSim());
 
   /* --- selection sync ------------------------------------------------ */
   var target = rows()[3];
@@ -104,7 +104,7 @@ window.addEventListener("load", async function () {
   ok("sort by margin is monotonic", m0 >= m1, m0 + " >= " + m1);
   D.querySelector('#rank-tbl th[data-sort="rank"]').click();
   await sleep(150);
-  ok("sort back by rank restores #468 first", firstSim() === "#468", firstSim());
+  ok("sort back by rank restores #725 first", firstSim() === "#725", firstSim());
 
   /* --- 3D reset ------------------------------------------------------ */
   try { D.getElementById("view-reset").click(); ok("reset view does not throw", true); }
@@ -150,8 +150,8 @@ window.addEventListener("load", async function () {
      !!D.querySelector(".formula-line") && !D.querySelector(".crit-w"));
   ok("assumptions live in a collapsible box, not on the chart",
      !!D.querySelector("details.disclose"));
-  ok("weights are labelled as our assumption",
-     /our assumption, not a calibrated result/i.test(D.querySelector(".f-note").textContent));
+  ok("weights state their derivation",
+     /AHP-derived|consistency ratio/i.test(D.querySelector(".f-note").textContent));
 
   /* --- score parity against the shipped ranking ---------------------- */
   var sc = A.scores();
