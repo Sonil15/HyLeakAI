@@ -138,6 +138,18 @@ def health():
     return {"status": "ready" if service.ready else "degraded", "service": "HyLeakAI API", "mode": "surrogate screening"}
 
 
+@app.get("/v1/public-config")
+def public_config():
+    """Browser-safe configuration only.
+
+    The Maps JavaScript key is intentionally a browser key and must be
+    protected by HTTP-referrer and API restrictions in Google Cloud.  It is
+    never stored in source control or returned when the service is unconfigured.
+    """
+    key = os.getenv("GOOGLE_MAPS_BROWSER_API_KEY", "")
+    return {"google_maps_browser_api_key": key, "maps_enabled": bool(key)}
+
+
 @app.get("/v1/simulations")
 def simulations():
     require_ready()
