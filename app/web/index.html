@@ -503,7 +503,15 @@ canvas { display: block; width: 100%; height: auto; }
 .live-stages li::before { content:"○ "; color:var(--text-faint); }
 .live-stages li.active { color:var(--h2); }.live-stages li.active::before { content:"◉ "; color:var(--h2); }
 .live-stages li.done { color:var(--text-dim); }.live-stages li.done::before { content:"✓ "; color:var(--good); }
-@media (max-width:700px) { .live-controls { grid-template-columns:1fr 1fr; } .live-controls .btn { grid-column:1/-1; } }
+.site-screen { display:grid; gap:14px; padding:18px; border:1px solid var(--line); background:var(--panel-sunk); margin-bottom:14px; }
+.site-screen-grid { display:grid; grid-template-columns:repeat(3,minmax(130px,1fr)); gap:10px; }
+.site-screen label { display:grid; gap:4px; font-family:var(--font-mono); font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--text-faint); }
+.site-screen input { min-height:34px; border:1px solid var(--line); background:var(--panel); color:var(--text); padding:6px 8px; font:12px var(--font-mono); }
+.screen-results { display:grid; grid-template-columns:repeat(4,minmax(130px,1fr)); gap:8px; }
+.screen-result { padding:10px; border-top:2px solid var(--h2); background:var(--panel); }
+.screen-result b { display:block; margin-top:4px; font:600 18px var(--font-mono); color:var(--text); }
+.screen-result span { font:10px/1.35 var(--font-mono); color:var(--text-dim); }
+@media (max-width:700px) { .site-screen-grid,.screen-results,.live-controls { grid-template-columns:1fr 1fr; } .live-controls .btn { grid-column:1/-1; } }
 
 footer { padding: 46px 0 70px; }
 .legend {
@@ -669,6 +677,27 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     </p>
 
     <div class="act-body">
+      <form class="site-screen" id="site-screen">
+        <div class="row" style="justify-content:space-between">
+          <div><p class="eyebrow">01 / Site-input screen — volumetric, reproducible</p><p style="font-size:14px;color:var(--text-dim)">Start with a default saline-aquifer example, then replace values with your measured or interpreted inputs. These values are used by the calculator below; they do not alter the synthetic U-Net analogue.</p></div>
+          <button class="btn" id="load-default-case" type="button">Load default case</button>
+        </div>
+        <div class="site-screen-grid">
+          <label>Area km²<input name="area_km2" type="number" min="0.1" step="0.1" value="25"></label>
+          <label>Net thickness m<input name="reservoir_thickness_m" type="number" min="1" step="1" value="80"></label>
+          <label>Porosity fraction<input name="porosity_fraction" type="number" min="0.01" max="0.5" step="0.01" value="0.18"></label>
+          <label>Storage efficiency<input name="storage_efficiency_fraction" type="number" min="0.001" max="0.2" step="0.001" value="0.04"></label>
+          <label>CO₂ density kg/m³<input name="co2_density_kg_m3" type="number" min="100" step="10" value="650"></label>
+          <label>Depth m TVD<input name="depth_m" type="number" min="1" step="10" value="1800"></label>
+          <label>Allowable overpressure bar<input name="allowable_overpressure_bar" type="number" min="1" step="1" value="50"></label>
+          <label>Injection rate Mt/yr<input name="injection_rate_mtpa" type="number" min="0.01" step="0.1" value="1"></label>
+          <label>Injection years<input name="injection_years" type="number" min="1" step="1" value="20"></label>
+          <label>Caprock thickness m<input name="caprock_thickness_m" type="number" min="1" step="1" value="120"></label>
+        </div>
+        <div class="row"><button class="btn" id="run-site-screen" type="submit">Calculate site screen</button><p class="status" id="site-screen-status">Default example is ready to calculate.</p></div>
+        <div class="screen-results" id="site-screen-results" aria-live="polite"></div>
+        <p class="note">A first-pass volumetric capacity and hydrostatic-pressure screen only. A site decision still requires seismic/well interpretation, PVT and brine data, relative permeability and capillary pressure, dynamic flow simulation, geomechanics, fault/well integrity, and a monitoring plan.</p>
+      </form>
       <div class="live-panel" id="live-panel" hidden>
         <div class="row" style="justify-content:space-between">
           <div>
@@ -939,6 +968,52 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
      immediately in a demo, while Run live assessment always refreshes it. */
   var VERIFIED_DEMO_RESULT = {"simulation_id":0,"timestep":31,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":262.1124267578125,"pressure_delta_bar":64.91242675781251,"plume_area_km2":2.9736,"caprock_margin":0.5317369955976214},"risk_summary":{"fault_count":5,"median_probability":3.1093936314618986e-8,"p90_probability":3.3465208275629267e-7,"worst_case_probability":3.406817370432691e-7},"faults":[{"fault":{"fault_id":0,"x_m":2026.556,"y_m":4972.085,"length_m":558.831,"width_m":5.446,"permeability_m2":6.250887536644922e-13,"orientation_rad":1.560188},"current_flux_m3_s":0,"elevated_leakage_probability":3.25607601325828e-7},{"fault":{"fault_id":1,"x_m":5565.8,"y_m":1743.88,"length_m":305.766,"width_m":9.189,"permeability_m2":1.1233473384304368e-13,"orientation_rad":3.099848},"current_flux_m3_s":0,"elevated_leakage_probability":8.79326123026658e-9},{"fault":{"fault_id":2,"x_m":3769.028,"y_m":1092.921,"length_m":789.479,"width_m":5.486,"permeability_m2":3.59147474494291e-13,"orientation_rad":1.7081},"current_flux_m3_s":0,"elevated_leakage_probability":3.406817370432691e-7},{"fault":{"fault_id":3,"x_m":2063.84,"y_m":3420.815,"length_m":1892.459,"width_m":2.473,"permeability_m2":5.40218926082173e-15,"orientation_rad":2.784003},"current_flux_m3_s":0,"elevated_leakage_probability":5.793386215202645e-9},{"fault":{"fault_id":4,"x_m":3077.212,"y_m":5326.215,"length_m":1717.886,"width_m":7.753,"permeability_m2":1.267424645304919e-14,"orientation_rad":2.418797},"current_flux_m3_s":0,"elevated_leakage_probability":3.1093936314618986e-8}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction."]};
 
+  var DEFAULT_SITE_CASE = { area_km2:25, reservoir_thickness_m:80, porosity_fraction:0.18,
+    storage_efficiency_fraction:0.04, co2_density_kg_m3:650, depth_m:1800,
+    allowable_overpressure_bar:50, injection_rate_mtpa:1, injection_years:20,
+    caprock_thickness_m:120 };
+
+  function siteScreenStatus(message, error) {
+    var el = document.getElementById("site-screen-status");
+    el.textContent = message; el.classList.toggle("error", Boolean(error));
+  }
+
+  function formatMt(value) { return value >= 100 ? value.toFixed(0) : value.toFixed(2); }
+  function screenCard(label, value, note) {
+    return '<div class="screen-result"><span>' + label + '</span><b>' + value + '</b><span>' + note + '</span></div>';
+  }
+
+  function renderSiteScreen(payload) {
+    var r = payload.results;
+    document.getElementById("site-screen-results").innerHTML =
+      screenCard("Effective capacity", formatMt(r.capacity_mt_co2) + " Mt", "volumetric first-pass") +
+      screenCard("Planned injection", formatMt(r.planned_mass_mt_co2) + " Mt", "rate × duration") +
+      screenCard("Capacity utilisation", (r.capacity_utilization_fraction * 100).toFixed(0) + "%", r.capacity_utilization_fraction > 1 ? "screen flag: exceeds capacity" : "before pressure / flow constraints") +
+      screenCard("Pressure ceiling", r.pressure_ceiling_bar.toFixed(1) + " bar", "hydrostatic + selected overpressure");
+    siteScreenStatus(payload.flags.join(" "), payload.results.capacity_utilization_fraction > 1);
+  }
+
+  async function runSiteScreen(event) {
+    event.preventDefault();
+    var form = document.getElementById("site-screen"), data = {};
+    Object.keys(DEFAULT_SITE_CASE).forEach(function (key) { data[key] = Number(form.elements[key].value); });
+    var button = document.getElementById("run-site-screen"); button.disabled = true;
+    siteScreenStatus("Calculating from the values entered above.");
+    try {
+      var response = await fetch(API_BASE + "/v1/site-screen", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(data) });
+      if (!response.ok) throw new Error("screen failed (" + response.status + ")");
+      renderSiteScreen(await response.json());
+    } catch (error) {
+      siteScreenStatus("Could not calculate the site screen: " + error.message, true);
+    } finally { button.disabled = false; }
+  }
+
+  function loadDefaultSiteCase() {
+    var form = document.getElementById("site-screen");
+    Object.keys(DEFAULT_SITE_CASE).forEach(function (key) { form.elements[key].value = DEFAULT_SITE_CASE[key]; });
+    siteScreenStatus("Default synthetic saline-aquifer case loaded. Calculate to inspect it.");
+  }
+
   function pause(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
   function setLiveStage(active, completed) {
     [].forEach.call(document.querySelectorAll("#live-stages li"), function (item) {
@@ -1095,6 +1170,8 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     }
   }
 
+  document.getElementById("site-screen").addEventListener("submit", runSiteScreen);
+  document.getElementById("load-default-case").addEventListener("click", loadDefaultSiteCase);
   document.getElementById("mode-seg").addEventListener("click", function (event) {
     var button = event.target.closest("button"); if (button) setMode(button.dataset.mode);
   });
