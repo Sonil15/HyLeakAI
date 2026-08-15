@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +31,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="HyLeakAI API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="HyLeakAI API", version="0.2.0", lifespan=lifespan)
 allowed_origins = os.getenv("HYLEAK_ALLOWED_ORIGINS", "https://sonil15.github.io").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -185,7 +187,11 @@ def assessment(request: AssessmentRequest):
             if request.mode == "custom_faults"
             else service.sampled_faults(request.fault_count, request.seed)
         )
-        return service.assess(request.simulation_id, request.timestep, faults)
+        result = service.assess(request.simulation_id, request.timestep, faults)
+        result["request_id"] = str(uuid4())
+        result["created_at"] = datetime.now(timezone.utc).isoformat()
+        result["scenario_input"] = request.model_dump(mode="json")
+        return result
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
