@@ -1,10 +1,8 @@
 # Deployment
 
-The public demo is one Cloud Run service. FastAPI serves the API *and* the
-static frontend from `app/web/`, so there is a single origin, a single URL, and
-no CORS to configure.
+The public demo runs as a single Cloud Run service. FastAPI serves the API and the static frontend from [index.html](file:///Users/sonil/Desktop/HyLeakAI/app/web/index.html), providing a single origin, a single URL, and zero CORS configuration overhead.
 
-| | |
+| Attribute | Value |
 |---|---|
 | Live URL | https://hyleakai-152424867743.asia-south1.run.app |
 | GCP project | `hileak` (project number `152424867743`) |
@@ -12,64 +10,46 @@ no CORS to configure.
 | Service | `hyleakai` |
 | Sizing | 1 vCPU, 1 GiB, `min-instances=0`, startup CPU boost |
 
-`min-instances=0` means the service scales to zero when idle. The first request
-after an idle period pays a cold start (~10-20 s: importing torch and loading
-the checkpoint). Every subsequent request is under a second. Startup CPU boost
-is on specifically to shorten that cold start.
+Setting `min-instances=0` allows the service to scale to zero when idle. The first request after an idle period incurs a cold start (~10 to 20 s to import PyTorch and load the checkpoint). Every subsequent request completes in under a second. Startup CPU boost shortens that initial cold start.
 
 ## Endpoints
 
 | Path | Purpose |
 |---|---|
-| `GET /` | Frontend |
-| `GET /health` | `{"status": "ready"}` once artifacts are loaded, `"degraded"` if not |
-| `GET /v1/simulations` | The held-out test simulation IDs (the only valid inputs) |
-| `POST /v1/assessments` | Runs the U-Net surrogate + XGBoost risk screen |
+| `GET /` | Static frontend application |
+| `GET /health` | Returns `{"status": "ready"}` once artifacts load, or `"degraded"` if missing |
+| `GET /v1/simulations` | Returns held-out test simulation IDs |
+| `GET /v1/metadata` | Displays model specifications, grid parameters, and limitations |
+| `GET /v1/fields/{simulation_id}` | Returns U-Net predicted pressure, saturation, and static geology grids |
+| `POST /v1/assessments` | Runs U-Net surrogate and XGBoost risk screen (sampled or custom faults) |
+| `POST /v1/site-screen` | Computes first-pass volumetric capacity, pressure, and flag analysis |
 
-`/v1/assessments` rejects any `simulation_id` outside the held-out test split
-with a 422. That is deliberate — scoring a training simulation would report an
-accuracy the model does not have on unseen geology.
+The `/v1/assessments` endpoint rejects any `simulation_id` outside the held-out test split with a 422 error. This design prevents scoring training simulations that would report unearned accuracy on unseen geology.
 
 ## CI/CD
 
-`.github/workflows/deploy-cloud-run.yml` deploys on every push to `main` that
-touches `api/`, `src/`, `app/web/`, the `Dockerfile`, `requirements-api.txt`, or
-either ignore file. It can also be run manually via **workflow_dispatch**.
+The workflow [deploy-cloud-run.yml](file:///Users/sonil/Desktop/HyLeakAI/.github/workflows/deploy-cloud-run.yml) deploys on every push to `main` that touches `api/`, `src/`, `app/web/`, [Dockerfile](file:///Users/sonil/Desktop/HyLeakAI/Dockerfile), `requirements-api.txt`, or either ignore file. You can also trigger it manually via **workflow_dispatch**.
 
-> **Note:** GitHub only offers the manual "Run workflow" button for workflows
-> that exist on the *default* branch. Until this file is merged to `main`, the
-> workflow cannot be triggered manually — merging is what turns it on.
+> **Note:** GitHub provides the manual "Run workflow" button only for workflows on the default branch. Merging this file to `main` enables manual triggers.
 
-### Authentication: no secrets, no keys
+### Authentication: zero long-lived secrets
 
-Auth is **Workload Identity Federation**. GitHub mints a short-lived OIDC token,
-Google exchanges it for a credential valid about an hour, and the trust policy
-accepts only tokens whose `repository` claim is exactly `Sonil15/HyLeakAI`.
+Authentication relies on **Workload Identity Federation**. GitHub mints a short-lived OIDC token, Google exchanges it for a credential valid for one hour, and the trust policy accepts only tokens whose `repository` claim matches `Sonil15/HyLeakAI`.
 
-This was chosen over a service-account JSON key for two reasons. First, no
-long-lived credential exists to leak. Second — and decisively here — creating a
-repository secret requires **admin** on the repo, which contributors do not
-have; every value in the workflow is non-secret, so a contributor can ship the
-pipeline without waiting on the owner.
+This design provides two advantages over service-account JSON keys. First, no long-lived credential exists to leak. Second, contributors can ship updates without repository admin rights because all workflow values remain non-secret.
 
-A fork cannot reuse these values: its OIDC token carries the fork's own
-repository name and the exchange is rejected.
+Forks cannot reuse these values. A fork's OIDC token carries its own repository name, which GCP rejects.
 
-GCP-side resources, already created:
+GCP-side resources:
 
 - Service account `github-deployer@hileak.iam.gserviceaccount.com`
-- Roles: `run.admin`, `cloudbuild.builds.editor`, `artifactregistry.writer`,
-  `logging.viewer`, plus `iam.serviceAccountUser` on the compute service account
-- Storage is **bucket-scoped, not project-wide**: `storage.admin` on the Cloud
-  Build source bucket and `storage.objectViewer` on the artifact bucket
-- WIF pool `github`, provider `github-provider`, restricted by the attribute
-  condition `assertion.repository=='Sonil15/HyLeakAI'`
+- Roles: `run.admin`, `cloudbuild.builds.editor`, `artifactregistry.writer`, `logging.viewer`, plus `iam.serviceAccountUser` on the compute service account
+- Bucket-scoped storage permissions: `storage.admin` on the Cloud Build source bucket and `storage.objectViewer` on the artifact bucket
+- Workload Identity Federation pool `github`, provider `github-provider`, restricted by the attribute condition `assertion.repository=='Sonil15/HyLeakAI'`
 
 ## Model artifacts
 
-The Dockerfile `COPY`s six files that are **gitignored** and so are absent from
-a fresh checkout. They live in `gs://hileak-artifacts-152424867743/v1/` and the
-workflow pulls them before building:
+The [Dockerfile](file:///Users/sonil/Desktop/HyLeakAI/Dockerfile) copies six files that git ignores. They reside in `gs://hileak-artifacts-152424867743/v1/` and the workflow fetches them before building:
 
 | File | Size |
 |---|---|
@@ -78,10 +58,9 @@ workflow pulls them before building:
 | `outputs/xgb_classifier.ubj` | 2.0 MB |
 | `data/stats.json`, `outputs/shap_features.json`, `outputs/xgb_results.json` | small |
 
-`data/states.npy` (5.9 GB) is deliberately **not** deployed. The U-Net predicts
-the state fields from geology, so only `constants.npy` is needed at inference.
+The build excludes `data/states.npy` (5.9 GB) intentionally. The U-Net predicts state fields from geology, so inference requires only `constants.npy`.
 
-**After retraining, re-upload or CI will keep deploying the old weights:**
+**Re-uploading weights after retraining:**
 
 ```bash
 gcloud storage cp data/constants.npy data/stats.json \
@@ -90,25 +69,17 @@ gcloud storage cp data/constants.npy data/stats.json \
   gs://hileak-artifacts-152424867743/v1/ --project hileak
 ```
 
-The `v1/` prefix exists so a future weight revision can go to `v2/` and be rolled
-back by changing one line in the workflow.
+The `v1/` prefix enables deploying future weight revisions to `v2/` and rolling back by editing one line in the workflow.
 
 ## Cost
 
-Cloud Run's free tier is perpetual, not a trial: 2 million requests, 360,000
-GiB-seconds, and 180,000 vCPU-seconds per month. At `min-instances=0` the
-service bills only while serving a request, so a demo handling a few thousand
-requests stays inside it comfortably.
+Cloud Run provides a perpetual free tier: 2 million requests, 360,000 GiB-seconds, and 180,000 vCPU-seconds per month. At `min-instances=0` the service charges only while processing requests, keeping demonstration traffic within free limits.
 
-The two ongoing charges are trivial: ~216 MB in the artifact bucket and the
-container images in Artifact Registry, together well under $0.10/month. Keeping
-`min-instances=0` is what keeps this near zero — setting it to 1 would bill a
-vCPU continuously and blow through the free tier in days.
+Ongoing storage costs remain under $0.10 per month for ~216 MB in the artifact bucket and container images in Artifact Registry. Maintaining `min-instances=0` keeps costs near zero. Setting `min-instances=1` would bill continuous vCPU usage and exceed free limits.
 
 ## Troubleshooting
 
-**"The user-provided container failed to start and listen on the port."** This
-message says nothing about the cause. The cause is in the logs:
+**Container startup failure:** When Cloud Run reports a generic container startup error, inspect the execution logs directly:
 
 ```bash
 gcloud logging read \
@@ -116,26 +87,17 @@ gcloud logging read \
   --project hileak --limit 50 --format="value(timestamp,textPayload)" --freshness=1h
 ```
 
-**`ModuleNotFoundError: No module named 'src.data.dataset'`** — this happened,
-and it is worth knowing about. The `data/*` line in `.gcloudignore`, present to
-keep the 5.9 GB `states.npy` out, *also matched* `src/data/*`. gcloud's ignore
-matcher does not anchor a `dir/*` pattern to the context root the way git does,
-so `src/data/` uploaded as an empty directory. Every artifact pattern is now
-anchored with a leading slash, and the workflow's **Verify build context** step
-fails with the actual filename rather than the opaque port message. Check any
-change to either ignore file with:
+**Missing module error (`ModuleNotFoundError: No module named 'src.data.dataset'`):** The `.gcloudignore` pattern `data/*` previously matched `src/data/*` because gcloud unanchored wildcard patterns. Anchoring artifact patterns with a leading slash in [.gcloudignore](file:///Users/sonil/Desktop/HyLeakAI/.gcloudignore) resolved this issue. Verify build contexts using:
 
 ```bash
 gcloud meta list-files-for-upload | grep src/data
 ```
 
-**`/health` returns `"degraded"`** — the container is up but artifacts failed to
-load. Confirm the six files are in the bucket and that the `COPY` paths in the
-Dockerfile match `HYLEAK_DATA_DIR` / `HYLEAK_CHECKPOINT` / `HYLEAK_OUTPUT_DIR`.
+**Degraded health status (`/health` returns `"degraded"`):** The container started but failed to load inference artifacts. Confirm the six artifact files exist in the GCP bucket and verify that [Dockerfile](file:///Users/sonil/Desktop/HyLeakAI/Dockerfile) `COPY` paths match the configured environment variables (`HYLEAK_DATA_DIR`, `HYLEAK_CHECKPOINT`, `HYLEAK_OUTPUT_DIR`).
 
 ## Manual deploy
 
-CI is the normal path, but this works from a checkout that has the artifacts:
+Execute this command from a local checkout containing the downloaded artifacts to deploy manually:
 
 ```bash
 gcloud run deploy hyleakai --source . --project hileak --region asia-south1 \

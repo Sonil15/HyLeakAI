@@ -1,23 +1,15 @@
-# Site suitability — a running record
+# Site suitability ranking methodology
 
-Companion to `docs/FINDINGS.md`, same rules: report what we measured,
-including what didn't work. This covers the work done after checking out
-`feat/unet-xgboost-leakage-pipeline`, closing the gap identified against the
-original 4-module pitch (`Document 9.pdf`): module 1, "geological
-intelligence" / subsurface site screening, had no code at all. This is that
-module's first prototype.
+Companion document to [FINDINGS.md](file:///Users/sonil/Desktop/HyLeakAI/docs/FINDINGS.md) and [FRONTEND.md](file:///Users/sonil/Desktop/HyLeakAI/docs/FRONTEND.md). This file details the multi-criteria screening methodology implemented for subsurface candidate selection.
 
 ---
 
 ## Summary
 
-**What this does:** ranks the 1,000 geological realisations in the Mao et
-al. UHS dataset by how suitable each is for hydrogen storage — a 0-100
-suitability score and a full ranking, the first working piece of the
-"geological intelligence" module from the original project scope.
+**Functionality:** Ranks the 1,000 geological realisations from the Mao et al. UHS dataset according to hydrogen storage suitability. The pipeline outputs a continuous 0–100 score and candidate ranking via [site_suitability.py](file:///Users/sonil/Desktop/HyLeakAI/src/site_suitability.py).
 
-**Method:** a weighted multi-criteria score, not a classifier and not
-clustering.
+**Methodology:** A weighted multi-criteria scoring algorithm evaluates every realisation across three primary factors:
+
 
 | Criterion | Weight | From | Direction |
 |---|---|---|---|
@@ -43,14 +35,12 @@ atlases use, so it replaced clustering rather than sitting alongside it.
   weighting. Report which *tier* a site lands in on stage, not "site #468 is
   THE best site."
 
-**Honest limit:** these are 1,000 synthetic realisations of one domain, not
-1,000 real-world locations — this ranks candidate rock properties, not
-places on a map. No leakage-risk information is mixed in (that's a separate
-model, module 2, kept deliberately separate). Frontend: the Storage Atlas
-panel in `app/web/index.html` plots this ranking live — see `docs/FRONTEND.md`.
+**Limitations:** These 1,000 synthetic realisations represent one continuous domain rather than 1,000 geographical map locations. The Storage Atlas panel in [index.html](file:///Users/sonil/Desktop/HyLeakAI/app/web/index.html) visualises this ranking interactively (see [FRONTEND.md](file:///Users/sonil/Desktop/HyLeakAI/docs/FRONTEND.md)).
 
-Code: `src/site_suitability.py` (`python -m src.site_suitability`). Full
-ranking: `outputs/site_suitability_ranking.csv`. Summary: `outputs/site_suitability_summary.json`.
+Implementation: [site_suitability.py](file:///Users/sonil/Desktop/HyLeakAI/src/site_suitability.py).
+Full dataset output: `outputs/site_suitability_ranking.csv`.
+Summary stats: `outputs/site_suitability_summary.json`.
+
 
 *Everything below is the detailed working log: how this was built, the two
 Kaggle bugs hit along the way, and the reasoning behind each choice.*

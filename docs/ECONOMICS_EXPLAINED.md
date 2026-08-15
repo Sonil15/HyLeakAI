@@ -1,8 +1,7 @@
-# Economics and Impact — explained simply
+# Economics and Impact: explained simply
 
-This is a plain-language walkthrough of `Economics_and_impact.md` (the full
-technical version) and `docs/COMMERCIAL.md` (the slide-ready version). Read this
-one if the other two are hard to follow.
+This document provides a plain-language overview of [Economics_and_impact.md](file:///Users/sonil/Desktop/HyLeakAI/Economics_and_impact.md) and [COMMERCIAL.md](file:///Users/sonil/Desktop/HyLeakAI/docs/COMMERCIAL.md).
+
 
 ---
 
@@ -286,9 +285,9 @@ more credible than one whose numbers "just look right."
 
 ---
 
-## Where to go next
+## Next steps and technical references
 
-- Full technical detail: [`Economics_and_impact.md`](../Economics_and_impact.md)
-- Slide-ready short version: [`docs/COMMERCIAL.md`](COMMERCIAL.md)
-- Raw numbers: `outputs/voi_results.json`, `outputs/fluid_properties.json`,
-  `outputs/unit_cost.json`, `outputs/assumption_register.json`
+- Full technical derivation: [Economics_and_impact.md](file:///Users/sonil/Desktop/HyLeakAI/Economics_and_impact.md)
+- Commercial overview: [COMMERCIAL.md](file:///Users/sonil/Desktop/HyLeakAI/docs/COMMERCIAL.md)
+- Output metrics: `outputs/voi_results.json`, `outputs/fluid_properties.json`, `outputs/unit_cost.json`, `outputs/assumption_register.json`
+

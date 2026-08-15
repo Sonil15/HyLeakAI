@@ -1,34 +1,24 @@
-# MC²+ Grand Finale — 4–5 Minute Script
+# MC²+ Grand Finale: 4 to 5 Minute Script
 
-**Spoken words: 788** (counted, not estimated — recount with the snippet at the
-bottom after any edit). Plus ~20 s of clicking in the demo:
+**Spoken words: 788** (recount with the snippet at the bottom after any edit), plus ~20 s of interactive UI clicks:
 
-| Delivery pace | Total |
+| Delivery pace | Total time |
 |---|---|
-| 150 wpm — deliberate | 5:35 |
-| **160 wpm — normal** | **5:15** |
-| 170 wpm — brisk | 4:58 |
+| 150 wpm (deliberate) | 5:35 |
+| **160 wpm (normal)** | **5:15** |
+| 170 wpm (brisk) | 4:58 |
 
-**If your slot is hard-capped at 5:00, take cuts 1 and 2 from the cut list at the
-bottom (−78 words) and you land at 4:46 at 160 wpm.** Do not plan to speak at 170
-to make the time — nerves make people faster and less clear, and the economics
-block is the one that must land.
+**If your presentation slot has a strict 5:00 limit, apply cuts 1 and 2 from the cut list at the bottom (-78 words) to reach 4:46 at 160 wpm.** Avoid speaking at 170 wpm to fit the slot. Deliver the economics block clearly and deliberately.
 
-Compressed from the 912-word round-one script (`PRESENTATION_SCRIPT.md`, 5:52)
-using its own prepared cut list, then extended with the economics block. What
-changed and why:
+Compressed from the 912-word round-one presentation script (5:52), then extended with the economics section. Summary of modifications:
 
-- **Slide 6 (six physics rules) cut to one sentence.** It was 60 words defending
-  a point nobody challenged.
-- **Slide 8 (parameter counts, 124M vs 7M) cut.** The 86.4% and the one-percent
-  ranking shift survive; the hardware story does not.
-- **Slide 10 (impact) folded into the economics block**, where it now has numbers
-  behind it instead of adjectives.
-- **New: the economics block.** This is the whole reason we are here — a judge
-  asked how we make a business of this and we had nothing.
+- **Slide 6 (six physics rules):** Reduced to one sentence.
+- **Slide 8 (parameter counts):** Removed hardware details; preserved the 86 percent accuracy and one-percent ranking shift metrics.
+- **Slide 10 (impact):** Integrated into the economics section with quantitative metrics.
+- **New economics section:** Answers judge questions regarding commercial strategy and business model.
 
-Two rules, unchanged: short sentences, and never say a number without saying what
-it means.
+Two core presentation rules remain: keep sentences short, and explain the significance of every quoted number.
+
 
 ---
 
@@ -203,6 +193,22 @@ it means.
 **"How fast versus tNavigator?"**
 > We've never timed tNavigator, so we don't quote a ratio. Multi-hour is their
 > published framing, not our measurement.
+
+**"So what do you actually charge, and for what?"**
+> We don't sell a simulator licence — we'd lose to tNavigator on features. We
+> sell an auditable containment-risk statement, the thing a permit or an
+> insurance file needs. And VOI is the pricing model: a rational operator pays
+> less than the value of the information, so our ceiling is set by arithmetic
+> rather than asserted. The floor is measured — 0.65 vCPU-seconds a pass. First
+> engagement is a paid co-screening study alongside a decision you're already
+> taking, then per-asset re-screening as the geological model updates.
+
+**"Hydrogen storage barely exists in India. Who's the customer?"**
+> Agreed, and we say the number: about eight thousand tonnes a year commissioned
+> against a five-million-tonne 2030 target. That's why the next market is natural
+> gas storage — India is building its first strategic storage and depleted fields
+> are the stated preferred option. Same reservoir, same inject-and-withdraw duty,
+> and GAIL, ONGC and Petronet are all in this room.
 
 ---
 

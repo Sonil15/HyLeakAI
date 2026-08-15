@@ -1,76 +1,70 @@
-# HyLeakAI: usable-product and API plan
+# HyLeakAI: product architecture and API plan
 
 ## Product position
 
-HyLeakAI is a **physics-guided screening tool** for underground hydrogen storage. It is not a calibrated real-world leak-rate predictor. The source data contains reservoir fields but no observed faults, caprock measurements, or leakage labels; every public result must therefore show its assumptions and provenance.
+HyLeakAI operates as a physics-guided screening tool for underground hydrogen storage. It is not a calibrated real-world leak-rate predictor. The source dataset contains reservoir fields but no observed faults, caprock measurements, or leakage labels. Every public interface must display assumptions and data provenance clearly.
 
-## The two experiences we will keep
+## Core experiences
 
-The project will always provide both of these experiences:
+The project maintains two distinct user experiences:
 
-1. **Demo / Preview mode** — the current interactive mockup remains publicly available as a guided tour. It uses clearly labelled procedural and sample data, needs no API, and lets visitors understand the intended workflow even when the demo API is asleep or unavailable.
-2. **Live assessment mode** — the same visual language, but results come from the deployed U-Net and XGBoost models. Every response states model version, field source, fault assumptions, and the screening-only limitation.
+1. **Demo / Preview mode:** The interactive frontend at [index.html](file:///Users/sonil/Desktop/HyLeakAI/app/web/index.html) provides a self-contained static tour using labelled procedural data. Visitors explore the workflow even when the backend API is asleep or offline.
+2. **Live assessment mode:** The same visual interface requests real model predictions from the deployed U-Net surrogate and XGBoost risk models in [main.py](file:///Users/sonil/Desktop/HyLeakAI/api/main.py). Every response identifies the model version, field source, fault assumptions, and screening limitations.
 
-Demo mode must never be removed or silently presented as live inference. The UI will place a visible `Demo data` or `Live model` badge in every results panel.
+The frontend presents explicit status badges (`Preview values` or `Live API`) in every results panel.
 
-## Architecture for the first public demo
+## Architecture
 
+```text
+Static Web UI + FastAPI Service (Google Cloud Run single origin)
+      │
+      ├─ Preview / Demo mode (client-side procedural stand-ins)
+      └─ Live assessment mode (FastAPI endpoints)
+            ├─ U-Net surrogate (pressure and saturation fields)
+            ├─ XGBoost risk classifier (6-month leakage probability)
+            ├─ Volumetric site-screen calculator (scalar feasibility screen)
+            └─ Geological constants and metadata
 ```
-GitHub Pages (static UI) ──HTTPS──> FastAPI service (Render)
-      │                                      │
-      ├─ Demo / Preview mode                 ├─ U-Net surrogate
-      └─ Live assessment mode                ├─ XGBoost risk classifier
-                                             └─ constants + model metadata
-```
 
-The API is deliberately stateless. It must not include the 5.9 GB simulator state array or 12.4 GB LMDB file. For surrogate assessment it needs only the U-Net checkpoint, XGBoost model, normalisation metadata, and static geological constants.
+The API service remains stateless. It excludes the 5.9 GB simulator state array and 12.4 GB LMDB file. Inference requires only the U-Net checkpoint, XGBoost model, normalisation metadata, and static geological constants.
 
 ## Delivery phases
 
-### Phase 1 — API foundation ✅ done
+### Phase 1: API foundation (Completed)
 
-Shipped in `api/` (PR #4, merged `9c63772`), deployed to Render at
-`hyleak-api-demo.onrender.com`.
+Implemented in [main.py](file:///Users/sonil/Desktop/HyLeakAI/api/main.py) and [service.py](file:///Users/sonil/Desktop/HyLeakAI/api/service.py), deployed to Google Cloud Run at `https://hyleakai-152424867743.asia-south1.run.app`.
 
-- FastAPI, CORS, `GET /health`.
-- `GET /v1/simulations` for held-out realisations.
-- `POST /v1/assessments` for a realisation/timestep plus a supplied fault or seeded ensemble.
-- Returns pressure/plume summaries, risk, model metadata, provenance, and limitations.
-- Render blueprint (`render.yaml`), deployment requirements (`requirements-api.txt`), smoke tests in `test_results/`.
+- FastAPI framework with CORS configuration and `GET /health`.
+- `GET /v1/simulations` returning held-out test realization IDs.
+- `GET /v1/metadata` displaying model parameters and grid definitions.
+- `GET /v1/fields/{simulation_id}` providing U-Net predicted pressure and saturation grids.
+- `POST /v1/assessments` executing the U-Net surrogate and XGBoost risk classifier for sampled or custom fault hypotheses.
+- `POST /v1/site-screen` computing transparent volumetric site feasibility metrics and overpressure flags.
+- Automated CI/CD pipeline in [deploy-cloud-run.yml](file:///Users/sonil/Desktop/HyLeakAI/.github/workflows/deploy-cloud-run.yml) using Workload Identity Federation.
 
-### Phase 2 — connect the Pages UI ✅ done
+### Phase 2: Frontend integration (Completed)
 
-Shipped in `app/web/index.html` (PR #5 `feat/live-frontend` merged `2874d80`,
-PR #6 `feat/judge-live-demo` merged `9c63772`).
+Implemented in [index.html](file:///Users/sonil/Desktop/HyLeakAI/app/web/index.html).
 
-- Current page preserved as `Preview` mode (unchanged, needs no API).
-- Added a `Live model` toggle with scenario controls that calls the deployed API.
-- Shows a cold-start/loading state; falls back to Preview when the API is unavailable.
-- Reuses the existing atlas/reservoir/fault interaction patterns.
+- Preserved client-side Preview mode.
+- Integrated Live model scenario controls connected to the Cloud Run API.
+- Integrated Geologist Site Input Screen (Geologist Workbench) for direct volumetric screening.
+- Added visual loading states and automatic fallback to Preview mode if the API is unreachable.
 
-Confirmed working end-to-end in production: `test_results/judge-live-production-e2e-2026-08-12.md`, `test_results/production-e2e-smoke-2026-08-12.md`, `test_results/frontend-api-smoke-2026-08-12.md`.
+### Phase 3: Decision workflow
 
-### Phase 3 — decision workflow
+- Compare two fault scenarios or operating timesteps side by side.
+- Present median, P10, P90, and worst-case risk distributions instead of a single metric.
+- Provide sensitivity sweeps for fault permeability, length, width, and fracture gradient.
+- Output plain-language screening summaries with clear engineering caveats.
 
-- Compare two scenarios (fault hypotheses or operating timesteps).
-- Show median, P10, P90, and worst-case risk—not only one number.
-- Add sensitivity sweeps for fault permeability, length, width, and caprock fracture-gradient assumptions.
-- Return a plain-language screening conclusion without presenting it as an approval/rejection decision.
+### Phase 4: Reproducibility and governance
 
-### Phase 4 — reproducibility and trust
+- Export complete JSON and PDF run records containing inputs, assumptions, model versions, timestamps, and limitations.
+- Implement API rate limiting, structured logs, and automated contract tests.
+- Validate against site-specific field data prior to any operational decision-support claims.
 
-- Export JSON/CSV, then PDF, with inputs, assumptions, model/artifact version, timestamps, and limitations.
-- Add API versioning, request IDs, logs, rate limits, monitoring, contract tests, and browser end-to-end tests.
-- Before professional decision-support claims, validate against independent site-specific data and publish the protocol.
+## Deployment model
 
-## One-week hosting choice
+The public service runs on Google Cloud Run with 1 vCPU, 1 GiB RAM, startup CPU boost, and `min-instances=0`. Serving static assets and API routes from a single FastAPI application eliminates CORS configuration issues and cross-origin security constraints.
 
-Use a **Render Free Web Service** for the temporary FastAPI demo and GitHub Pages for the frontend. Render supports Python and HTTPS. Its free tier has 512 MB RAM / 0.1 CPU, spins down after 15 idle minutes, and may take about a minute to wake; it is suitable for a preview, not production. The UI must explain the warm-up delay and offer Preview mode immediately.
-
-Deployment is only authorised after local endpoint tests pass and the small inference artifact bundle is prepared. No artifact should be copied to a public service until its licensing and size are reviewed.
-
-The first bundle is published as the `hyleak-api-artifacts-v0.1.0` GitHub prerelease asset. Render downloads and SHA-256-verifies it during the build; the raw simulator state and LMDB files remain excluded. When the repository is private, configure a read-only `HYLEAK_GITHUB_TOKEN` secret in Render so its build can access the GitHub Release Asset API.
-
-## Definition of usable
-
-The public demo is usable when a visitor can choose a held-out simulation and timestep, define or sample fault hypotheses, see a labelled live risk distribution with assumptions, compare scenarios, and export a reproducible result. Preview mode must remain usable independently of the API.

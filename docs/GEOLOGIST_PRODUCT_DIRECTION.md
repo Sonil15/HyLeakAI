@@ -2,71 +2,33 @@
 
 ## What the product can claim today
 
-HyLeakAI is a **screening tool**, not a site model. Its live service predicts
-pressure and saturation for held-out synthetic geological realisations using a
-U-Net surrogate, then scores explicitly supplied or sampled fault hypotheses
-with an XGBoost classifier. The 128 by 128 fields, model provenance and fault
-probabilities are real service outputs. They are not measurements from a user
-site and must not be presented as such.
+HyLeakAI serves as a **screening tool**, not a calibrated site model. Its live service predicts pressure and saturation for held-out synthetic geological realisations using a U-Net surrogate, then scores explicitly supplied or sampled fault hypotheses with an XGBoost classifier. The 128 by 128 fields, model provenance, and fault probabilities represent real service outputs from [main.py](file:///Users/sonil/Desktop/HyLeakAI/api/main.py). They do not represent measured site data.
 
-The public interface now has two deliberately separate paths:
+The public interface in [index.html](file:///Users/sonil/Desktop/HyLeakAI/app/web/index.html) provides two distinct workflows:
 
-1. **Site-input screen.** A transparent scalar volumetric calculation takes a
-   user's interpreted area, thickness, porosity, efficiency, CO2 density,
-   depth, overpressure allowance, injection schedule and caprock thickness.
-   It returns effective capacity, planned mass, utilisation and a hydrostatic
-   pressure ceiling. A default saline-aquifer case makes the workflow usable
-   without a data upload.
-2. **Analogue risk screen.** The deployed surrogate remains a way to explore
-   representative field behaviour and fault-pathway sensitivity. It must keep
-   the labels “synthetic realisation” and “screening only.”
+1. **Site-input screen (Geologist Workbench):** A transparent scalar volumetric calculation accepts a user's interpreted area, thickness, porosity, efficiency, CO2 density, depth, overpressure allowance, injection schedule, and caprock thickness. It returns effective capacity, planned mass, utilisation, and hydrostatic pressure ceilings via `POST /v1/site-screen`. A default saline-aquifer profile enables immediate evaluation without data uploads.
+2. **Analogue risk screen:** The deployed surrogate allows exploring representative field behaviour and fault-pathway sensitivity. Labels clearly specify "synthetic realisation" and "screening only."
 
-This separation is essential: scalar inputs cannot validly be mapped into the
-current U-Net, which was trained on gridded synthetic realizations.
+This separation remains essential: scalar inputs cannot map directly into the current U-Net surrogate trained on gridded synthetic realisations.
 
-## Why these inputs matter
+## Significance of geological inputs
 
-Reservoir structure, thickness, porosity/permeability and natural flow control
-capacity and plume behaviour. Seal continuity, entry pressure, faults and
-geomechanical response control containment. NETL identifies pressure-front and
-plume tracking, potential migration pathways, faults/fractures and physical
-property change as core monitoring concerns. [NETL subsurface
-monitoring](https://netl.doe.gov/node/5873) and [NETL site-screening best
-practice](https://netl.doe.gov/node/5829) support this workflow.
+Reservoir structure, thickness, porosity, permeability, and natural flow characteristics determine storage capacity and plume movement. Caprock continuity, entry pressure, fault networks, and geomechanical responses govern containment. NETL identifies pressure-front tracking, plume migration pathways, structural faults, and physical property shifts as primary monitoring concerns. See [NETL subsurface monitoring](https://netl.doe.gov/node/5873) and [NETL site-screening best practice](https://netl.doe.gov/node/5829).
 
-## Next product increments, in order
+## Roadmap increments
 
-1. **Project package input.** Accept CSV/LAS/WITSML-derived summaries and GIS
-   polygons with units, coordinate reference system, provenance and validation.
-   Keep raw files private; persist a versioned input manifest.
-2. **Evidence-based storage-complex model.** Add reservoir top/base, net-to-
-   gross, porosity/permeability distributions, pressure/temperature/salinity,
-   relative permeability and capillary-pressure curves, wells, faults, caprock
-   entry pressure and stress data. Require uncertainty ranges rather than one
-   “best” number.
-3. **Calibrated dynamics.** Couple a compositional-flow or trusted reservoir
-   simulator to generate project-specific scenarios, then train/condition a
-   surrogate only inside that scenario envelope. Show out-of-distribution
-   warnings and prediction intervals.
-4. **Fault and well integrity workspace.** Let users enter mapped fault traces,
-   offsets, throw, permeability ranges, orientation/stress relationship and
-   legacy wells. Rank pathways with evidence links, rather than random samples.
-5. **Monitoring and decision plan.** Generate baseline, injection and
-   contingency monitoring actions: downhole pressure/temperature, injection
-   rate and volume, well integrity, repeat seismic/logs, tracers and pressure
-   fall-off testing. Track observed pressure and plume response against the
-   forecast envelope. NETL notes that pressure front and plume front need to be
-   distinguished and that monitoring design must identify possible pathways.
-6. **Governance.** Add project roles, assumption approvals, immutable run
-   records, downloadable input/result packages, data-retention controls and an
-   explicit “not permit-ready” gate until calibrated studies are attached.
+1. **Project package ingestion:** Accept CSV, LAS, and WITSML summaries alongside GIS boundary polygons with units, coordinate reference systems, and validation checks.
+2. **Evidence-based storage-complex model:** Incorporate reservoir boundaries, net-to-gross ratios, flow property distributions, pressure-temperature-salinity profiles, capillary pressure curves, and stress states with explicit uncertainty ranges.
+3. **Calibrated dynamics:** Couple compositional-flow simulators to generate project-specific scenarios, conditioning surrogates strictly within valid operational envelopes.
+4. **Fault and well integrity workspace:** Enable direct input of mapped fault traces, offsets, throw, permeability ranges, and legacy well locations to rank migration pathways.
+5. **Monitoring and decision workflow:** Generate baseline, operational, and contingency monitoring plans covering downhole pressure, injection rates, seismic logs, and tracer tests.
+6. **Governance and compliance:** Implement role-based access control, immutable run logs, downloadable audit packages, and explicit regulatory disclaimers.
 
 ## Product rules
 
-- Every output names its source: measured, user-entered, synthetic dataset,
-  surrogate prediction or derived calculation.
-- A change in user input must visibly change only outputs that actually use it.
-- Default examples are labelled examples, never “site data.”
-- No probability is shown with more precision than the calibration supports.
-- The UI shows actionable thresholds and uncertainty, not a single traffic
-  light.
+- Every output explicitly identifies its source: measured site data, user input, synthetic dataset, surrogate prediction, or analytical calculation.
+- Input updates modify only the specific downstream calculations dependent on those values.
+- Default examples carry explicit example labels and never present as measured site data.
+- Output probabilities match the precision supported by underlying model calibration.
+- The interface presents actionable risk ranges and uncertainty thresholds rather than binary indicators.
+

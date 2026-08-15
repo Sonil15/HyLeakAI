@@ -1,53 +1,31 @@
-# Commercial case — how HyLeakAI becomes a business
+# Commercial case: how HyLeakAI scales as a business
 
-> A judge in the online round asked how we would make a business out of this and
-> we had no answer, because Module 4 (Economics) was the one module in our own
-> README marked **Not Started**. This document and `src/economics/` are that
-> answer. The module is now built, and it deliberately does not produce an ROI —
-> Section 2 explains why that is the stronger result.
+> In the online evaluation round, judges inquired about our business model. Module 4 (Economics) in [economics](file:///Users/sonil/Desktop/HyLeakAI/src/economics) addresses that question directly. The module generates a defensible Value of Information framework rather than an ungrounded ROI figure. Section 2 details why this strategy provides a stronger analytical position.
 
 ---
 
-## 1. What we sell
+## 1. Value proposition and market position
 
-Not a reservoir simulator, and not a licence competing with tNavigator or
-ECLIPSE. We would lose that fight on features and should not pick it.
+We do not sell a full reservoir simulator or a software license competing against tNavigator or ECLIPSE. We sell **an auditable containment-risk statement for a storage site**: a defensible, provenance-tagged risk quantification suitable for permitting and insurance evaluation.
 
-We sell **an auditable containment-risk statement for a storage site** — a
-defensible, provenance-tagged number that survives a permitting or insurance
-conversation. Our own round-one script already identified this as the wedge:
+The technical core relies on **decoupling fault properties from field predictions**: because the surrogate predicts fields without taking fault parameters as inputs, one field prediction can be evaluated against thousands of fault hypotheses in real time. This converts single-fault deterministic simulation into comprehensive hypothesis sweeping across unconstrained fault parameter spaces.
 
-> "A permit or an insurance case needs a defensible number... the one operators
-> need and the one nobody else is offering."
+**Delivery stages:**
 
-The technical asset behind it is not the neural network. It is the **decoupling**:
-the fault is not an input to the surrogate, so one field prediction is re-scored
-against thousands of fault hypotheses. That turns "simulate the one fault you
-happened to think of" into "sweep the space of faults you cannot rule out", which
-is what an auditable statement actually requires.
-
-**Delivery model, in order:**
-
-| Stage | Offer | Why it comes here |
+| Stage | Offer | Strategy |
 |---|---|---|
-| 1. Land | Paid co-screening study alongside a decision the operator is already taking | No procurement fight; we are measured against their existing workflow on their own site |
-| 2. Expand | Per-asset annual subscription — re-screen as the geological model updates | Screening is not one-shot; every new well log changes the prior |
-| 3. Defend | Assurance / methodology role as storage permitting rules are written | The moat is being the accepted method, not the fastest code |
+| 1. Land | Co-screening study alongside an existing operator evaluation | Evaluates performance directly against existing workflows on client assets |
+| 2. Expand | Per-asset annual subscription for continuous re-screening | Re-evaluates risk whenever updated well logs or geological models arrive |
+| 3. Defend | Assurance and methodology validation as storage permitting rules evolve | Establishes our method as the accepted industry benchmark |
 
 ---
 
-## 2. Why there is no ROI number here, and what replaces it
+## 2. Value of Information (VOI) framework
 
-An ROI needs a leakage loss fraction. **No public dataset anywhere in the world
-contains hydrogen leakage measurements** — that absence is the founding premise
-of this project, documented in `Data_sources_research.md` §1. Multiplying an
-uncalibrated label by a hydrogen price does not create knowledge; it puts a
-currency symbol on an order-of-magnitude uncertainty.
+Calculating a traditional ROI requires knowing the actual hydrogen leakage fraction. **No public dataset worldwide provides measured hydrogen leakage data**, as documented in [Data_sources_research.md](file:///Users/sonil/Desktop/HyLeakAI/Data_sources_research.md) section 1. Multiplying uncalibrated physics labels by energy prices yields arbitrary financial figures.
 
-So `src/economics/voi.py` computes **Value of Information** instead — the
-framework petroleum decision analysis already uses for exactly this question. VOI
-prices information by how much it changes a decision. It needs the decision
-structure and the reliability of the screen; it does not need the true leak rate.
+Therefore, [voi.py](file:///Users/sonil/Desktop/HyLeakAI/src/economics/voi.py) computes **Value of Information (VOI)**: the standard petroleum decision analysis methodology for valuing information based on its ability to optimize decisions under uncertainty.
+
 
 ### What is actually being valued: coverage, not accuracy
 
@@ -188,30 +166,24 @@ Both are cheap to grant, and only MC²+ can grant them.
 
 ---
 
-## 5. What we do not claim
+## 5. Explicit limitations
 
-Carried forward from `docs/PRESENTATION_CONTEXT.md` §14, with the economics
-additions:
+Carried forward from [PRESENTATION_CONTEXT.md](file:///Users/sonil/Desktop/HyLeakAI/docs/PRESENTATION_CONTEXT.md) section 14, with economics additions:
 
-- No ROI, no $/kg, no avoided-cost figure. Efficiency is a **ratio**; the only
-  price is our own compute.
-- No speedup or cost ratio against tNavigator — **we never timed it.**
-- No CO₂ / CCUS capability. The buoyancy table above is why.
-- The screen's ceiling is set by how well Se/Sp are known, and sensitivity rests
-  on ~308 positive held-out rows. **More hypotheses cannot raise that ceiling** —
-  only a better-characterised classifier can.
-- Efficiency of 0.9974 says how much of the *available decision value* the screen
-  captures. It does **not** say the underlying T3 label is correct. That label is
-  ours, semi-analytical, and uncalibrated — see the ask.
+- No ROI, no $/kg, and no "avoided cost" figure. Efficiency represents a **ratio**; compute usage represents our only direct cost.
+- No speedup or cost comparisons against tNavigator (we benchmarked surrogate speed directly without timing proprietary software).
+- No CO2 or CCUS claims. The physical buoyancy table above explains why H2 models do not transfer directly to CO2.
+- The screening ceiling depends on receiver sensitivity and specificity bounds (evaluated on ~308 positive held-out scenarios). Increasing fault hypothesis counts cannot exceed this upper bound without improved classifier calibration.
+- An efficiency value of 0.9974 measures the percentage of available decision value captured. It does not certify that the underlying T3 semi-analytical physics label represents true field leakage rates.
 
 ---
 
 ## Sources
 
-- India strategic gas storage, depleted fields preferred — [BW Businessworld](https://www.businessworld.in/article/india-plans-strategic-natural-gas-storage-to-bolster-energy-security-after-west-asia-crisis-613462)
-- ONGC / Oil India, depleted fields for sequestration and gas storage — [PSU Watch](https://psuwatch.com/newsupdates/exclusive-ongc-oil-to-use-depleted-oil-fields-for-carbon-sequestration-gas-storage)
-- National Green Hydrogen Mission targets — [MNRE](https://mnre.gov.in/en/national-green-hydrogen-mission/)
-- Prior art on storage surrogates (not our novelty — the fault layer is) — [CCSNet, Wen & Benson, Stanford](https://ccsnet.ai/)
+- India strategic gas storage, depleted fields preferred: [BW Businessworld](https://www.businessworld.in/article/india-plans-strategic-natural-gas-storage-to-bolster-energy-security-after-west-asia-crisis-613462)
+- ONGC / Oil India, depleted fields for sequestration and gas storage: [PSU Watch](https://psuwatch.com/newsupdates/exclusive-ongc-oil-to-use-depleted-oil-fields-for-carbon-sequestration-gas-storage)
+- National Green Hydrogen Mission targets: [MNRE](https://mnre.gov.in/en/national-green-hydrogen-mission/)
+- Prior art on storage surrogates: [CCSNet, Wen & Benson, Stanford](https://ccsnet.ai/)
 
-Internal: `outputs/voi_results.json`, `outputs/unit_cost.json`,
-`outputs/fluid_properties.json`, `outputs/assumption_register.json`.
+Internal outputs: `outputs/voi_results.json`, `outputs/unit_cost.json`, `outputs/fluid_properties.json`, `outputs/assumption_register.json`.
+
