@@ -205,7 +205,9 @@ Two core presentation rules remain: keep sentences short, and explain the signif
 
 **"Hydrogen storage barely exists in India. Who's the customer?"**
 > Agreed, and we say the number: about eight thousand tonnes a year commissioned
-> against a five-million-tonne 2030 target. That's why the next market is natural
+> against the five-million-tonne 2030 target — and that target isn't ours, it's
+> the Ministry of New and Renewable Energy's, under the National Green Hydrogen
+> Mission. Somebody has to store that hydrogen. That's why the next market is natural
 > gas storage — India is building its first strategic storage and depleted fields
 > are the stated preferred option. Same reservoir, same inject-and-withdraw duty,
 > and GAIL, ONGC and Petronet are all in this room.
