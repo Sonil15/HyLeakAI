@@ -674,13 +674,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   <div class="wrap">
     <div class="mark"><i></i>HYLEAKAI</div>
     <div class="row">
-      <p class="eyebrow" id="mode-copy">Interactive preview</p>
-      <div class="seg" id="mode-seg" role="group" aria-label="Assessment mode">
-        <button type="button" data-mode="preview" aria-pressed="true">Preview</button>
-        <button type="button" data-mode="live" aria-pressed="false">Live model</button>
-      </div>
+      <!-- The Preview / Live-model toggle is gone: one mode, so there is nothing
+           to switch between and nothing to label. #mode-copy is kept because the
+           existing script writes status into it. -->
+      <p class="eyebrow" id="mode-copy">Underground hydrogen storage screening</p>
     </div>
-    <p class="eyebrow">Frontend design direction &nbsp;·&nbsp; interactive mockup &nbsp;·&nbsp; not the shipped app</p>
+    <p class="eyebrow">1,000 synthetic realisations &nbsp;·&nbsp; U-Net surrogate + XGBoost screening &nbsp;·&nbsp; assumptions stated throughout</p>
   </div>
 </header>
 
@@ -1081,9 +1080,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       <h2>How the live demo is delivered</h2>
     </div>
     <p class="lede">
-      GitHub Pages serves the interface while a small FastAPI service runs the U-Net surrogate and
-      XGBoost screening model. The full dataset stays out of the browser; the page requests only
-      held-out simulation IDs and compact assessment results.
+      One container on Google Cloud Run: a FastAPI service runs the U-Net surrogate and the XGBoost
+      screening model, and serves this interface from the same origin — so there is one URL and no
+      cross-origin setup. It scales to zero when idle, so a cold request pays a short model-load
+      before the first result. The full dataset stays out of the browser; the page carries the
+      1,000-realisation ranking inline and requests only held-out simulation IDs and compact
+      assessment results.
     </p>
 
     <div class="ideas">
@@ -1264,15 +1266,11 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       syncPlay();
     }
     document.getElementById("live-panel").hidden = mode !== "live";
-    document.getElementById("mode-copy").textContent = mode === "live" ? "Live model assessment" : "Interactive preview";
     document.getElementById("field-source-badge").textContent = mode === "live"
       ? "Illustrative field · live numerical results below" : "Preview field · procedural illustration";
     document.getElementById("risk-source-badge").className = "src " + (mode === "live" ? "real" : "stub");
     document.getElementById("risk-source-badge").textContent = mode === "live"
       ? "Live API · U-Net surrogate + XGBoost" : "Preview values · illustrative";
-    [].forEach.call(document.querySelectorAll("#mode-seg button"), function (button) {
-      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
-    });
     if (mode === "preview") {
       renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
     } else if (state.live.result) {
@@ -1383,9 +1381,6 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     }
   }
 
-  document.getElementById("mode-seg").addEventListener("click", function (event) {
-    var button = event.target.closest("button"); if (button) setMode(button.dataset.mode);
-  });
   document.getElementById("run-live").addEventListener("click", runLiveAssessment);
   document.getElementById("live-simulation").addEventListener("change", function () {
     state.live.result = null;
@@ -2530,8 +2525,6 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
    * boot
    * ================================================================ */
   function boot() {
-    document.querySelector(".mast .eyebrow:not(#mode-copy)").textContent =
-      "Hydrogen storage screening · explore the preview or run the deployed demo model";
     reorder();
     state.site = order[0];
     buildFields();
