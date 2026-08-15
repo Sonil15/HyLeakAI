@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import csv
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -156,6 +157,27 @@ def metadata():
             "Physics-guided screening only; not a calibrated leak-rate prediction.",
             "Fault and caprock properties are hypotheses, not measured site data.",
         ],
+    }
+
+
+@app.get("/v1/suitability")
+def suitability():
+    """Portfolio ranking for the 1,000 synthetic geological realizations.
+
+    It is intentionally not a geographic recommendation service.  Only the
+    held-out subset is eligible for the deployed surrogate field explorer.
+    """
+    require_ready()
+    ranking_path = service.output_dir / "site_suitability_ranking.csv"
+    if not ranking_path.exists():
+        raise HTTPException(status_code=503, detail="Suitability ranking artifact is not loaded.")
+    with ranking_path.open(newline="") as handle:
+        points = [{key: float(value) if key != "sim_id" and key != "rank" else int(value)
+                   for key, value in row.items()} for row in csv.DictReader(handle)]
+    return {
+        "points": points,
+        "live_simulation_ids": service.test_ids,
+        "provenance": "Synthetic geological-realisation portfolio; not geographic locations.",
     }
 
 
