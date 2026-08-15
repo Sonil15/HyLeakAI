@@ -1,9 +1,10 @@
 # syntax=docker/dockerfile:1.7
 #
-# Single-image deployment for Fly.io: the FastAPI backend also serves the
-# static frontend from app/web/, so there is one app, one domain, and no CORS.
+# Single-image deployment: the FastAPI backend also serves the static frontend
+# from app/web/, so there is one service, one domain, and no CORS.
 #
-# Replaces the previous split of Render (backend) + GitHub Pages (frontend).
+# Targets Google Cloud Run, but the image is plain OCI and runs anywhere that
+# takes a container (Fly, Render, local Docker).
 
 FROM python:3.11-slim
 
@@ -14,37 +15,46 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Dependencies before code: torch is a slow, ~800 MB install, and this keeps it
-# in a cached layer that ordinary code edits do not invalidate.
+# Dependencies before code: torch is a slow, ~800 MB install, and keeping it in
+# its own layer means ordinary code edits do not re-run it.
 COPY requirements-api.txt ./
 RUN pip install -r requirements-api.txt
 
-# Application code. src/ is needed because api/service.py imports the model
-# definition and leakage physics from it.
+# Application code. src/ is required because api/service.py imports the model
+# definition and the leakage physics from it.
 COPY api/ api/
 COPY src/ src/
-COPY scripts/ scripts/
 COPY app/web/ app/web/
 
-# Model artifacts (~216 MB) are baked into the image rather than downloaded on
-# boot. Cold starts already pay for a torch import; adding a 216 MB download on
-# top would make the first request after a scale-to-zero wake unusably slow.
+# Model artifacts (~216 MB), copied from the build context rather than
+# downloaded from the private GitHub release.
 #
-# The token is a BuildKit secret, so it is never written to an image layer —
-# unlike an ARG or ENV, which would be recoverable from `docker history`.
-RUN --mount=type=secret,id=hyleak_token \
-    HYLEAK_GITHUB_TOKEN="$(cat /run/secrets/hyleak_token)" \
-    python scripts/download_api_artifacts.py
+# Why copy instead of download: Cloud Build has no first-class BuildKit secret,
+# so a token would have to be passed as a build ARG and would then be
+# recoverable from the image history. Copying needs no credential at all, which
+# also means this image can be rebuilt by anyone with the repo checked out.
+#
+# .gcloudignore and .dockerignore both allow exactly these six paths through and
+# exclude everything else under data/, checkpoints/ and outputs/ — in particular
+# data/states.npy, which is 5.9 GB and is not needed, because the U-Net predicts
+# the state fields from geology.
+COPY data/constants.npy data/stats.json runtime_artifacts/data/
+COPY checkpoints/unet_small_best.pt runtime_artifacts/checkpoints/
+COPY outputs/xgb_classifier.ubj outputs/shap_features.json outputs/xgb_results.json runtime_artifacts/outputs/
 
-# Match the paths render.yaml used, so api/service.py finds the same layout.
 ENV HYLEAK_DATA_DIR=/app/runtime_artifacts/data \
     HYLEAK_CHECKPOINT=/app/runtime_artifacts/checkpoints/unet_small_best.pt \
     HYLEAK_OUTPUT_DIR=/app/runtime_artifacts/outputs
 
-# Fly routes to this port; it must match internal_port in fly.toml.
+# Cloud Run injects PORT and expects the server to listen on it. The default
+# keeps the image runnable outside Cloud Run.
+ENV PORT=8080
 EXPOSE 8080
 
-# One worker deliberately: the model is loaded into memory once at startup, and
-# a second worker would double the resident footprint for no throughput gain on
-# a shared-cpu-1x machine.
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+# Shell form so ${PORT} expands; exec so uvicorn becomes PID 1 and receives
+# SIGTERM directly, which lets Cloud Run shut instances down cleanly.
+#
+# One worker deliberately: the model is loaded once at startup and a second
+# worker would double the ~415 MB resident footprint for no throughput gain on
+# a single-vCPU instance.
+CMD exec uvicorn api.main:app --host 0.0.0.0 --port ${PORT} --workers 1
