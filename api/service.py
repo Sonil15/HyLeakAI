@@ -211,6 +211,21 @@ class InferenceService:
         matrix = np.asarray(rows, np.float32)
         probabilities = self.classifier.predict_proba(matrix)[:, 1]
 
+        # Exact TreeSHAP from the booster that produced the probability, so the
+        # attribution explains THIS prediction rather than approximating it.
+        # XGBoost's own pred_contribs is used rather than the shap package,
+        # which cannot parse xgboost 3.2's base_score (serialised as the JSON
+        # array '[2.37e-2]' instead of a scalar). Same algorithm, no version
+        # conflict. The trailing column is the bias term, dropped so the array
+        # lines up with the feature names.
+        contributions = None
+        try:
+            import xgboost as xgb
+            raw = self.classifier.get_booster().predict(xgb.DMatrix(matrix), pred_contribs=True)
+            contributions, base_logit = raw[:, :-1], float(raw[0, -1])
+        except Exception:
+            base_logit = None
+
         # Second head: the regressor predicts log10(Q + 1e-12) at the same
         # horizon. Reported as a forecast, never as a measured leak rate --
         # Q is a closed-form function of quantities that are themselves
@@ -219,8 +234,18 @@ class InferenceService:
         forecasts = (self.regressor.predict(matrix) if self.regressor is not None
                      else [None] * len(rows))
 
-        for result, probability, log_q in zip(results, probabilities, forecasts, strict=True):
+        for index, (result, probability, log_q) in enumerate(zip(results, probabilities, forecasts, strict=True)):
             result["elevated_leakage_probability"] = float(probability)
+            if contributions is not None:
+                # Only the terms that moved this prediction. All 41 would bury
+                # the handful that matter under a list of near-zeros, and the
+                # full vector is already available under "features".
+                row = contributions[index]
+                ranked = sorted(zip(self.feature_names, row), key=lambda kv: -abs(kv[1]))
+                result["contributions"] = [
+                    {"feature": name, "value": float(v)} for name, v in ranked[:8] if abs(v) > 1e-6
+                ]
+                result["contribution_base_logit"] = base_logit
             if log_q is not None:
                 result["forecast_log10_q"] = float(log_q)
                 # Below the 1e-12 floor used when building the label, the
