@@ -974,6 +974,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           </ol>
         </div>
         <p class="status" id="live-status" role="status">Connecting to the model service…</p>
+        <div class="readouts" id="xgb-readouts"></div>
         <details class="disclose" id="feature-detail">
           <summary>What goes into the two XGBoost models (<span id="feature-count">41</span> inputs)</summary>
           <div class="disclose-body">
@@ -1265,9 +1266,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     ? "https://hyleakai-152424867743.asia-south1.run.app"
     : "";
   var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
-  /* A real API response captured on 2026-08-12. It makes the Live tab useful
-     immediately in a demo, while Run live assessment always refreshes it. */
-  var VERIFIED_DEMO_RESULT = {"simulation_id":0,"timestep":31,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":262.1124267578125,"pressure_delta_bar":64.91242675781251,"plume_area_km2":2.9736,"caprock_margin":0.5317369955976214},"risk_summary":{"fault_count":5,"median_probability":3.1093936314618986e-8,"p90_probability":3.3465208275629267e-7,"worst_case_probability":3.406817370432691e-7},"faults":[{"fault":{"fault_id":0,"x_m":2026.556,"y_m":4972.085,"length_m":558.831,"width_m":5.446,"permeability_m2":6.250887536644922e-13,"orientation_rad":1.560188},"current_flux_m3_s":0,"elevated_leakage_probability":3.25607601325828e-7},{"fault":{"fault_id":1,"x_m":5565.8,"y_m":1743.88,"length_m":305.766,"width_m":9.189,"permeability_m2":1.1233473384304368e-13,"orientation_rad":3.099848},"current_flux_m3_s":0,"elevated_leakage_probability":8.79326123026658e-9},{"fault":{"fault_id":2,"x_m":3769.028,"y_m":1092.921,"length_m":789.479,"width_m":5.486,"permeability_m2":3.59147474494291e-13,"orientation_rad":1.7081},"current_flux_m3_s":0,"elevated_leakage_probability":3.406817370432691e-7},{"fault":{"fault_id":3,"x_m":2063.84,"y_m":3420.815,"length_m":1892.459,"width_m":2.473,"permeability_m2":5.40218926082173e-15,"orientation_rad":2.784003},"current_flux_m3_s":0,"elevated_leakage_probability":5.793386215202645e-9},{"fault":{"fault_id":4,"x_m":3077.212,"y_m":5326.215,"length_m":1717.886,"width_m":7.753,"permeability_m2":1.267424645304919e-14,"orientation_rad":2.418797},"current_flux_m3_s":0,"elevated_leakage_probability":3.1093936314618986e-8}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction."]};
+  /* A real API response, captured from the deployed service. It is shown on
+     load so the readouts are populated before anyone clicks Run, and it carries
+     both XGBoost heads and the feature list. Running an assessment replaces it
+     with a fresh call. Re-capture with:
+       curl -s -X POST <service>/v1/assessments -H 'Content-Type: application/json'          -d '{"simulation_id":110,"timestep":30,"mode":"sampled_ensemble","fault_count":5,"seed":7}' */
+  var VERIFIED_DEMO_RESULT = {"simulation_id":110,"timestep":30,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":207.9679412841797,"pressure_delta_bar":10.767941284179699,"plume_area_km2":5.3208,"caprock_margin":0.08820672763604838},"risk_summary":{"fault_count":5,"median_probability":0.00015857662947382778,"p90_probability":0.999826717376709,"worst_case_probability":0.999996542930603,"worst_forecast_log10_q":1.2451015710830688},"models":{"fields":{"name":"U-Net surrogate","predicts":["pressure","saturation"],"inputs":["porosity","permeability","time","cycle index","distance to well"]},"classifier":{"name":"XGBoost classifier","predicts":"P(elevated leakage)","n_features":41,"pr_auc":0.9931344282676601,"auc":0.9998290036522239},"regressor":{"name":"XGBoost regressor","predicts":"log10 flux at the horizon","n_features":41,"r2":0.9711298018604623,"rmse_log10":0.7406433820724487}},"feature_names":["p_max_bar","p_min_bar","p_mean_bar","p_p95_bar","p_well_bar","delta_p_bar","p_grad_max_bar_per_m","dp_dt_bar_per_year","s_max","s_mean","hpv_total_m3","plume_area_m2","plume_cell_count","plume_centroid_offset_m","plume_max_radius_m","plume_front_speed_m_per_year","hpv_rate_m3_per_year","boundary_saturation_max","boundary_hpv_fraction","caprock_margin","poro_mean","poro_std","logk_mean","logk_std","fault_p_bar","fault_s","fault_krg","fault_overpressure_bar","fault_delta_p_bar","distance_plume_to_fault_m","fault_poro","fault_logk","fault_log10_perm_m2","fault_length_m","fault_width_m","fault_area_m2","fault_radius_from_well_m","timestep","cycle_number","cycle_index","step_in_cycle"],"faults":[{"fault":{"fault_id":0,"x_m":5397.490619704816,"y_m":2666.217423750363,"length_m":1596.2342424413482,"width_m":3.0268647099153267,"permeability_m2":7.952411684214868e-15,"orientation_rad":2.7443490865749487},"current_flux_m3_s":0.0,"elevated_leakage_probability":8.629542913585198e-11,"forecast_log10_q":-12.082201957702637,"forecast_q_m3_s":0.0},{"fault":{"fault_id":1,"x_m":3932.9300423517384,"y_m":3646.40635328052,"length_m":1634.7249717536831,"width_m":5.211414575593487,"permeability_m2":8.111427306649053e-15,"orientation_rad":0.8746998575470308},"current_flux_m3_s":0.0,"elevated_leakage_probability":0.00015857662947382778,"forecast_log10_q":-0.42904940247535706,"forecast_q_m3_s":0.37234934783986867},{"fault":{"fault_id":2,"x_m":2980.23026323563,"y_m":4149.070591501126,"length_m":1108.1868661243159,"width_m":5.981476168670432,"permeability_m2":9.69395167272759e-13,"orientation_rad":2.4902208621823125},"current_flux_m3_s":0.0,"elevated_leakage_probability":0.999996542930603,"forecast_log10_q":1.2451015710830688,"forecast_q_m3_s":17.58334798291601},{"fault":{"fault_id":3,"x_m":5777.4314419191705,"y_m":3705.3932607429406,"length_m":587.5556568240781,"width_m":2.441908304720601,"permeability_m2":6.880481204463462e-14,"orientation_rad":0.1380478893954662},"current_flux_m3_s":0.0,"elevated_leakage_probability":1.0131981365013587e-10,"forecast_log10_q":-12.021698951721191,"forecast_q_m3_s":0.0},{"fault":{"fault_id":4,"x_m":3541.4065644065754,"y_m":3811.9850463698863,"length_m":1039.1708455855205,"width_m":9.254509958735671,"permeability_m2":7.72109264339647e-14,"orientation_rad":1.6151482216379063},"current_flux_m3_s":0.0,"elevated_leakage_probability":0.9995719790458679,"forecast_log10_q":0.5848516225814819,"forecast_q_m3_s":3.8446040807870054}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction.","Fault and caprock properties are hypotheses, not measured site data.","Results use U-Net surrogate fields, not simulator truth fields."],"request_id":"38677ae0-6bd3-4afb-b7e8-19c3c6a6f2f2","created_at":"2026-08-16T02:19:11.348821+00:00","scenario_input":{"simulation_id":110,"timestep":30,"mode":"sampled_ensemble","fault_count":5,"seed":7,"faults":null}};
 
   function pause(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
   function setLiveStage(active, completed) {
@@ -1305,7 +1309,6 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       state.playing = false;
       syncPlay();
     }
-    document.getElementById("live-panel").hidden = mode !== "live";
     document.getElementById("field-source-badge").textContent = mode === "live"
       ? "Illustrative field · live numerical results below" : "Illustrative field";
     document.getElementById("risk-source-badge").className = "src " + (mode === "live" ? "real" : "stub");
@@ -1364,7 +1367,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       ro("Caprock margin", C_ASSUMED, summary.caprock_margin.toFixed(3), "> 1 would mean exceedance", summary.caprock_margin > 0.85 ? "hot" : "") +
       ro("Fault ensemble", C_ASSUMED, risk.fault_count + " samples", "seeded hypothesis sweep") +
       ro("Model call", null, "live", "U-Net surrogate + XGBoost", "good");
-    document.getElementById("fault-readouts").innerHTML =
+    document.getElementById("xgb-readouts").innerHTML =
       ro("P(elevated leak)", C_DERIVED, worst.elevated_leakage_probability.toFixed(4),
          "XGBoost classifier, " + result.forecast_horizon_months + " months ahead",
          worst.elevated_leakage_probability > 0.5 ? "hot" : "good") +
@@ -2737,6 +2740,9 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     state.fault = faults.reduce(function (p, c, n) { return c.risk > faults[p].risk ? n : p; }, 0);
     renderFaultReadouts(); renderWaterfall();
     syncPlay();
+    /* Populate the Stage 2 readouts immediately from the captured response, so
+       the panel is not three empty boxes until someone clicks Run. */
+    renderLiveResult(cachedResult());
     initLive();
   }
 
