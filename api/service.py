@@ -30,6 +30,10 @@ class InferenceService:
     def load(self) -> None:
         required = (self.data_dir / "constants.npy", self.data_dir / "stats.json", self.checkpoint_path,
                     self.output_dir / "xgb_classifier.ubj", self.output_dir / "shap_features.json")
+        # The regressor is optional so an older artifact bundle still starts;
+        # the flux forecast is simply omitted rather than the service refusing
+        # to boot.
+        self.regressor_path = self.output_dir / "xgb_regressor.ubj"
         missing = [str(path) for path in required if not path.exists()]
         if missing:
             raise ArtifactError("Missing inference artifact(s): " + ", ".join(missing))
@@ -52,9 +56,20 @@ class InferenceService:
         self.torch = torch
         self.classifier = xgb.XGBClassifier()
         self.classifier.load_model(self.output_dir / "xgb_classifier.ubj")
+        self.regressor = None
+        if self.regressor_path.exists():
+            self.regressor = xgb.XGBRegressor()
+            self.regressor.load_model(self.regressor_path)
         self.feature_names = json.loads((self.output_dir / "shap_features.json").read_text())
         results = json.loads((self.output_dir / "xgb_results.json").read_text())
         self.horizon_steps = int(results["report_horizon"])
+        horizon = results["horizons"][str(self.horizon_steps)]["full"]
+        self.metrics = {
+            "auc": float(horizon["classification"]["auc"]),
+            "pr_auc": float(horizon["classification"]["pr_auc"]),
+            "r2": float(horizon["regression"]["r2"]),
+            "rmse": float(horizon["regression"]["rmse"]),
+        }
         self.test_ids = C.simulation_splits()["test"]
         self._ready = True
 
@@ -187,17 +202,51 @@ class InferenceService:
             row = {**global_row, **geology_row, **features, **operational_features(timestep)}
             rows.append([row.get(name, 0.0) for name in self.feature_names])
             results.append({"fault": asdict(fault), "current_flux_m3_s": flux})
-        probabilities = self.classifier.predict_proba(np.asarray(rows, np.float32))[:, 1]
-        for result, probability in zip(results, probabilities, strict=True):
+        matrix = np.asarray(rows, np.float32)
+        probabilities = self.classifier.predict_proba(matrix)[:, 1]
+
+        # Second head: the regressor predicts log10(Q + 1e-12) at the same
+        # horizon. Reported as a forecast, never as a measured leak rate --
+        # Q is a closed-form function of quantities that are themselves
+        # features, so at the SAME timestep it would be arithmetic. The only
+        # genuine learning content is how the fields evolve over the horizon.
+        forecasts = (self.regressor.predict(matrix) if self.regressor is not None
+                     else [None] * len(rows))
+
+        for result, probability, log_q in zip(results, probabilities, forecasts, strict=True):
             result["elevated_leakage_probability"] = float(probability)
+            if log_q is not None:
+                result["forecast_log10_q"] = float(log_q)
+                # Below the 1e-12 floor used when building the label, the
+                # value is indistinguishable from no flux at all.
+                result["forecast_q_m3_s"] = float(10.0 ** log_q) if log_q > -11.5 else 0.0
         return {
             "simulation_id": simulation_id, "timestep": timestep, "field_source": "U-Net surrogate",
             "forecast_horizon_steps": self.horizon_steps,
             "forecast_horizon_months": self.horizon_steps * C.MONTHS_PER_STEP,
             "field_summary": {"peak_pressure_bar": global_row["p_max_bar"], "pressure_delta_bar": global_row["delta_p_bar"],
                               "plume_area_km2": global_row["plume_area_m2"] / 1e6, "caprock_margin": global_row["caprock_margin"]},
-            "risk_summary": {"fault_count": len(results), "median_probability": float(np.median(probabilities)),
-                             "p90_probability": float(np.quantile(probabilities, 0.9)), "worst_case_probability": float(np.max(probabilities))},
+            "risk_summary": {
+                "fault_count": len(results),
+                "median_probability": float(np.median(probabilities)),
+                "p90_probability": float(np.quantile(probabilities, 0.9)),
+                "worst_case_probability": float(np.max(probabilities)),
+                # Worst case rather than mean: a leakage screen is about the
+                # pathway that fails, not the average pathway.
+                "worst_forecast_log10_q": (float(np.max(forecasts)) if self.regressor is not None else None),
+            },
+            "models": {
+                "fields": {"name": "U-Net surrogate", "predicts": ["pressure", "saturation"],
+                           "inputs": ["porosity", "permeability", "time", "cycle index", "distance to well"]},
+                "classifier": {"name": "XGBoost classifier", "predicts": "P(elevated leakage)",
+                               "n_features": len(self.feature_names),
+                               "pr_auc": self.metrics.get("pr_auc"), "auc": self.metrics.get("auc")},
+                "regressor": ({"name": "XGBoost regressor", "predicts": "log10 flux at the horizon",
+                               "n_features": len(self.feature_names),
+                               "r2": self.metrics.get("r2"), "rmse_log10": self.metrics.get("rmse")}
+                              if self.regressor is not None else None),
+            },
+            "feature_names": self.feature_names,
             "faults": results,
             "limitations": ["Physics-guided screening only; not a calibrated leak-rate prediction.",
                             "Fault and caprock properties are hypotheses, not measured site data.",

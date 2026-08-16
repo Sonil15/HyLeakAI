@@ -32,6 +32,7 @@ __pycache__/
 
 /outputs/*
 !/outputs/xgb_classifier.ubj
+!/outputs/xgb_regressor.ubj
 !/outputs/shap_features.json
 !/outputs/xgb_results.json
 !/outputs/site_suitability_ranking.csv
