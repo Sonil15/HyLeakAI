@@ -153,6 +153,30 @@ window.addEventListener("load", async function () {
   ok("weights state their derivation",
      /AHP-derived|consistency ratio/i.test(D.querySelector(".f-note").textContent));
 
+  /* --- Stage 2 controls, and that the mockup is untouched ------------- */
+  var sel = D.getElementById("series-sim");
+  ok("simulation picker lists all 150 held-out sims", sel && sel.options.length === 150,
+     sel ? sel.options.length : "missing");
+  ok("Run and Reset controls exist",
+     !!D.getElementById("run-series") && !!D.getElementById("reset-series"));
+  ok("Reset starts disabled (mockup is the default)",
+     D.getElementById("reset-series").disabled);
+  ok("source badge starts on the illustration",
+     /Illustrative/.test(D.getElementById("field-source-badge").textContent),
+     D.getElementById("field-source-badge").textContent);
+
+  /* The slab must still render from the mockup, and scrubbing the timeline
+     must not throw now that setStep also refreshes series frames. */
+  var slab = D.getElementById("slab");
+  ok("slab canvas still renders", slab && slab.width > 0, slab ? slab.width : "missing");
+  var threw = null;
+  try {
+    var range = D.getElementById("tstep") || D.querySelector('input[type="range"]');
+    if (range) { range.value = 42; range.dispatchEvent(new W.Event("input")); }
+  } catch (e) { threw = e.message; }
+  await sleep(200);
+  ok("scrubbing the timeline does not throw", threw === null, threw || "ok");
+
   /* --- score parity against the shipped ranking ---------------------- */
   var sc = A.scores();
   ok("scores span 0-100",

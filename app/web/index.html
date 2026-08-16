@@ -530,6 +530,10 @@ tr.sel td { background: color-mix(in srgb, var(--h2) 12%, transparent); }
 tbody tr { cursor: pointer; }
 tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 
+.series-bar { border-top: 1px solid var(--line-soft); }
+.series-bar .row { gap: 8px; flex-wrap: wrap; }
+#series-status { color: var(--text-faint); }
+
 /* ================= Stage 1: explainer, 3D atlas, ranking list ================= */
 
 .synth-banner {
@@ -977,6 +981,17 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
               <button type="button" data-f="perm" aria-pressed="false">Permeability</button>
             </div>
             <span class="src stub" id="field-source-badge">Illustrative field</span>
+          </div>
+        </div>
+        <div class="panel-bar series-bar">
+          <p class="eyebrow">Run a real simulation</p>
+          <div class="row">
+            <select id="series-sim" class="mini-input" aria-label="Held-out simulation to run">
+              <option>loading…</option>
+            </select>
+            <button type="button" class="mini-btn" id="run-series">Run</button>
+            <button type="button" class="mini-btn" id="reset-series" disabled>Reset</button>
+            <span class="eyebrow" id="series-status">Showing the default illustration.</span>
           </div>
         </div>
         <div class="canvas-host">
@@ -2451,8 +2466,118 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     if (e.key === "ArrowLeft") { setStep(Math.max(1, state.step - 1)); e.preventDefault(); }
   });
 
+  /* ================================================================ *
+   * Real simulation series
+   *
+   * The mockup stays the default. Running a simulation swaps only the CONTENTS
+   * of the sat/pres/perm arrays that drawSlab already reads, so the tilted slab,
+   * the colour ramps, the cycle ribbon and the timeline are untouched. Nothing
+   * about the visualisation changes; only the numbers behind it do.
+   *
+   * drawLiveField() is deliberately not used here: it renders a flat square map,
+   * which would replace the slab rather than feed it.
+   * ================================================================ */
+  var series = null;   /* decoded /v1/field-series payload, or null for the mockup */
+
+  function decodeSeries(payload) {
+    var out = { simulation_id: payload.simulation_id, grid: payload.grid, layers: {} };
+    Object.keys(payload.layers).forEach(function (name) {
+      var L = payload.layers[name];
+      var bin = atob(L.data);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      out.layers[name] = { bytes: bytes, range: L.range, units: L.units,
+                           source: L.source, frames: L.frames };
+    });
+    return out;
+  }
+
+  /* Resample one 128x128 frame into the 96x96 array the slab uses. Nearest
+     neighbour: the slab already draws well below native resolution, and
+     interpolating would smooth the plume front, which is the feature the
+     surrogate is least accurate at and therefore the one worth showing honestly. */
+  function fillFromSeries(layerName, target, step) {
+    var L = series.layers[layerName];
+    if (!L) return false;
+    var gw = series.grid.width, gh = series.grid.height;
+    var frame = L.frames > 1 ? (step - 1) : 0;
+    var base = frame * gw * gh;
+    for (var y = 0; y < N; y++) {
+      var sy = Math.min(gh - 1, Math.floor(y * gh / N));
+      for (var x = 0; x < N; x++) {
+        var sx = Math.min(gw - 1, Math.floor(x * gw / N));
+        target[y * N + x] = L.bytes[base + sy * gw + sx] / 255;
+      }
+    }
+    return true;
+  }
+
+  function applySeriesFrame(step) {
+    if (!series) return;
+    fillFromSeries("saturation", sat, step);
+    fillFromSeries("pressure", pres, step);
+    fillFromSeries("permeability", perm, step);
+  }
+
+  function seriesBadge() {
+    var badge = document.getElementById("field-source-badge");
+    if (!badge) return;
+    badge.textContent = series
+      ? "U-Net surrogate · simulation #" + series.simulation_id
+      : "Illustrative field";
+    badge.className = "src " + (series ? "real" : "stub");
+  }
+
+  async function runSeries(simulationId) {
+    var status = document.getElementById("series-status");
+    var button = document.getElementById("run-series");
+    button.disabled = true;
+    if (status) status.textContent = "Running the surrogate over all 60 timesteps… about 20 s, longer on a cold start.";
+    try {
+      var response = await fetch(API_BASE + "/v1/field-series/" + simulationId);
+      if (!response.ok) throw new Error("request failed (" + response.status + ")");
+      series = decodeSeries(await response.json());
+      applySeriesFrame(state.step);
+      seriesBadge();
+      drawSlab(); renderSlabReadouts();
+      if (status) status.textContent = "Simulation #" + simulationId + " loaded. All 60 timesteps are model output.";
+      var reset = document.getElementById("reset-series");
+      if (reset) reset.disabled = false;
+    } catch (error) {
+      if (status) status.textContent = "Could not run the simulation: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function resetSeries() {
+    series = null;
+    buildFields();               /* regenerates the mockup arrays in place */
+    seriesBadge();
+    drawSlab(); renderSlabReadouts();
+    var status = document.getElementById("series-status");
+    if (status) status.textContent = "Showing the default illustration.";
+    var reset = document.getElementById("reset-series");
+    if (reset) reset.disabled = true;
+  }
+
+  /* Populate the simulation picker from the held-out ids the page already
+     carries, so the control works before any API call succeeds. */
+  (function initSeriesControls() {
+    var select = document.getElementById("series-sim");
+    if (!select) return;
+    select.innerHTML = TEST_IDS.map(function (id) {
+      return '<option value="' + id + '">simulation #' + id + "</option>";
+    }).join("");
+    document.getElementById("run-series").addEventListener("click", function () {
+      runSeries(Number(select.value));
+    });
+    document.getElementById("reset-series").addEventListener("click", resetSeries);
+  })();
+
   function setStep(t) {
     state.step = t;
+    applySeriesFrame(t);
     paintRibbon(); drawSlab(); renderSlabReadouts(); renderFaultReadouts(); renderWaterfall();
     if (state.mode === "live") {
       state.live.result = null;
