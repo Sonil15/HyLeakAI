@@ -23,8 +23,8 @@ are what let you return to a specific earlier epoch if a later one goes bad.
     "saturation"  a single-headed model for saturation only
 
 The paper trains SEPARATE models per state variable. Running the two
-single-headed variants tests whether the shared trunk is what costs us ~1.9x
-the paper's error.
+single-headed variants tests whether the shared trunk is what puts our error
+above the paper's.
 """
 
 from __future__ import annotations

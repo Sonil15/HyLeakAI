@@ -209,7 +209,7 @@ this answers **"given this fault hypothesis, how does risk evolve?"** — useful
 for Monte-Carlo screening over unknown faults, which is what the dashboard does
 — and not "how much hydrogen will leak".
 
-## 8. U-Net surrogate: trained, and ~1.9x short of the paper
+## 8. U-Net surrogate: trained, and short of the paper's accuracy
 
 **Status: trained on Kaggle (T4), 120 epochs, 4.23 h, 127 s/epoch, batch 48.**
 
@@ -221,9 +221,10 @@ Held-out test error (150 simulations never seen in training):
 | Saturation | **0.1101** | ~0.06–0.07 | 0.0577 |
 
 The right comparison is the paper's **Small** model, since that is what we
-trained. We are roughly **1.9x its error**. This is a working surrogate and a
-faithful implementation — the parameter counts match Table 1 exactly — but it is
-not a reproduction of the paper's accuracy, and should not be described as one.
+trained. This is a working surrogate and a faithful implementation, and the
+parameter counts match Table 1 exactly, but the accuracy is not a reproduction
+of the paper's and should not be described as one. The table above is the
+comparison; read it directly rather than through a ratio.
 
 ### The training curve says "noisy floor", not "converged"
 
