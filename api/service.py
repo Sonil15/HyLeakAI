@@ -200,8 +200,14 @@ class InferenceService:
             features = fault_features(pressure, saturation, porosity, permeability, fault, distance, fault_cell_mask(distance))
             flux = float(features.pop("_q_now_m3_s"))
             row = {**global_row, **geology_row, **features, **operational_features(timestep)}
-            rows.append([row.get(name, 0.0) for name in self.feature_names])
-            results.append({"fault": asdict(fault), "current_flux_m3_s": flux})
+            vector = [row.get(name, 0.0) for name in self.feature_names]
+            rows.append(vector)
+            # The actual numbers handed to both models, per fault. Returned so
+            # the interface can show what was fed in rather than only naming it:
+            # a list of 41 feature names says nothing about whether the values
+            # are sensible, and this is the level at which a reader can check.
+            results.append({"fault": asdict(fault), "current_flux_m3_s": flux,
+                            "features": {name: float(v) for name, v in zip(self.feature_names, vector)}})
         matrix = np.asarray(rows, np.float32)
         probabilities = self.classifier.predict_proba(matrix)[:, 1]
 
@@ -247,6 +253,15 @@ class InferenceService:
                               if self.regressor is not None else None),
             },
             "feature_names": self.feature_names,
+            # Where each group of features comes from, so the interface does not
+            # have to hardcode provenance that only the server actually knows.
+            "feature_sources": {
+                "fault": "the sampled fault hypothesis, plus the predicted fields read at its cells",
+                "plume": "computed from the U-Net predicted saturation field",
+                "pressure": "computed from the U-Net predicted pressure field",
+                "geology": "dataset porosity and permeability maps for this realisation",
+                "operational": "the selected timestep and its position in the injection cycle",
+            },
             "faults": results,
             "limitations": ["Physics-guided screening only; not a calibrated leak-rate prediction.",
                             "Fault and caprock properties are hypotheses, not measured site data.",
