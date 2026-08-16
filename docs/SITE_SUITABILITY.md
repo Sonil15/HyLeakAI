@@ -211,6 +211,33 @@ heterogeneity = minmax(poro_std)                # higher = less predictable inje
 score = 0.5 * capacity - 0.3 * seal_risk - 0.2 * heterogeneity      # then rescaled to 0-100
 ```
 
+**Where `caprock_margin_peak` itself comes from — two stacked assumptions,
+not just a proxy.** `margin = (P_max - P_init) / (P_frac - P_init)`
+(`src/leakage/labels.caprock_margin()`). `P_max` is real (peak simulated
+pressure, any cell, any of the 60 timesteps) and `P_init = 197.2 bar` is from
+the dataset description. `P_frac` is **[ASSUMED]**, built from two numbers
+neither dataset states:
+
+- Reservoir depth is never given, so it's inferred by assuming the
+  reservoir sits at hydrostatic pressure at t=0 (standard for a
+  depleted-then-repressurised gas reservoir) with a brine gradient of
+  0.105 bar/m (~1,050 kg/m³): depth = 197.2 / 0.105 ≈ 1,878 m
+  (`src/config.py` `RESERVOIR_DEPTH_M`).
+- Fracture gradient is set to 0.17 bar/m, the mid-point of the
+  0.15-0.20 bar/m range typical for sedimentary basins and a common
+  screening default (`src/config.py` `LeakageConfig.frac_gradient_bar_per_m`;
+  sweep values 0.15/0.17/0.20 defined alongside it).
+
+So `P_frac ≈ 1,878 x 0.17 ≈ 319 bar`. Across the 1,000 realisations,
+`caprock_margin_peak` itself ranges 0.43-0.79 (mean 0.64) — nobody actually
+crosses 1.0. Because `seal_risk` is min-max normalised before scoring,
+the ranking is largely insensitive to the exact 0.17 value (it rescales the
+spread, doesn't reorder much) — but the underlying margin numbers should
+never be quoted as absolute breach probabilities. On stage: "seal risk here
+means peak simulated overpressure, scaled against an inferred depth and an
+assumed fracture gradient — not an independently modelled seal-integrity
+number."
+
 The three weights are **[ASSUMED]**, tagged as such in the module docstring —
 same convention `src/config.py` uses for the leakage pipeline's assumptions,
 because there is no ground-truth "suitability" label to fit them against, the
