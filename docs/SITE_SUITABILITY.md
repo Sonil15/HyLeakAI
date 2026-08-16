@@ -208,7 +208,7 @@ capacity      = minmax(poro_mean)              # logk_mean not added separately:
 seal_risk     = minmax(caprock_margin_peak)     # higher = closer to assumed fracture pressure = worse
 heterogeneity = minmax(poro_std)                # higher = less predictable injection = worse
 
-score = 0.5 * capacity - 0.3 * seal_risk - 0.2 * heterogeneity      # then rescaled to 0-100
+score = 0.5396 * capacity - 0.2970 * seal_risk - 0.1634 * heterogeneity   # then rescaled to 0-100
 ```
 
 **Where `caprock_margin_peak` itself comes from — two stacked assumptions,
@@ -238,12 +238,18 @@ means peak simulated overpressure, scaled against an inferred depth and an
 assumed fracture gradient — not an independently modelled seal-integrity
 number."
 
-The three weights are **[ASSUMED]**, tagged as such in the module docstring —
-same convention `src/config.py` uses for the leakage pipeline's assumptions,
-because there is no ground-truth "suitability" label to fit them against, the
-same reason the leakage labels in `src/leakage/labels.py` are derived rather
-than trained. `--w-capacity` / `--w-seal` / `--w-het` on the CLI so the
-weighting is a stated, sweepable choice rather than a buried constant.
+The three weights are **AHP-derived** (`src/ahp_weights.py`): the principal
+eigenvector of a pairwise comparison matrix built from stated judgments
+(capacity 2× seal, capacity 3× heterogeneity, seal 2× heterogeneity), with a
+consistency ratio of **0.0079** against the conventional 0.10 threshold. They
+replace the hand-picked 0.5 / 0.3 / 0.2 and land close to them, so this
+changes the *provenance* of the weighting, not the answer. There is still no
+ground-truth "suitability" label to fit against — the same reason the leakage
+labels in `src/leakage/labels.py` are derived rather than trained — so the
+honest claim is "derived from these stated judgments, and internally
+consistent", never "these are the right weights". `--w-capacity` / `--w-seal`
+/ `--w-het` remain on the CLI so the weighting stays a stated, sweepable
+choice rather than a buried constant.
 
 **Sensitivity check before calling this done** — same principle as
 `docs/FINDINGS.md`'s tripwire discipline (don't report a number without

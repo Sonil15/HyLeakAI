@@ -680,12 +680,17 @@ score:
 
 | Criterion | Weight | From | Direction |
 |---|---|---|---|
-| Capacity | 0.5 | mean porosity (storage volume / injectivity proxy) | higher is better |
-| Seal risk | 0.3 | peak pressure vs. assumed caprock fracture pressure | higher is **worse** |
-| Heterogeneity | 0.2 | within-realisation porosity σ | higher is **worse** |
+| Capacity | 0.5396 | mean porosity (storage volume / injectivity proxy) | higher is better |
+| Seal risk | 0.2970 | peak pressure vs. assumed caprock fracture pressure | higher is **worse** |
+| Heterogeneity | 0.1634 | within-realisation porosity σ | higher is **worse** |
 
-All three weights are `[ASSUMED]` and exposed on the CLI (`--w-capacity` / `--w-seal` /
-`--w-het`) so the weighting is a stated, sweepable choice rather than a buried constant.
+All three weights are **AHP-derived** (`src/ahp_weights.py`) — principal eigenvector of a
+pairwise comparison matrix, consistency ratio **0.0079** against the 0.10 threshold — and
+still exposed on the CLI (`--w-capacity` / `--w-seal` / `--w-het`) so the weighting is a
+stated, sweepable choice rather than a buried constant. They replace hand-picked
+0.5 / 0.3 / 0.2 and land close to them: AHP fixes the provenance, not the truth. On stage,
+the claim is "derived from stated judgments and internally consistent" — never "these are
+the right weights".
 
 **Seal risk's own provenance** (see `docs/SITE_SUITABILITY.md` §4 for the full
 derivation): it is `caprock_margin_peak = (P_max - P_init) / (P_frac - P_init)`
