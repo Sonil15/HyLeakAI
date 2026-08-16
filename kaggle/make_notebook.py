@@ -393,7 +393,7 @@ ranking. (That 99% figure is itself under review — see docs/FINDINGS.md.)
   cheaper two-head model.
 - Only the split pressure model improves → the weight decay was the fix.
 - Neither moves → the cause is batch 48 vs the paper's 128, or mixed precision,
-  and 1.9x should simply be reported as our honest number."""),
+  and the measured error should simply be reported as our honest number."""),
 
 code('''# Single-head PRESSURE model. weight_decay defaults to the paper's 1e-4 here.
 hist_p = train_unet(
