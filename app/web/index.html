@@ -1266,7 +1266,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   var API_BASE = location.hostname.endsWith("github.io")
     ? "https://hyleakai-152424867743.asia-south1.run.app"
     : "";
-  var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
+  var LIVE_CACHE_KEY = "hyleak-live-assessment-v2";   /* v2: v1 payloads predate both model heads and the feature vector */
   /* A real API response, captured from the deployed service. It is shown on
      load so the readouts are populated before anyone clicks Run, and it carries
      both XGBoost heads and the feature list. Running an assessment replaces it
@@ -1282,9 +1282,28 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       item.classList.toggle("done", stage <= completed);
     });
   }
+  /* A stored result from an older build can be missing fields this page now
+     renders, and it silently wins over the embedded capture. That is what
+     produced 41 empty feature rows: the readouts populated from localStorage
+     while every feature value came back undefined. Validate the shape rather
+     than trusting the key, so an old payload is discarded instead of
+     half-rendered. */
+  function usableResult(result) {
+    return !!(result && result.faults && result.faults.length &&
+              result.feature_names && result.models &&
+              result.faults[0].features &&
+              Object.keys(result.faults[0].features).length);
+  }
+
   function cachedResult() {
-    try { return JSON.parse(localStorage.getItem(LIVE_CACHE_KEY)) || VERIFIED_DEMO_RESULT; }
-    catch (_) { return VERIFIED_DEMO_RESULT; }
+    try {
+      var stored = JSON.parse(localStorage.getItem(LIVE_CACHE_KEY));
+      if (usableResult(stored)) return stored;
+      if (stored) localStorage.removeItem(LIVE_CACHE_KEY);
+    } catch (_) {
+      try { localStorage.removeItem(LIVE_CACHE_KEY); } catch (__) {}
+    }
+    return VERIFIED_DEMO_RESULT;
   }
   function saveCachedResult(result) {
     try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify(result)); } catch (_) {}
