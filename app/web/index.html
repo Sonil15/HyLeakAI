@@ -530,6 +530,7 @@ tr.sel td { background: color-mix(in srgb, var(--h2) 12%, transparent); }
 tbody tr { cursor: pointer; }
 tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 
+.feature-list { margin: 0 0 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; color: var(--text-faint); word-break: break-word; }
 .series-bar { border-top: 1px solid var(--line-soft); }
 .series-bar .row { gap: 8px; flex-wrap: wrap; }
 #series-status { color: var(--text-faint); }
@@ -947,7 +948,10 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     </p>
 
     <div class="act-body">
-      <div class="live-panel" id="live-panel" hidden>
+      <!-- Part 2 of this stage. Previously gated on state.mode === "live", which
+           nothing sets since the Preview/Live toggle was removed, so the XGBoost
+           outputs had nowhere to appear. -->
+      <div class="live-panel" id="live-panel">
         <div class="row" style="justify-content:space-between">
           <div>
             <p class="eyebrow">Live assessment · deployed U-Net surrogate + XGBoost</p>
@@ -970,6 +974,23 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           </ol>
         </div>
         <p class="status" id="live-status" role="status">Connecting to the model service…</p>
+        <details class="disclose" id="feature-detail">
+          <summary>What goes into the two XGBoost models (<span id="feature-count">41</span> inputs)</summary>
+          <div class="disclose-body">
+            <p style="margin:0 0 8px">
+              Both heads read the same feature vector. The classifier returns P(elevated leakage);
+              the regressor returns log<sub>10</sub> of the flux at the same horizon.
+              <span id="model-metrics"></span>
+            </p>
+            <div id="feature-groups"></div>
+            <p class="disclose-warn" style="margin-top:10px">
+              The flux label is a closed-form function of quantities that also appear as features,
+              so at the same timestep it would be arithmetic. What is forecast is how the fields
+              evolve over the horizon, which is why it is reported as a forecast and not a
+              measured leak rate.
+            </p>
+          </div>
+        </details>
       </div>
       <div class="panel">
         <div class="panel-bar">
@@ -1344,8 +1365,15 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       ro("Fault ensemble", C_ASSUMED, risk.fault_count + " samples", "seeded hypothesis sweep") +
       ro("Model call", null, "live", "U-Net surrogate + XGBoost", "good");
     document.getElementById("fault-readouts").innerHTML =
-      ro("Worst P(elevated leak)", C_ASSUMED, worst.elevated_leakage_probability.toFixed(4), result.forecast_horizon_months + "-month horizon", worst.elevated_leakage_probability > 0.5 ? "hot" : "good") +
-      ro("Current fault flux", C_DERIVED, worst.current_flux_m3_s.toExponential(2) + " m³/s", "derived from surrogate fields") +
+      ro("P(elevated leak)", C_DERIVED, worst.elevated_leakage_probability.toFixed(4),
+         "XGBoost classifier, " + result.forecast_horizon_months + " months ahead",
+         worst.elevated_leakage_probability > 0.5 ? "hot" : "good") +
+      ro("Forecast flux", C_DERIVED,
+         worst.forecast_q_m3_s === undefined ? "—" : worst.forecast_q_m3_s.toExponential(2) + " m³/s",
+         worst.forecast_log10_q === undefined ? "regressor unavailable"
+           : "XGBoost regressor, log₁₀ " + worst.forecast_log10_q.toFixed(2)) +
+      ro("Flux now", C_DERIVED, worst.current_flux_m3_s.toExponential(2) + " m³/s",
+         "Darcy, computed not predicted") +
       ro("Fault length", C_ASSUMED, Math.round(worst.fault.length_m).toLocaleString() + " m", "sampled, not measured") +
       ro("Fault permeability", C_ASSUMED, worst.fault.permeability_m2.toExponential(2) + " m²", "sampled, not measured");
     document.getElementById("risk-readouts").innerHTML =
@@ -1356,6 +1384,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       var pct = Math.max(1, item.elevated_leakage_probability * 100);
       return '<div class="wf-row"><div class="nm">fault ' + (index + 1) + '</div><div class="wf-track"><div class="wf-bar up" style="left:0;width:' + pct + '%"></div></div><div class="amt">' + item.elevated_leakage_probability.toFixed(4) + '</div></div>';
     }).join("");
+    renderFeaturePanel(result);
     document.getElementById("lat").textContent = "live";
     state.live.mapScale = Math.max(0.75, Math.min(1.35, summary.plume_area_km2 / 2.9736));
     document.getElementById("field-source-badge").textContent =
@@ -2574,6 +2603,48 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     });
     document.getElementById("reset-series").addEventListener("click", resetSeries);
   })();
+
+  /* Feature panel. Groups are derived from the names the API returns rather
+     than hardcoded, so a retrained model with different features still renders
+     correctly instead of silently dropping the ones it does not recognise. */
+  var FEATURE_GROUPS = [
+    ["Fault hypothesis", function (n) { return n.indexOf("fault") === 0 || n.indexOf("_to_fault") > -1; }],
+    ["Plume", function (n) { return /^(s_|hpv|plume)/.test(n); }],
+    ["Pressure", function (n) { return /^(p_|dp_|delta_p)/.test(n); }],
+    ["Geology", function (n) { return /^(poro|logk)/.test(n); }],
+    ["Operational", function (n) { return /^(timestep|cycle|step_in)/.test(n); }],
+    ["Other", function () { return true; }]
+  ];
+
+  function renderFeaturePanel(result) {
+    var host = document.getElementById("feature-groups");
+    if (!host || !result || !result.feature_names) return;
+    document.getElementById("feature-count").textContent = result.feature_names.length;
+
+    var models = result.models || {};
+    var bits = [];
+    if (models.classifier && models.classifier.pr_auc != null) {
+      bits.push("Classifier PR-AUC " + models.classifier.pr_auc.toFixed(3));
+    }
+    if (models.regressor && models.regressor.r2 != null) {
+      bits.push("regressor R² " + models.regressor.r2.toFixed(3) +
+                ", RMSE " + models.regressor.rmse_log10.toFixed(2) + " in log₁₀ units");
+    }
+    document.getElementById("model-metrics").textContent =
+      bits.length ? "Held-out performance: " + bits.join(", ") + "." : "";
+
+    var remaining = result.feature_names.slice();
+    var html = "";
+    FEATURE_GROUPS.forEach(function (group) {
+      var name = group[0], test = group[1];
+      var taken = remaining.filter(test);
+      remaining = remaining.filter(function (n) { return taken.indexOf(n) === -1; });
+      if (!taken.length) return;
+      html += '<p class="d-sec">' + name + " (" + taken.length + ")</p>" +
+              '<p class="feature-list">' + taken.join(", ") + "</p>";
+    });
+    host.innerHTML = html;
+  }
 
   function setStep(t) {
     state.step = t;
