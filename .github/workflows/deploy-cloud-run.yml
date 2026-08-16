@@ -102,7 +102,8 @@ jobs:
                    src/leakage/features.py src/config.py api/main.py api/service.py \
                    app/web/index.html data/constants.npy data/stats.json \
                    checkpoints/unet_small_best.pt outputs/xgb_classifier.ubj \
-                   outputs/xgb_regressor.ubj outputs/shap_features.json \n                   outputs/xgb_results.json; do
+                   outputs/xgb_regressor.ubj outputs/shap_features.json \
+                   outputs/xgb_results.json; do
             grep -qxF "$f" /tmp/context.txt || { echo "MISSING FROM BUILD CONTEXT: $f"; missing=1; }
           done
           # states.npy is 5.9 GB and must never be uploaded.
