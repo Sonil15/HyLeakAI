@@ -967,7 +967,10 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
         <div class="live-controls">
           <label>Fault samples<input id="live-fault-count" type="number" min="1" max="50" value="20"></label>
           <label>Sampling seed<input id="live-seed" type="number" min="0" max="2147483647" value="20260809"></label>
-          <button class="btn" id="run-live" type="button" disabled>Score fault ensemble</button>
+          <!-- No second run control. The single "Run simulation" button above the
+               slab fetches the fields and scores the ensemble; changing the two
+               inputs here re-scores without refetching. -->
+          <span class="eyebrow" id="rescore-hint">Change these and press Run simulation to re-score.</span>
         </div>
         <div class="live-run" aria-live="polite">
           <p>Assessment trace</p>
@@ -1011,7 +1014,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
             <select id="series-sim" class="mini-input" aria-label="Held-out simulation to run">
               <option>loading…</option>
             </select>
-            <button type="button" class="mini-btn" id="run-series">Run</button>
+            <button type="button" class="mini-btn" id="run-series">Run simulation</button>
             <button type="button" class="mini-btn" id="reset-series" disabled>Reset</button>
             <span class="eyebrow" id="series-status">Showing the default illustration.</span>
           </div>
@@ -1361,7 +1364,6 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       }
       state.live.simulationId = Number(select.value || payload.simulation_ids[0]);
       state.live.ready = true;
-      document.getElementById("run-live").disabled = false;
       badge.textContent = "API ready · " + payload.simulation_ids.length + " held-out simulations";
       state.live.result = cachedResult();
       state.live.cached = true;
@@ -1418,13 +1420,16 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     renderFeaturePanel(result);
     document.getElementById("lat").textContent = "live";
     state.live.mapScale = Math.max(0.75, Math.min(1.35, summary.plume_area_km2 / 2.9736));
-    document.getElementById("field-source-badge").textContent =
-      "Illustrative field · scaled to live plume summary";
+    /* Let seriesBadge decide. This used to hardcode "Illustrative field",
+       which was true when the slab could only ever be the mockup. Now that a
+       run puts real U-Net fields there, hardcoding it relabelled genuine model
+       output as an illustration - the exact opposite of the mistake worth
+       avoiding. */
+    seriesBadge();
   }
 
   async function runLiveAssessment() {
     if (!state.live.ready) return;
-    var button = document.getElementById("run-live");
     /* One selector for the stage. Two meant the fields on screen and the
        ensemble being scored could describe different realisations. */
     state.live.simulationId = Number(document.getElementById("series-sim").value);
@@ -1447,7 +1452,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
        the call is in flight, so reading state.step again on completion reported
        a different timestep from the one actually scored. */
     var timestep = state.step;
-    button.disabled = true;
+    /* Button state belongs to runSeries, which is the only caller. */
     state.live.cached = false;
     setLiveStage(1, 0);
     liveStatus("Live run started: loading held-out realisation #" + state.live.simulationId + ".");
@@ -1484,13 +1489,14 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       liveStatus("Live assessment complete for simulation #" + state.live.simulationId + ", timestep " + state.step + ". Results are screening outputs, not calibrated predictions.");
     } catch (error) {
       setLiveStage(0, 0);
-      liveStatus("Live assessment could not complete. Preview mode remains available. " + error.message, true);
+      liveStatus("Scoring could not complete. " + error.message, true);
+      throw error;
     } finally {
-      button.disabled = false;
+      /* runSeries owns the button state now; this function is only ever called
+         from there. */
     }
   }
 
-  document.getElementById("run-live").addEventListener("click", runLiveAssessment);
   document.getElementById("series-sim").addEventListener("change", function () {
     /* Changing the simulation invalidates any scored ensemble: it belonged to
        a different realisation. */
@@ -2623,19 +2629,29 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     var status = document.getElementById("series-status");
     var button = document.getElementById("run-series");
     button.disabled = true;
-    if (status) status.textContent = "Running the surrogate over all 60 timesteps… about 20 s, longer on a cold start.";
     try {
-      var response = await fetch(API_BASE + "/v1/field-series/" + simulationId);
-      if (!response.ok) throw new Error("request failed (" + response.status + ")");
-      series = decodeSeries(await response.json());
-      applySeriesFrame(state.step);
-      seriesBadge();
-      drawSlab(); renderSlabReadouts();
-      if (status) status.textContent = "Simulation #" + simulationId + " loaded. All 60 timesteps are model output.";
-      var reset = document.getElementById("reset-series");
-      if (reset) reset.disabled = false;
+      var haveFields = series && series.simulation_id === simulationId;
+      if (!haveFields) {
+        if (status) status.textContent = "Running the surrogate over all 60 timesteps… about 30 s, longer on a cold start.";
+        var response = await fetch(API_BASE + "/v1/field-series/" + simulationId);
+        if (!response.ok) throw new Error("field request failed (" + response.status + ")");
+        series = decodeSeries(await response.json());
+        applySeriesFrame(state.step);
+        seriesBadge();
+        drawSlab(); renderSlabReadouts();
+        var reset = document.getElementById("reset-series");
+        if (reset) reset.disabled = false;
+      }
+      if (status) status.textContent = haveFields
+        ? "Re-scoring the fault ensemble for simulation #" + simulationId + "…"
+        : "Fields ready. Scoring the fault ensemble…";
+      await runLiveAssessment();
+      if (status) {
+        status.textContent = "Simulation #" + simulationId +
+          ": 60 timesteps of model output, fault ensemble scored.";
+      }
     } catch (error) {
-      if (status) status.textContent = "Could not run the simulation: " + error.message;
+      if (status) status.textContent = "Could not complete the run: " + error.message;
     } finally {
       button.disabled = false;
     }
