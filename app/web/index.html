@@ -1384,7 +1384,9 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     document.getElementById("slab-readouts").innerHTML =
       ro("Peak pressure", C_DERIVED, summary.peak_pressure_bar.toFixed(1) + " bar", "+" + summary.pressure_delta_bar.toFixed(1) + " vs initial", "hot") +
       ro("Plume area", C_DERIVED, summary.plume_area_km2.toFixed(2) + " km²", "surrogate-derived field") +
-      ro("Caprock margin", C_ASSUMED, summary.caprock_margin.toFixed(3), "> 1 would mean exceedance", summary.caprock_margin > 0.85 ? "hot" : "") +
+      ro("Caprock margin", C_ASSUMED, summary.caprock_margin.toFixed(3),
+         "of 0.43–0.79 seen across all 1,000; exceedance at 1.0",
+         summary.caprock_margin > 0.85 ? "hot" : "") +
       ro("Fault ensemble", C_ASSUMED, risk.fault_count + " samples", "seeded hypothesis sweep") +
       ro("Model call", null, "live", "U-Net surrogate + XGBoost", "good");
     document.getElementById("xgb-readouts").innerHTML =
@@ -2717,9 +2719,13 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     document.getElementById("slab-readouts").innerHTML =
       ro("Peak pressure", C_DERIVED, pbar.toFixed(1) + " bar", "+" + (pbar - 180).toFixed(1) + " vs initial", "hot") +
       ro("Plume area", C_DERIVED, areaKm2.toFixed(2) + " km²", "cells with S &gt; 0.05") +
-      ro("Caprock margin", C_ASSUMED, margin.toFixed(3), "&gt; 1 would mean exceedance", margin > 0.85 ? "hot" : "") +
-      ro("Faults with flux", C_DERIVED, nz + " / " + faults.length, "non-zero Darcy flux now") +
-      ro("Recompute", null, lastLatency.toFixed(2) + " ms", "measured in this browser", "good");
+      ro("Caprock margin", C_ASSUMED, margin.toFixed(3),
+         "of 0.43&ndash;0.79 seen across all 1,000; exceedance at 1.0",
+         margin > 0.85 ? "hot" : "") +
+      ro("Faults with flux", C_DERIVED, nz + " / " + faults.length,
+         Math.round(100 * nz / faults.length) + "% of this ensemble carries non-zero Darcy flux") +
+      ro("Recompute", null, lastLatency.toFixed(2) + " ms",
+         "this browser &middot; the same field takes hours to simulate", "good");
     document.getElementById("lat").textContent = lastLatency.toFixed(2) + " ms";
   }
 
