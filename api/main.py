@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import csv
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -137,6 +138,18 @@ def health():
     return {"status": "ready" if service.ready else "degraded", "service": "HyLeakAI API", "mode": "surrogate screening"}
 
 
+@app.get("/v1/public-config")
+def public_config():
+    """Browser-safe configuration only.
+
+    The Maps JavaScript key is intentionally a browser key and must be
+    protected by HTTP-referrer and API restrictions in Google Cloud.  It is
+    never stored in source control or returned when the service is unconfigured.
+    """
+    key = os.getenv("GOOGLE_MAPS_BROWSER_API_KEY", "")
+    return {"google_maps_browser_api_key": key, "maps_enabled": bool(key)}
+
+
 @app.get("/v1/simulations")
 def simulations():
     require_ready()
@@ -159,6 +172,27 @@ def metadata():
     }
 
 
+@app.get("/v1/suitability")
+def suitability():
+    """Portfolio ranking for the 1,000 synthetic geological realizations.
+
+    It is intentionally not a geographic recommendation service.  Only the
+    held-out subset is eligible for the deployed surrogate field explorer.
+    """
+    require_ready()
+    ranking_path = service.output_dir / "site_suitability_ranking.csv"
+    if not ranking_path.exists():
+        raise HTTPException(status_code=503, detail="Suitability ranking artifact is not loaded.")
+    with ranking_path.open(newline="") as handle:
+        points = [{key: float(value) if key != "sim_id" and key != "rank" else int(value)
+                   for key, value in row.items()} for row in csv.DictReader(handle)]
+    return {
+        "points": points,
+        "live_simulation_ids": service.test_ids,
+        "provenance": "Synthetic geological-realisation portfolio; not geographic locations.",
+    }
+
+
 @app.get("/v1/fields/{simulation_id}")
 def fields(
     simulation_id: int,
@@ -174,6 +208,23 @@ def fields(
         raise HTTPException(status_code=422, detail=f"layers must use: {', '.join(sorted(allowed))}")
     try:
         return service.field_layers(simulation_id, timestep, requested)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/v1/field-series/{simulation_id}")
+def field_series(simulation_id: int):
+    """All 60 timesteps of one simulation, quantised, for the 10-year animation.
+
+    Separate from /v1/fields because the cost profile is different: this runs 60
+    forward passes in one batch (about 17 s on one vCPU) and returns roughly
+    2 MB of base64 uint8, where /v1/fields is a single fast timestep as plain
+    JSON numbers. Fetching 60 individual timesteps instead would multiply the
+    per-request overhead for no benefit.
+    """
+    require_ready()
+    try:
+        return service.field_series(simulation_id)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -205,6 +256,29 @@ def assessment(request: AssessmentRequest):
 #
 # The directory is optional on purpose — running the API alone (tests, a local
 # uvicorn, an image built without app/web/) should not fail here.
+@app.middleware("http")
+async def no_stale_frontend(request, call_next):
+    """Force revalidation of the frontend on every load.
+
+    StaticFiles sets only etag and last-modified, no Cache-Control. With no
+    explicit directive a browser applies HEURISTIC caching and may serve a
+    stale page without revalidating at all, so a deploy lands on the server and
+    the user keeps seeing the old build. That happened: the new Stage 2 markup
+    was verifiably in the response while the page appeared unchanged.
+
+    no-cache does not mean "do not store", it means "revalidate before use".
+    The etag still does its job, so an unchanged file is a 304 and costs
+    nothing; only a changed file transfers.
+
+    API responses are left alone -- they are POSTs and dynamic GETs that are
+    not cached this way in the first place.
+    """
+    response = await call_next(request)
+    if not request.url.path.startswith("/v1") and request.url.path != "/health":
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response
+
+
 WEB_DIR = Path(__file__).resolve().parent.parent / "app" / "web"
 if WEB_DIR.is_dir():
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

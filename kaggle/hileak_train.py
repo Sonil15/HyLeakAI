@@ -23,8 +23,8 @@ are what let you return to a specific earlier epoch if a later one goes bad.
     "saturation"  a single-headed model for saturation only
 
 The paper trains SEPARATE models per state variable. Running the two
-single-headed variants tests whether the shared trunk is what costs us ~1.9x
-the paper's error.
+single-headed variants tests whether the shared trunk is what puts our error
+above the paper's.
 """
 
 from __future__ import annotations
@@ -75,8 +75,9 @@ def train_unet(
     epochs: int = 120,
     batch_size: int = 64,
     lr: float = 1e-4,
-    weight_decay: float = 1e-5,
+    weight_decay: float | None = None,
     lr_halve_every: int = 50,
+    augment: bool = True,
     workers: int = 2,
     amp: bool = True,
     overfit: int = 0,
@@ -88,6 +89,23 @@ def train_unet(
 ):
     data_dir, ckpt_dir = Path(data_dir), Path(ckpt_dir)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+
+    if target not in ("both", "pressure", "saturation"):
+        raise ValueError(f"target must be both/pressure/saturation, got {target!r}")
+
+    # The paper's Appendix A1 uses a DIFFERENT weight decay per state variable:
+    # 1e-4 for pressure, 1e-5 for saturation. The first run used 1e-5 for both,
+    # leaving pressure — the worse head, val 0.193 against train 0.070 — ten
+    # times under-regularised.
+    #
+    # A shared two-head trunk cannot honour both values, since one optimiser
+    # applies one decay to the same weights. That, not the "conflicting targets"
+    # story, is the concrete reason to train the heads separately: it is the
+    # only configuration in which the paper's own hyperparameters are
+    # expressible. For target="both" we keep 1e-5 so the comparison against the
+    # first run stays like-for-like.
+    if weight_decay is None:
+        weight_decay = 1e-4 if target == "pressure" else 1e-5
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -101,25 +119,32 @@ def train_unet(
         # Deliberately tiny: train and evaluate on the SAME few simulations.
         # The only question this answers is whether the model can fit at all.
         ids = splits["train"][:overfit]
-        train_ds = UHSDataset(data_dir, ids, norm)
+        # No augmentation here: the overfit probe asks "can the model fit at
+        # all", and augmenting would make it fail for a reason unrelated to
+        # architecture bugs, which is the only thing this mode tests.
+        train_ds = UHSDataset(data_dir, ids, norm, augment=False)
         val_ds = UHSDataset(data_dir, ids, norm)
         weight_decay = 0.0
+        augment = False
         print(f"OVERFIT MODE: {overfit} simulations, {len(train_ds)} samples, train == val")
     else:
-        train_ds = UHSDataset(data_dir, splits["train"], norm)
+        # Augment TRAIN ONLY. Augmenting validation would change what the
+        # metric means and make it incomparable with the first run and the
+        # paper.
+        train_ds = UHSDataset(data_dir, splits["train"], norm, augment=augment)
         val_ds = UHSDataset(data_dir, splits["val"], norm)
         assert not set(train_ds.sim_ids) & set(val_ds.sim_ids), "train/val overlap"
         print(f"Simulations  train {len(train_ds.sim_ids)}  val {len(val_ds.sim_ids)}  "
               f"test {len(splits['test'])}")
         print(f"Samples      train {len(train_ds):,}  val {len(val_ds):,}")
+        print(f"Augment      {'D4 (8x), train only' if augment else 'OFF'}   "
+              f"weight decay {weight_decay:.0e} ({target})")
 
     kw = dict(num_workers=workers, pin_memory=(device.type == "cuda"),
               persistent_workers=workers > 0)
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, **kw)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, **kw)
 
-    if target not in ("both", "pressure", "saturation"):
-        raise ValueError(f"target must be both/pressure/saturation, got {target!r}")
     single = target != "both"
     out_channels = 1 if single else 2
     channel = TARGET_CHANNEL[target] if single else None
@@ -135,11 +160,17 @@ def train_unet(
     use_amp = amp and device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
-    tag = f"unet_{size}" + (f"_{target}" if single else "") + ("_overfit" if overfit else "")
+    # "_aug" is part of the tag, not cosmetic: resume=True keys off these paths,
+    # so without it an augmented run would load the previous un-augmented
+    # 120-epoch checkpoint and exit with "nothing to do" — silently reporting
+    # the old result as the new one. Different hyperparameters, different files.
+    tag = (f"unet_{size}" + (f"_{target}" if single else "")
+           + ("_aug" if augment else "") + ("_overfit" if overfit else ""))
     best_path, last_path = ckpt_dir / f"{tag}_best.pt", ckpt_dir / f"{tag}_last.pt"
     meta = {"size": size, "in_channels": train_ds.in_channels, "use_cyclic": True,
             "use_distance": True, "batch_size": batch_size, "overfit": overfit, "target": target,
-            "out_channels": out_channels,
+            "out_channels": out_channels, "augment": augment, "weight_decay": weight_decay,
+            "lr": lr, "epochs_requested": epochs,
             "normalizer": norm.describe()}
 
     start, history, best_val = 0, [], float("inf")

@@ -78,6 +78,7 @@ jobs:
           stats.json data
           unet_small_best.pt checkpoints
           xgb_classifier.ubj outputs
+          xgb_regressor.ubj outputs
           shap_features.json outputs
           xgb_results.json outputs
           FILES
@@ -101,7 +102,8 @@ jobs:
                    src/leakage/features.py src/config.py api/main.py api/service.py \
                    app/web/index.html data/constants.npy data/stats.json \
                    checkpoints/unet_small_best.pt outputs/xgb_classifier.ubj \
-                   outputs/shap_features.json outputs/xgb_results.json; do
+                   outputs/xgb_regressor.ubj outputs/shap_features.json \
+                   outputs/xgb_results.json; do
             grep -qxF "$f" /tmp/context.txt || { echo "MISSING FROM BUILD CONTEXT: $f"; missing=1; }
           done
           # states.npy is 5.9 GB and must never be uploaded.
@@ -163,6 +165,16 @@ jobs:
               assert key in d, f'missing {key} in response: {d}'
           assert len(d['faults']) == 5, f"expected 5 faults, got {len(d['faults'])}"
           assert d['field_source'] == 'U-Net surrogate', d['field_source']
+          # The regressor is the second head; if it silently failed to ship,
+          # the response is still valid JSON and only this catches it.
+          assert d['models']['regressor'] is not None, 'flux regressor did not load'
+          assert 'forecast_log10_q' in d['faults'][0], 'no flux forecast in the response'
+          # Range check, not just presence. A library-version mismatch loads the
+          # model without error and returns numbers that are silently wrong;
+          # this caught log10 flux 11.4, i.e. 2.5e11 m3/s, which no training
+          # label comes near. Darcy fluxes in this dataset top out near 47 m3/s.
+          worst = max(f['forecast_log10_q'] for f in d['faults'])
+          assert -13.0 <= worst <= 4.0, f'flux forecast out of physical range: log10 {worst}'
           print('inference OK:', json.dumps(d['risk_summary']))
           PY
 

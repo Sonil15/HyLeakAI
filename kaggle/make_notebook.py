@@ -232,15 +232,24 @@ from hileak_train import train_unet
 _ = train_unet(DATA, CKPT, size="small", epochs=40, batch_size=16,
                overfit=4, workers=2, snapshot_every=0, resume=False)'''),
 
-code('''# 9. Full training. Re-run this cell verbatim in a new session to resume.
+code('''# 9. RUN A. Full training with D4 augmentation. Re-run verbatim to resume.
+#
+# Why augmentation: run 1 ended at train pressure 0.070 / val 0.193 -- it fits
+# training data BETTER than the paper's test error, so capacity was never the
+# limit. The failure is generalisation to unseen geology. D4 (8 rotations and
+# reflections) turns 42,000 training samples into an effective 336,000 at
+# essentially no extra cost per epoch.
+#
+# Writes to unet_small_aug_* so it CANNOT resume from, or overwrite, run 1.
 history = train_unet(
     DATA, CKPT,
     size="small",          # 7.7M params; matches Large WITH cyclic+distance
     epochs=120,
     batch_size=BATCH_SIZE,
     lr=1e-4,               # paper Appendix Table A1
-    weight_decay=1e-5,
+    weight_decay=1e-5,     # matches run 1, so augmentation is the only variable
     lr_halve_every=50,     # "halved every 50 epochs"
+    augment=True,
     workers=2,
     amp=True,
     snapshot_every=10,
@@ -256,7 +265,7 @@ from hileak_core import (Normalizer, UHSDataset, build_unet, evaluate,
                          simulation_splits)
 
 device = torch.device("cuda")
-ck = torch.load(CKPT / "unet_small_best.pt", map_location=device, weights_only=False)
+ck = torch.load(CKPT / "unet_small_aug_best.pt", map_location=device, weights_only=False)
 norm = Normalizer.from_file(DATA / "stats.json")
 splits = simulation_splits()
 
@@ -279,7 +288,7 @@ import json
 
 import matplotlib.pyplot as plt
 
-hist = json.loads((CKPT / "unet_small_history.json").read_text())
+hist = json.loads((CKPT / "unet_small_aug_history.json").read_text())
 ep = [h["epoch"] for h in hist]
 fig, ax = plt.subplots(1, 2, figsize=(12, 4))
 for a, key, paper in ((ax[0], "pressure", 0.0861), (ax[1], "saturation", 0.0577)):
@@ -356,40 +365,49 @@ Cells 9-13 train ONE model with two output channels, covering pressure and
 saturation together. That halves training cost, but it is a deviation: the paper
 trains a **separate model per state variable**.
 
-The two targets genuinely conflict. Pressure is smooth, global, and flips sign
-between injection and withdrawal; saturation is local with a sharp plume front.
-A shared trunk must compromise between them, and that is the leading suspect for
-our test error being ~1.9x the paper's at the same model size (0.1640 pressure
-against the paper's 0.086).
+Originally this section existed to test whether the two targets *conflict* —
+pressure being smooth and global, saturation local with a sharp front. The run-1
+history argues against that: train error reached 0.070 pressure / 0.037
+saturation, better than the paper's *test* error, so a shared trunk clearly has
+enough capacity to represent both fields. Head conflict is not the limiter.
 
-The cells below test that directly. Each trains a one-headed model, so together
-they cost two more full runs — but they reuse the converted data, so there is no
-re-download. Checkpoints are named separately (`unet_small_pressure_*`,
-`unet_small_saturation_*`) and cannot overwrite the two-head run.
+The real reason to split is narrower and concrete. The paper's Appendix A1 uses
+a **different weight decay per state variable** — 1e-4 for pressure, 1e-5 for
+saturation. One optimiser over a shared trunk applies one decay to the same
+weights, so a two-head model *cannot express the paper's own hyperparameters*.
+Run 1 used 1e-5 for both, leaving pressure — the worse head — ten times
+under-regularised on a model that is demonstrably overfitting.
+
+Both cells below now train with D4 augmentation as well, so they are directly
+comparable with Run A. Checkpoints are named separately
+(`unet_small_pressure_aug_*`, `unet_small_saturation_aug_*`) and cannot
+overwrite anything.
 
 **Worth knowing before you spend the GPU hours:** for leakage screening the
-two-head model already retains **99% of the simulator's PR-AUC**, so this
-experiment matters mainly for the reproduction claim and for flux-magnitude
-accuracy, not for the risk ranking.
+two-head model already retains ~99% of the simulator's PR-AUC, so this affects
+the reproduction claim and flux-magnitude accuracy far more than the risk
+ranking. (That 99% figure is itself under review — see docs/FINDINGS.md.)
 
-**How to read the result:** if single-head pressure lands near 0.09-0.10, the
-shared trunk was the limiter. If it stays near 0.16, the cause is elsewhere
-(batch 48 vs the paper's 128, or mixed precision) and the cheaper two-head model
-should be kept."""),
+**How to read the result.** Compare against Run A, not against run 1:
+- Run A alone closes most of the gap → augmentation was the fix; keep the
+  cheaper two-head model.
+- Only the split pressure model improves → the weight decay was the fix.
+- Neither moves → the cause is batch 48 vs the paper's 128, or mixed precision,
+  and the measured error should simply be reported as our honest number."""),
 
-code('''# Single-head PRESSURE model.
+code('''# Single-head PRESSURE model. weight_decay defaults to the paper's 1e-4 here.
 hist_p = train_unet(
     DATA, CKPT, size="small", target="pressure",
-    epochs=120, batch_size=BATCH_SIZE, lr=1e-4, weight_decay=1e-5,
-    lr_halve_every=50, workers=2, amp=True,
+    epochs=120, batch_size=BATCH_SIZE, lr=1e-4,   # weight_decay=None -> 1e-4
+    lr_halve_every=50, augment=True, workers=2, amp=True,
     snapshot_every=10, keep_snapshots=4, resume=True,
 )'''),
 
-code('''# Single-head SATURATION model.
+code('''# Single-head SATURATION model. weight_decay defaults to the paper's 1e-5.
 hist_s = train_unet(
     DATA, CKPT, size="small", target="saturation",
-    epochs=120, batch_size=BATCH_SIZE, lr=1e-4, weight_decay=1e-5,
-    lr_halve_every=50, workers=2, amp=True,
+    epochs=120, batch_size=BATCH_SIZE, lr=1e-4,   # weight_decay=None -> 1e-5
+    lr_halve_every=50, augment=True, workers=2, amp=True,
     snapshot_every=10, keep_snapshots=4, resume=True,
 )'''),
 
@@ -409,7 +427,7 @@ loader = DataLoader(test_ds, batch_size=BATCH_SIZE, num_workers=2)
 
 scores = {}
 for target, channel in (("pressure", STATE_PRESSURE), ("saturation", STATE_SATURATION)):
-    ck = torch.load(CKPT / f"unet_small_{target}_best.pt", map_location=device,
+    ck = torch.load(CKPT / f"unet_small_{target}_aug_best.pt", map_location=device,
                     weights_only=False)
     m = build_unet("small", test_ds.in_channels, 1).to(device)
     m.load_state_dict(ck["model"])
@@ -448,7 +466,7 @@ already finished.
 > deliberately launching.
 
 Belt and braces: the editor's right-hand file browser also lets you download
-`checkpoints/unet_small_best.pt` (~93 MB) directly. Do both; it costs nothing.
+`checkpoints/unet_small_aug_best.pt` (~93 MB) directly. Do both; it costs nothing.
 
 To continue training later: new session → *Data → Add Input* → this notebook's
 output → set `PREV_OUTPUT` in cell 2 → run all.

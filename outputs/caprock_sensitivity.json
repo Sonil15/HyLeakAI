@@ -1,0 +1,38 @@
+{
+  "thicknesses_m": [
+    25.0,
+    50.0,
+    100.0,
+    200.0
+  ],
+  "assumed_default_m": 50.0,
+  "evaluations_per_thickness": 9000,
+  "summary": {
+    "25.0": {
+      "mean_nonzero_q_m3_s": 2.3628324191001817,
+      "p95_q_m3_s": 4.9001532682415405,
+      "max_q_m3_s": 46.84374496251436,
+      "nonzero_fraction": 0.3131111111111111
+    },
+    "50.0": {
+      "mean_nonzero_q_m3_s": 1.1814162095500909,
+      "p95_q_m3_s": 2.4500766341207703,
+      "max_q_m3_s": 23.42187248125718,
+      "nonzero_fraction": 0.3131111111111111
+    },
+    "100.0": {
+      "mean_nonzero_q_m3_s": 0.5907081047750454,
+      "p95_q_m3_s": 1.2250383170603851,
+      "max_q_m3_s": 11.71093624062859,
+      "nonzero_fraction": 0.3131111111111111
+    },
+    "200.0": {
+      "mean_nonzero_q_m3_s": 0.2953540523875227,
+      "p95_q_m3_s": 0.6125191585301926,
+      "max_q_m3_s": 5.855468120314295,
+      "nonzero_fraction": 0.3131111111111111
+    }
+  },
+  "relationship": "Q proportional to 1 / caprock_thickness_m (exact; it is the denominator)",
+  "not_supported": "A per-site thickness screening filter. Caprock thickness is a single assumed constant across all 1,000 realisations in this dataset, so a threshold test cannot discriminate between sites."
+}

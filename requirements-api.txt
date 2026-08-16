@@ -3,5 +3,11 @@ fastapi==0.115.12
 uvicorn[standard]==0.34.0
 numpy==1.26.4
 torch==2.5.1+cpu
-xgboost==2.1.4
+# Must match the version that SAVED the models. They were trained under 3.2.0,
+# and loading them under 2.1.4 produced silently wrong predictions rather than
+# an error: identical model file and identical inputs gave log10 flux 11.4 in
+# the container against 1.245 locally, which is far outside the range of any
+# training label. The classifier probabilities differed too, by less, which is
+# worse in a way -- they still looked plausible.
+xgboost==3.2.0
 scikit-learn==1.5.2

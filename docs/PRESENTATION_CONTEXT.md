@@ -523,7 +523,7 @@ result about *what to feed a model*, which generalises beyond this project.
 | Pressure rel. L2 | **0.1640** | **0.086** | 0.0861 |
 | Saturation rel. L2 | **0.1101** | ~0.06–0.07 | 0.0577 |
 
-**We are ~1.9× the paper's Small error. Say that number out loud.** It is a working
+**Our test error is above the paper's Small model. State the numbers.** It is a working
 surrogate and a faithful implementation — the parameter counts match Table 1 exactly — but
 it is *not* a reproduction of the paper's accuracy and must not be described as one.
 
@@ -1094,7 +1094,7 @@ and II.
    no invented comparison to "traditional monitoring." Real sites already run downhole
    gauges, DTS/DAS, integrity logging and soil-gas sampling — HyLeakAI is a forecasting
    layer *on top of* that stack, not a replacement for a strawman (`Build_Plan.md` §Economics).
-5. **Say the ~1.9× surrogate gap out loud.** Somebody will find it in the docs. Getting
+5. **State the surrogate gap.** Somebody will find it in the docs. Getting
    there first converts a weakness into evidence of honesty.
 
 ---
@@ -1190,7 +1190,7 @@ part that has to be learned, and it's the part persistence fails at.
 
 ### On the models
 
-**"Your U-Net is 1.9× worse than the paper. Why should I trust the rest?"**
+**"Your U-Net does not match the paper's accuracy. Why should I trust the rest?"**
 Because we measured it and told you. Our parameter counts match the paper's Table 1 exactly,
 so it's a faithful implementation; the accuracy gap is real and we ranked the causes. The top
 suspect is our own deviation — we use one two-headed trunk to predict pressure and saturation
@@ -1416,7 +1416,7 @@ the deck is wrong.
 - ❌ "Traditional monitoring catches it at day 40, we catch it at day 5" — this exact
   comparison is called out in `Build_Plan.md` as an invented number. Real sites run downhole
   gauges, DTS/DAS, integrity logging and soil-gas sampling.
-- ❌ Reproduction of the paper's accuracy — we are ~1.9× the paper's U-Net-Small error.
+- ❌ Reproduction of the paper's accuracy — our test error is above the paper's U-Net-Small.
 - ❌ Naming the undocumented third channel. We know its units. We don't know its name.
 
 ---
