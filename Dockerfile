@@ -40,7 +40,7 @@ COPY app/web/ app/web/
 # the state fields from geology.
 COPY data/constants.npy data/stats.json runtime_artifacts/data/
 COPY checkpoints/unet_small_best.pt runtime_artifacts/checkpoints/
-COPY outputs/xgb_classifier.ubj outputs/shap_features.json outputs/xgb_results.json outputs/site_suitability_ranking.csv runtime_artifacts/outputs/
+COPY outputs/xgb_classifier.ubj outputs/xgb_regressor.ubj outputs/shap_features.json outputs/xgb_results.json outputs/site_suitability_ranking.csv runtime_artifacts/outputs/
 
 ENV HYLEAK_DATA_DIR=/app/runtime_artifacts/data \
     HYLEAK_CHECKPOINT=/app/runtime_artifacts/checkpoints/unet_small_best.pt \
