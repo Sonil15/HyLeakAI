@@ -1413,10 +1413,27 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       ro("Worst-case probability", C_ASSUMED, risk.worst_case_probability.toFixed(4), result.forecast_horizon_months + " months ahead", risk.worst_case_probability > 0.5 ? "hot" : "good") +
       ro("P90 probability", C_ASSUMED, risk.p90_probability.toFixed(4), "across sampled faults") +
       ro("Median probability", C_ASSUMED, risk.median_probability.toFixed(4), "across sampled faults");
-    document.getElementById("waterfall").innerHTML = result.faults.map(function (item, index) {
-      var pct = Math.max(1, item.elevated_leakage_probability * 100);
-      return '<div class="wf-row"><div class="nm">fault ' + (index + 1) + '</div><div class="wf-track"><div class="wf-bar up" style="left:0;width:' + pct + '%"></div></div><div class="amt">' + item.elevated_leakage_probability.toFixed(4) + '</div></div>';
-    }).join("");
+    /* Real TreeSHAP for the fault the model rates highest. This used to plot
+       per-fault probabilities, which is a ranking of faults rather than an
+       explanation of one, under a heading that promises attribution. */
+    if (worst.contributions && worst.contributions.length) {
+      var maxAbs = Math.max.apply(null, worst.contributions.map(function (c) { return Math.abs(c.value); })) || 1;
+      var wf = '<div class="wf-row"><div class="nm" style="color:var(--text)">base rate</div>' +
+        '<div class="wf-track"><div class="wf-zero" style="left:50%"></div></div>' +
+        '<div class="amt">' + worst.contribution_base_logit.toFixed(3) + "</div></div>";
+      worst.contributions.forEach(function (c) {
+        var w = Math.abs(c.value) / maxAbs * 48, up = c.value >= 0;
+        wf += '<div class="wf-row"><div class="nm">' + c.feature + "</div>" +
+          '<div class="wf-track"><div class="wf-zero" style="left:50%"></div>' +
+          '<div class="wf-bar ' + (up ? "up" : "dn") + '" style="left:' + (up ? 50 : 50 - w) +
+          "%;width:" + w + '%"></div></div>' +
+          '<div class="amt">' + (up ? "+" : "−") + Math.abs(c.value).toFixed(3) + "</div></div>";
+      });
+      document.getElementById("waterfall").innerHTML = wf;
+      var rb = document.getElementById("risk-source-badge");
+      rb.className = "src real";
+      rb.textContent = "XGBoost TreeSHAP · simulation #" + result.simulation_id;
+    }
     renderFeaturePanel(result);
     document.getElementById("lat").textContent = "live";
     state.live.mapScale = Math.max(0.75, Math.min(1.35, summary.plume_area_km2 / 2.9736));
@@ -2661,7 +2678,11 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     series = null;
     buildFields();               /* regenerates the mockup arrays in place */
     seriesBadge();
-    drawSlab(); renderSlabReadouts();
+    /* renderWaterfall repaints the illustrative bars and, with series now null,
+       restores the badge that says so. Without this the TreeSHAP label would
+       stay over mockup arithmetic. */
+    state.live.result = null;
+    drawSlab(); renderSlabReadouts(); renderWaterfall(); renderFaultReadouts();
     var status = document.getElementById("series-status");
     if (status) status.textContent = "Showing the default illustration.";
     var reset = document.getElementById("reset-series");
@@ -2817,6 +2838,14 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
         '<div class="amt">' + (up ? "+" : "−") + Math.abs(c[1]).toFixed(3) + "</div></div>";
     });
     document.getElementById("waterfall").innerHTML = html;
+    /* These contributions are illustrative arithmetic, not TreeSHAP. Say so.
+       The badge was only ever set by setMode(), which nothing calls since the
+       mode toggle was removed, so it never announced anything. */
+    var rsb = document.getElementById("risk-source-badge");
+    if (rsb && !series) {
+      rsb.className = "src stub";
+      rsb.textContent = "Illustrative values · run a simulation for TreeSHAP";
+    }
 
     document.getElementById("risk-readouts").innerHTML =
       ro("P(elevated leakage)", C_ASSUMED, f.risk.toFixed(3), "in 6 months, this fault", f.risk > 0.5 ? "hot" : "good") +
