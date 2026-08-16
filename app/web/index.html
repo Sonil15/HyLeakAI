@@ -531,6 +531,11 @@ tbody tr { cursor: pointer; }
 tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
 
 .feature-list { margin: 0 0 6px; font-family: var(--font-mono); font-size: 11px; line-height: 1.7; color: var(--text-faint); word-break: break-word; }
+.feature-block { border-top: 1px solid var(--line-soft); margin-top: 14px; padding-top: 12px; }
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 2px 14px; margin: 0 0 8px; }
+.feature-grid .fk { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; }
+.feature-grid .fv { font-family: var(--font-mono); font-size: 10.5px; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+.src-note { font-size: 10px; text-transform: none; letter-spacing: 0; color: var(--text-faint); font-weight: 400; }
 .series-bar { border-top: 1px solid var(--line-soft); }
 .series-bar .row { gap: 8px; flex-wrap: wrap; }
 #series-status { color: var(--text-faint); }
@@ -974,23 +979,20 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
           </ol>
         </div>
         <p class="status" id="live-status" role="status">Connecting to the model service…</p>
-        <details class="disclose" id="feature-detail">
-          <summary>What goes into the two XGBoost models (<span id="feature-count">41</span> inputs)</summary>
-          <div class="disclose-body">
-            <p style="margin:0 0 8px">
-              Both heads read the same feature vector. The classifier returns P(elevated leakage);
-              the regressor returns log<sub>10</sub> of the flux at the same horizon.
-              <span id="model-metrics"></span>
-            </p>
-            <div id="feature-groups"></div>
-            <p class="disclose-warn" style="margin-top:10px">
-              The flux label is a closed-form function of quantities that also appear as features,
-              so at the same timestep it would be arithmetic. What is forecast is how the fields
-              evolve over the horizon, which is why it is reported as a forecast and not a
-              measured leak rate.
-            </p>
-          </div>
-        </details>
+        <div class="readouts" id="xgb-readouts"></div>
+        <div class="feature-block" id="feature-detail">
+          <p class="eyebrow">Model inputs &nbsp;·&nbsp; <span id="feature-count">41</span> values, both heads read the same vector</p>
+          <p class="f-note" style="margin-bottom:8px">
+            Values shown are for the highest-probability fault in the current ensemble.
+            <span id="model-metrics"></span>
+          </p>
+          <div id="feature-groups"></div>
+          <p class="disclose-warn" style="margin-top:10px">
+            The flux label is a closed-form function of quantities that also appear as features, so at
+            the same timestep it would be arithmetic. What is forecast is how the fields evolve over
+            the horizon, which is why it is reported as a forecast and not a measured leak rate.
+          </p>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-bar">
@@ -1265,9 +1267,12 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     ? "https://hyleakai-152424867743.asia-south1.run.app"
     : "";
   var LIVE_CACHE_KEY = "hyleak-live-assessment-v1";
-  /* A real API response captured on 2026-08-12. It makes the Live tab useful
-     immediately in a demo, while Run live assessment always refreshes it. */
-  var VERIFIED_DEMO_RESULT = {"simulation_id":0,"timestep":31,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":262.1124267578125,"pressure_delta_bar":64.91242675781251,"plume_area_km2":2.9736,"caprock_margin":0.5317369955976214},"risk_summary":{"fault_count":5,"median_probability":3.1093936314618986e-8,"p90_probability":3.3465208275629267e-7,"worst_case_probability":3.406817370432691e-7},"faults":[{"fault":{"fault_id":0,"x_m":2026.556,"y_m":4972.085,"length_m":558.831,"width_m":5.446,"permeability_m2":6.250887536644922e-13,"orientation_rad":1.560188},"current_flux_m3_s":0,"elevated_leakage_probability":3.25607601325828e-7},{"fault":{"fault_id":1,"x_m":5565.8,"y_m":1743.88,"length_m":305.766,"width_m":9.189,"permeability_m2":1.1233473384304368e-13,"orientation_rad":3.099848},"current_flux_m3_s":0,"elevated_leakage_probability":8.79326123026658e-9},{"fault":{"fault_id":2,"x_m":3769.028,"y_m":1092.921,"length_m":789.479,"width_m":5.486,"permeability_m2":3.59147474494291e-13,"orientation_rad":1.7081},"current_flux_m3_s":0,"elevated_leakage_probability":3.406817370432691e-7},{"fault":{"fault_id":3,"x_m":2063.84,"y_m":3420.815,"length_m":1892.459,"width_m":2.473,"permeability_m2":5.40218926082173e-15,"orientation_rad":2.784003},"current_flux_m3_s":0,"elevated_leakage_probability":5.793386215202645e-9},{"fault":{"fault_id":4,"x_m":3077.212,"y_m":5326.215,"length_m":1717.886,"width_m":7.753,"permeability_m2":1.267424645304919e-14,"orientation_rad":2.418797},"current_flux_m3_s":0,"elevated_leakage_probability":3.1093936314618986e-8}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction."]};
+  /* A real API response, captured from the deployed service. It is shown on
+     load so the readouts are populated before anyone clicks Run, and it carries
+     both XGBoost heads and the feature list. Running an assessment replaces it
+     with a fresh call. Re-capture with:
+       curl -s -X POST <service>/v1/assessments -H 'Content-Type: application/json'          -d '{"simulation_id":110,"timestep":30,"mode":"sampled_ensemble","fault_count":5,"seed":7}' */
+  var VERIFIED_DEMO_RESULT = {"simulation_id":110,"timestep":30,"field_source":"U-Net surrogate","forecast_horizon_steps":3,"forecast_horizon_months":6,"field_summary":{"peak_pressure_bar":207.9679412841797,"pressure_delta_bar":10.7679443359375,"plume_area_km2":5.3208,"caprock_margin":0.08820672763604838},"risk_summary":{"fault_count":5,"median_probability":0.00015857662947382778,"p90_probability":0.9998267292976379,"worst_case_probability":0.999996542930603,"worst_forecast_log10_q":1.2451015710830688},"models":{"fields":{"name":"U-Net surrogate","predicts":["pressure","saturation"],"inputs":["porosity","permeability","time","cycle index","distance to well"]},"classifier":{"name":"XGBoost classifier","predicts":"P(elevated leakage)","n_features":41,"pr_auc":0.9931344282676601,"auc":0.9998290036522239},"regressor":{"name":"XGBoost regressor","predicts":"log10 flux at the horizon","n_features":41,"r2":0.9711298018604623,"rmse_log10":0.7406433820724487}},"feature_names":["p_max_bar","p_min_bar","p_mean_bar","p_p95_bar","p_well_bar","delta_p_bar","p_grad_max_bar_per_m","dp_dt_bar_per_year","s_max","s_mean","hpv_total_m3","plume_area_m2","plume_cell_count","plume_centroid_offset_m","plume_max_radius_m","plume_front_speed_m_per_year","hpv_rate_m3_per_year","boundary_saturation_max","boundary_hpv_fraction","caprock_margin","poro_mean","poro_std","logk_mean","logk_std","fault_p_bar","fault_s","fault_krg","fault_overpressure_bar","fault_delta_p_bar","distance_plume_to_fault_m","fault_poro","fault_logk","fault_log10_perm_m2","fault_length_m","fault_width_m","fault_area_m2","fault_radius_from_well_m","timestep","cycle_number","cycle_index","step_in_cycle"],"feature_sources":{"fault":"the sampled fault hypothesis, plus the predicted fields read at its cells","plume":"computed from the U-Net predicted saturation field","pressure":"computed from the U-Net predicted pressure field","geology":"dataset porosity and permeability maps for this realisation","operational":"the selected timestep and its position in the injection cycle"},"faults":[{"fault":{"fault_id":0,"x_m":5397.490619704816,"y_m":2666.217423750363,"length_m":1596.2342424413482,"width_m":3.0268647099153267,"permeability_m2":7.952411684214868e-15,"orientation_rad":2.7443490865749487},"current_flux_m3_s":0.0,"features":{"p_max_bar":207.9679412841797,"p_min_bar":111.74600219726562,"p_mean_bar":201.3294677734375,"p_p95_bar":207.10011291503906,"p_well_bar":117.7727279663086,"delta_p_bar":10.7679443359375,"p_grad_max_bar_per_m":0.2080074730667008,"dp_dt_bar_per_year":0.0,"s_max":0.5031067132949829,"s_mean":0.021499071270227432,"hpv_total_m3":36620472.0,"plume_area_m2":5320800.0,"plume_cell_count":1478.0,"plume_centroid_offset_m":91.61075688010996,"plume_max_radius_m":1632.7277789025334,"plume_front_speed_m_per_year":0.0,"hpv_rate_m3_per_year":0.0,"boundary_saturation_max":0.0025458484888076782,"boundary_hpv_fraction":0.0013171376194804907,"caprock_margin":0.08820672763604838,"poro_mean":0.28403061628341675,"poro_std":0.024184470996260643,"logk_mean":1.5273978401352462,"logk_std":0.3731191091600365,"fault_p_bar":199.94256591796875,"fault_s":0.0028737224638462067,"fault_krg":0.0,"fault_overpressure_bar":2.742565917968762,"fault_delta_p_bar":2.7425659179687614,"distance_plume_to_fault_m":90.22951751695359,"fault_poro":0.2767261564731598,"fault_logk":1.4276858285386145,"fault_log10_perm_m2":-14.099501145266323,"fault_length_m":1596.2342424413482,"fault_width_m":3.0268647099153267,"fault_area_m2":4831.585097204143,"fault_radius_from_well_m":1950.267306493068,"timestep":30.0,"cycle_number":5.0,"cycle_index":-1.0,"step_in_cycle":5.0},"elevated_leakage_probability":8.629542913585198e-11,"forecast_log10_q":-12.082201957702637,"forecast_q_m3_s":0.0},{"fault":{"fault_id":1,"x_m":3932.9300423517384,"y_m":3646.40635328052,"length_m":1634.7249717536831,"width_m":5.211414575593487,"permeability_m2":8.111427306649053e-15,"orientation_rad":0.8746998575470308},"current_flux_m3_s":0.0,"features":{"p_max_bar":207.9679412841797,"p_min_bar":111.74600219726562,"p_mean_bar":201.3294677734375,"p_p95_bar":207.10011291503906,"p_well_bar":117.7727279663086,"delta_p_bar":10.7679443359375,"p_grad_max_bar_per_m":0.2080074730667008,"dp_dt_bar_per_year":0.0,"s_max":0.5031067132949829,"s_mean":0.021499071270227432,"hpv_total_m3":36620472.0,"plume_area_m2":5320800.0,"plume_cell_count":1478.0,"plume_centroid_offset_m":91.61075688010996,"plume_max_radius_m":1632.7277789025334,"plume_front_speed_m_per_year":0.0,"hpv_rate_m3_per_year":0.0,"boundary_saturation_max":0.0025458484888076782,"boundary_hpv_fraction":0.0013171376194804907,"caprock_margin":0.08820672763604838,"poro_mean":0.28403061628341675,"poro_std":0.024184470996260643,"logk_mean":1.5273978401352462,"logk_std":0.3731191091600365,"fault_p_bar":155.1935577392578,"fault_s":0.35158273577690125,"fault_krg":0.16169270492209822,"fault_overpressure_bar":0.0,"fault_delta_p_bar":-42.006442260742176,"distance_plume_to_fault_m":0.067926896872849,"fault_poro":0.2910294234752655,"fault_logk":1.6456297578393124,"fault_log10_perm_m2":-14.09090271954206,"fault_length_m":1634.7249717536831,"fault_width_m":5.211414575593487,"fault_area_m2":8519.229544883796,"fault_radius_from_well_m":214.74285278360904,"timestep":30.0,"cycle_number":5.0,"cycle_index":-1.0,"step_in_cycle":5.0},"elevated_leakage_probability":0.00015857662947382778,"forecast_log10_q":-0.42904940247535706,"forecast_q_m3_s":0.372349351644516},{"fault":{"fault_id":2,"x_m":2980.23026323563,"y_m":4149.070591501126,"length_m":1108.1868661243159,"width_m":5.981476168670432,"permeability_m2":9.69395167272759e-13,"orientation_rad":2.4902208621823125},"current_flux_m3_s":0.0,"features":{"p_max_bar":207.9679412841797,"p_min_bar":111.74600219726562,"p_mean_bar":201.3294677734375,"p_p95_bar":207.10011291503906,"p_well_bar":117.7727279663086,"delta_p_bar":10.7679443359375,"p_grad_max_bar_per_m":0.2080074730667008,"dp_dt_bar_per_year":0.0,"s_max":0.5031067132949829,"s_mean":0.021499071270227432,"hpv_total_m3":36620472.0,"plume_area_m2":5320800.0,"plume_cell_count":1478.0,"plume_centroid_offset_m":91.61075688010996,"plume_max_radius_m":1632.7277789025334,"plume_front_speed_m_per_year":0.0,"hpv_rate_m3_per_year":0.0,"boundary_saturation_max":0.0025458484888076782,"boundary_hpv_fraction":0.0013171376194804907,"caprock_margin":0.08820672763604838,"poro_mean":0.28403061628341675,"poro_std":0.024184470996260643,"logk_mean":1.5273978401352462,"logk_std":0.3731191091600365,"fault_p_bar":175.3768768310547,"fault_s":0.2938005328178406,"fault_krg":0.10566879964846751,"fault_overpressure_bar":0.0,"fault_delta_p_bar":-21.8231231689453,"distance_plume_to_fault_m":0.8967083092488606,"fault_poro":0.30357128381729126,"fault_logk":1.8308280542008106,"fault_log10_perm_m2":-12.013499149696822,"fault_length_m":1108.1868661243159,"fault_width_m":5.981476168670432,"fault_area_m2":6628.593330156166,"fault_radius_from_well_m":913.6348454315488,"timestep":30.0,"cycle_number":5.0,"cycle_index":-1.0,"step_in_cycle":5.0},"elevated_leakage_probability":0.999996542930603,"forecast_log10_q":1.2451015710830688,"forecast_q_m3_s":17.58334732055664},{"fault":{"fault_id":3,"x_m":5777.4314419191705,"y_m":3705.3932607429406,"length_m":587.5556568240781,"width_m":2.441908304720601,"permeability_m2":6.880481204463462e-14,"orientation_rad":0.1380478893954662},"current_flux_m3_s":0.0,"features":{"p_max_bar":207.9679412841797,"p_min_bar":111.74600219726562,"p_mean_bar":201.3294677734375,"p_p95_bar":207.10011291503906,"p_well_bar":117.7727279663086,"delta_p_bar":10.7679443359375,"p_grad_max_bar_per_m":0.2080074730667008,"dp_dt_bar_per_year":0.0,"s_max":0.5031067132949829,"s_mean":0.021499071270227432,"hpv_total_m3":36620472.0,"plume_area_m2":5320800.0,"plume_cell_count":1478.0,"plume_centroid_offset_m":91.61075688010996,"plume_max_radius_m":1632.7277789025334,"plume_front_speed_m_per_year":0.0,"hpv_rate_m3_per_year":0.0,"boundary_saturation_max":0.0025458484888076782,"boundary_hpv_fraction":0.0013171376194804907,"caprock_margin":0.08820672763604838,"poro_mean":0.28403061628341675,"poro_std":0.024184470996260643,"logk_mean":1.5273978401352462,"logk_std":0.3731191091600365,"fault_p_bar":201.03794860839844,"fault_s":0.0014690851094201207,"fault_krg":0.0,"fault_overpressure_bar":3.8379486083984493,"fault_delta_p_bar":3.837948608398449,"distance_plume_to_fault_m":228.40482706364585,"fault_poro":0.2820567190647125,"fault_logk":1.5093965859216993,"fault_log10_perm_m2":-13.162381187180907,"fault_length_m":587.5556568240781,"fault_width_m":2.441908304720601,"fault_area_m2":1434.7570378842838,"fault_radius_from_well_m":1942.1018424352555,"timestep":30.0,"cycle_number":5.0,"cycle_index":-1.0,"step_in_cycle":5.0},"elevated_leakage_probability":1.0131981365013587e-10,"forecast_log10_q":-12.021698951721191,"forecast_q_m3_s":0.0},{"fault":{"fault_id":4,"x_m":3541.4065644065754,"y_m":3811.9850463698863,"length_m":1039.1708455855205,"width_m":9.254509958735671,"permeability_m2":7.72109264339647e-14,"orientation_rad":1.6151482216379063},"current_flux_m3_s":0.0,"features":{"p_max_bar":207.9679412841797,"p_min_bar":111.74600219726562,"p_mean_bar":201.3294677734375,"p_p95_bar":207.10011291503906,"p_well_bar":117.7727279663086,"delta_p_bar":10.7679443359375,"p_grad_max_bar_per_m":0.2080074730667008,"dp_dt_bar_per_year":0.0,"s_max":0.5031067132949829,"s_mean":0.021499071270227432,"hpv_total_m3":36620472.0,"plume_area_m2":5320800.0,"plume_cell_count":1478.0,"plume_centroid_offset_m":91.61075688010996,"plume_max_radius_m":1632.7277789025334,"plume_front_speed_m_per_year":0.0,"hpv_rate_m3_per_year":0.0,"boundary_saturation_max":0.0025458484888076782,"boundary_hpv_fraction":0.0013171376194804907,"caprock_margin":0.08820672763604838,"poro_mean":0.28403061628341675,"poro_std":0.024184470996260643,"logk_mean":1.5273978401352462,"logk_std":0.3731191091600365,"fault_p_bar":153.77236938476562,"fault_s":0.413265198469162,"fault_krg":0.23459840785571495,"fault_overpressure_bar":0.0,"fault_delta_p_bar":-43.427630615234364,"distance_plume_to_fault_m":7.195374882041789,"fault_poro":0.2994072139263153,"fault_logk":1.767883987587539,"fault_log10_perm_m2":-13.112321236526968,"fault_length_m":1039.1708455855205,"fault_width_m":9.254509958735671,"fault_area_m2":9617.016939298968,"fault_radius_from_well_m":299.90478056606906,"timestep":30.0,"cycle_number":5.0,"cycle_index":-1.0,"step_in_cycle":5.0},"elevated_leakage_probability":0.9995719790458679,"forecast_log10_q":0.5848516225814819,"forecast_q_m3_s":3.844604015350342}],"limitations":["Physics-guided screening only; not a calibrated leak-rate prediction.","Fault and caprock properties are hypotheses, not measured site data.","Results use U-Net surrogate fields, not simulator truth fields."],"request_id":"e383707a-6b83-4e5f-9987-3d78d83c3472","created_at":"2026-08-16T02:27:01.661073+00:00","scenario_input":{"simulation_id":110,"timestep":30,"mode":"sampled_ensemble","fault_count":5,"seed":7,"faults":null}};
 
   function pause(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
   function setLiveStage(active, completed) {
@@ -1305,7 +1310,6 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       state.playing = false;
       syncPlay();
     }
-    document.getElementById("live-panel").hidden = mode !== "live";
     document.getElementById("field-source-badge").textContent = mode === "live"
       ? "Illustrative field · live numerical results below" : "Illustrative field";
     document.getElementById("risk-source-badge").className = "src " + (mode === "live" ? "real" : "stub");
@@ -1364,7 +1368,7 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       ro("Caprock margin", C_ASSUMED, summary.caprock_margin.toFixed(3), "> 1 would mean exceedance", summary.caprock_margin > 0.85 ? "hot" : "") +
       ro("Fault ensemble", C_ASSUMED, risk.fault_count + " samples", "seeded hypothesis sweep") +
       ro("Model call", null, "live", "U-Net surrogate + XGBoost", "good");
-    document.getElementById("fault-readouts").innerHTML =
+    document.getElementById("xgb-readouts").innerHTML =
       ro("P(elevated leak)", C_DERIVED, worst.elevated_leakage_probability.toFixed(4),
          "XGBoost classifier, " + result.forecast_horizon_months + " months ahead",
          worst.elevated_leakage_probability > 0.5 ? "hot" : "good") +
@@ -2608,11 +2612,11 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
      than hardcoded, so a retrained model with different features still renders
      correctly instead of silently dropping the ones it does not recognise. */
   var FEATURE_GROUPS = [
-    ["Fault hypothesis", function (n) { return n.indexOf("fault") === 0 || n.indexOf("_to_fault") > -1; }],
-    ["Plume", function (n) { return /^(s_|hpv|plume)/.test(n); }],
-    ["Pressure", function (n) { return /^(p_|dp_|delta_p)/.test(n); }],
-    ["Geology", function (n) { return /^(poro|logk)/.test(n); }],
-    ["Operational", function (n) { return /^(timestep|cycle|step_in)/.test(n); }],
+    ["Fault hypothesis", function (n) { return n.indexOf("fault") === 0 || n.indexOf("_to_fault") > -1; }, "fault"],
+    ["Plume", function (n) { return /^(s_|hpv|plume)/.test(n); }, "plume"],
+    ["Pressure", function (n) { return /^(p_|dp_|delta_p)/.test(n); }, "pressure"],
+    ["Geology", function (n) { return /^(poro|logk)/.test(n); }, "geology"],
+    ["Operational", function (n) { return /^(timestep|cycle|step_in)/.test(n); }, "operational"],
     ["Other", function () { return true; }]
   ];
 
@@ -2624,24 +2628,43 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     var models = result.models || {};
     var bits = [];
     if (models.classifier && models.classifier.pr_auc != null) {
-      bits.push("Classifier PR-AUC " + models.classifier.pr_auc.toFixed(3));
+      bits.push("classifier PR-AUC " + models.classifier.pr_auc.toFixed(3));
     }
     if (models.regressor && models.regressor.r2 != null) {
       bits.push("regressor R² " + models.regressor.r2.toFixed(3) +
-                ", RMSE " + models.regressor.rmse_log10.toFixed(2) + " in log₁₀ units");
+                " and RMSE " + models.regressor.rmse_log10.toFixed(2) + " in log₁₀ units");
     }
     document.getElementById("model-metrics").textContent =
       bits.length ? "Held-out performance: " + bits.join(", ") + "." : "";
 
+    /* Values for the fault the models rate highest: showing the ensemble mean
+       would describe a fault that does not exist. */
+    var worst = result.faults.reduce(function (a, b) {
+      return a.elevated_leakage_probability > b.elevated_leakage_probability ? a : b;
+    });
+    var values = worst.features || {};
+    var sources = result.feature_sources || {};
+
+    function fmt(v) {
+      if (v === undefined || v === null) return "—";
+      var a = Math.abs(v);
+      if (a === 0) return "0";
+      if (a >= 1e5 || a < 1e-3) return v.toExponential(2);
+      return v.toFixed(a >= 100 ? 1 : a >= 1 ? 3 : 4);
+    }
+
     var remaining = result.feature_names.slice();
     var html = "";
     FEATURE_GROUPS.forEach(function (group) {
-      var name = group[0], test = group[1];
+      var label = group[0], test = group[1], key = group[2];
       var taken = remaining.filter(test);
       remaining = remaining.filter(function (n) { return taken.indexOf(n) === -1; });
       if (!taken.length) return;
-      html += '<p class="d-sec">' + name + " (" + taken.length + ")</p>" +
-              '<p class="feature-list">' + taken.join(", ") + "</p>";
+      html += '<p class="d-sec">' + label + " (" + taken.length + ")" +
+              (sources[key] ? ' <span class="src-note">' + sources[key] + "</span>" : "") + "</p>" +
+              '<div class="feature-grid">' + taken.map(function (n) {
+                return '<span class="fk">' + n + '</span><span class="fv">' + fmt(values[n]) + "</span>";
+              }).join("") + "</div>";
     });
     host.innerHTML = html;
   }
@@ -2737,6 +2760,9 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     state.fault = faults.reduce(function (p, c, n) { return c.risk > faults[p].risk ? n : p; }, 0);
     renderFaultReadouts(); renderWaterfall();
     syncPlay();
+    /* Populate the Stage 2 readouts immediately from the captured response, so
+       the panel is not three empty boxes until someone clicks Run. */
+    renderLiveResult(cachedResult());
     initLive();
   }
 

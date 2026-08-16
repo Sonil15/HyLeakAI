@@ -256,6 +256,29 @@ def assessment(request: AssessmentRequest):
 #
 # The directory is optional on purpose — running the API alone (tests, a local
 # uvicorn, an image built without app/web/) should not fail here.
+@app.middleware("http")
+async def no_stale_frontend(request, call_next):
+    """Force revalidation of the frontend on every load.
+
+    StaticFiles sets only etag and last-modified, no Cache-Control. With no
+    explicit directive a browser applies HEURISTIC caching and may serve a
+    stale page without revalidating at all, so a deploy lands on the server and
+    the user keeps seeing the old build. That happened: the new Stage 2 markup
+    was verifiably in the response while the page appeared unchanged.
+
+    no-cache does not mean "do not store", it means "revalidate before use".
+    The etag still does its job, so an unchanged file is a 304 and costs
+    nothing; only a changed file transfers.
+
+    API responses are left alone -- they are POSTs and dynamic GETs that are
+    not cached this way in the first place.
+    """
+    response = await call_next(request)
+    if not request.url.path.startswith("/v1") and request.url.path != "/health":
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response
+
+
 WEB_DIR = Path(__file__).resolve().parent.parent / "app" / "web"
 if WEB_DIR.is_dir():
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
