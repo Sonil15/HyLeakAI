@@ -680,12 +680,29 @@ score:
 
 | Criterion | Weight | From | Direction |
 |---|---|---|---|
-| Capacity | 0.5 | mean porosity (storage volume / injectivity proxy) | higher is better |
-| Seal risk | 0.3 | peak pressure vs. assumed caprock fracture pressure | higher is **worse** |
-| Heterogeneity | 0.2 | within-realisation porosity σ | higher is **worse** |
+| Capacity | 0.5396 | mean porosity (storage volume / injectivity proxy) | higher is better |
+| Seal risk | 0.2970 | peak pressure vs. assumed caprock fracture pressure | higher is **worse** |
+| Heterogeneity | 0.1634 | within-realisation porosity σ | higher is **worse** |
 
-All three weights are `[ASSUMED]` and exposed on the CLI (`--w-capacity` / `--w-seal` /
-`--w-het`) so the weighting is a stated, sweepable choice rather than a buried constant.
+All three weights are **AHP-derived** (`src/ahp_weights.py`) — principal eigenvector of a
+pairwise comparison matrix, consistency ratio **0.0079** against the 0.10 threshold — and
+still exposed on the CLI (`--w-capacity` / `--w-seal` / `--w-het`) so the weighting is a
+stated, sweepable choice rather than a buried constant. They replace hand-picked
+0.5 / 0.3 / 0.2 and land close to them: AHP fixes the provenance, not the truth. On stage,
+the claim is "derived from stated judgments and internally consistent" — never "these are
+the right weights".
+
+**Seal risk's own provenance** (see `docs/SITE_SUITABILITY.md` §4 for the full
+derivation): it is `caprock_margin_peak = (P_max - P_init) / (P_frac - P_init)`
+(`src/leakage/labels.caprock_margin()`). `P_max` and `P_init` (197.2 bar) are
+real; `P_frac` is `[ASSUMED]` from two stacked numbers — a reservoir depth
+inferred by assuming hydrostatic pressure at t=0 with a 0.105 bar/m brine
+gradient (≈1,878 m, `src/config.py` `RESERVOIR_DEPTH_M`), and a fracture
+gradient of 0.17 bar/m, the mid-point of the 0.15–0.20 bar/m sedimentary-basin
+range (`src/config.py` `LeakageConfig.frac_gradient_bar_per_m`). Neither
+number comes from the dataset. On stage: "seal risk = peak simulated
+overpressure scaled against an inferred depth and an assumed fracture
+gradient, not an independently modelled seal-integrity number."
 
 **Why a weighted score and not clustering:** clustering was tried **first** and dropped.
 KMeans over k=2..6 never beat silhouette **0.263** (the conventional floor for "real cluster
