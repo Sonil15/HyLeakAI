@@ -959,16 +959,15 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       <div class="live-panel" id="live-panel">
         <div class="row" style="justify-content:space-between">
           <div>
-            <p class="eyebrow">Live assessment · deployed U-Net surrogate + XGBoost</p>
-            <p style="font-size:14px;color:var(--text-dim)">Choose a held-out realisation, set the timestep with the cycle ribbon, and score a seeded fault ensemble.</p>
+            <p class="eyebrow">Part 2 · fault screening with XGBoost</p>
+            <p style="font-size:14px;color:var(--text-dim)">Scores a seeded fault ensemble against the simulation selected above the slab, at the timestep on the cycle ribbon.</p>
           </div>
           <span class="src real" id="live-badge">API check</span>
         </div>
         <div class="live-controls">
-          <label>Held-out simulation<select id="live-simulation" disabled><option>Loading…</option></select></label>
           <label>Fault samples<input id="live-fault-count" type="number" min="1" max="50" value="20"></label>
-          <label>Sampling seed<input id="live-seed" type="number" value="20260809"></label>
-          <button class="btn" id="run-live" type="button" disabled>Run live assessment</button>
+          <label>Sampling seed<input id="live-seed" type="number" min="0" max="2147483647" value="20260809"></label>
+          <button class="btn" id="run-live" type="button" disabled>Score fault ensemble</button>
         </div>
         <div class="live-run" aria-live="polite">
           <p>Assessment trace</p>
@@ -1350,11 +1349,18 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
       var simsResponse = await fetch(API_BASE + "/v1/simulations");
       if (!simsResponse.ok) throw new Error("Could not load simulations (" + simsResponse.status + ")");
       var payload = await simsResponse.json();
-      var select = document.getElementById("live-simulation");
-      select.innerHTML = payload.simulation_ids.map(function (id) { return '<option value="' + id + '">#' + id + '</option>'; }).join("");
-      state.live.simulationId = payload.simulation_ids[0];
+      /* The stage has one selector, above the slab, already populated from the
+         embedded held-out ids. Reconcile it with what the API reports rather
+         than building a second list that could disagree. */
+      var select = document.getElementById("series-sim");
+      var served = payload.simulation_ids.map(String);
+      if (select.options.length !== served.length) {
+        select.innerHTML = served.map(function (id) {
+          return '<option value="' + id + '">simulation #' + id + "</option>";
+        }).join("");
+      }
+      state.live.simulationId = Number(select.value || payload.simulation_ids[0]);
       state.live.ready = true;
-      select.disabled = false;
       document.getElementById("run-live").disabled = false;
       badge.textContent = "API ready · " + payload.simulation_ids.length + " held-out simulations";
       state.live.result = cachedResult();
@@ -1419,9 +1425,28 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   async function runLiveAssessment() {
     if (!state.live.ready) return;
     var button = document.getElementById("run-live");
-    state.live.simulationId = Number(document.getElementById("live-simulation").value);
-    var count = Number(document.getElementById("live-fault-count").value);
-    var seed = Number(document.getElementById("live-seed").value);
+    /* One selector for the stage. Two meant the fields on screen and the
+       ensemble being scored could describe different realisations. */
+    state.live.simulationId = Number(document.getElementById("series-sim").value);
+
+    /* Clamp before sending. The number inputs carry min/max, but a typed value
+       is not constrained by them, and the API answers an out-of-range field
+       with a bare 422 that the UI reported as "Assessment failed (422)" with no
+       indication of which field or why. */
+    function clamp(id, lo, hi, fallback) {
+      var raw = Number(document.getElementById(id).value);
+      if (!isFinite(raw)) raw = fallback;
+      var v = Math.min(hi, Math.max(lo, Math.round(raw)));
+      if (v !== raw) document.getElementById(id).value = v;
+      return v;
+    }
+    var count = clamp("live-fault-count", 1, 50, 20);
+    var seed = clamp("live-seed", 0, 2147483647, 20260809);
+
+    /* Freeze the timestep for this request. The timeline keeps advancing while
+       the call is in flight, so reading state.step again on completion reported
+       a different timestep from the one actually scored. */
+    var timestep = state.step;
     button.disabled = true;
     state.live.cached = false;
     setLiveStage(1, 0);
@@ -1430,13 +1455,24 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
     setLiveStage(2, 1);
     liveStatus("Live run in progress: surrogate is inferring pressure and plume fields.");
     try {
-      await loadLiveFields(state.live.simulationId, state.step);
+      await loadLiveFields(state.live.simulationId, timestep);
       var response = await fetch(API_BASE + "/v1/assessments", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ simulation_id: state.live.simulationId, timestep: state.step,
+        body: JSON.stringify({ simulation_id: state.live.simulationId, timestep: timestep,
           mode: "sampled_ensemble", fault_count: count, seed: seed })
       });
-      if (!response.ok) throw new Error("Assessment failed (" + response.status + ")");
+      if (!response.ok) {
+        /* Surface what the API objected to. A status code alone sends the
+           reader looking in the wrong place. */
+        var detail = "";
+        try {
+          var body = await response.json();
+          detail = Array.isArray(body.detail)
+            ? body.detail.map(function (d) { return d.loc[d.loc.length - 1] + ": " + d.msg; }).join("; ")
+            : (body.detail || "");
+        } catch (_) {}
+        throw new Error("Assessment failed (" + response.status + ")" + (detail ? " - " + detail : ""));
+      }
       state.live.result = await response.json();
       saveCachedResult(state.live.result);
       setLiveStage(3, 2);
@@ -1455,14 +1491,15 @@ tbody tr:hover td { background: color-mix(in srgb, var(--h2) 7%, transparent); }
   }
 
   document.getElementById("run-live").addEventListener("click", runLiveAssessment);
-  document.getElementById("live-simulation").addEventListener("change", function () {
+  document.getElementById("series-sim").addEventListener("change", function () {
+    /* Changing the simulation invalidates any scored ensemble: it belonged to
+       a different realisation. */
+    state.live.simulationId = Number(this.value);
     state.live.result = null;
     state.live.fields = null;
     state.live.mapScale = 1;
     setLiveStage(0, 0);
-    if (state.mode === "live") {
-      liveStatus("Simulation changed. Run live assessment to refresh the result.");
-    }
+    liveStatus("Simulation changed to #" + this.value + ". Score the fault ensemble to refresh Part 2.");
   });
 
   var WEIGHTS = {
